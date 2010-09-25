@@ -112,6 +112,15 @@
 	  return ( a || b ) && !( a && b );
     }
 
+    function get_domain(h) {
+      var i = h.lastIndexOf(".");
+      var j = h.lastIndexOf(".", i-1);
+      if (j != -1)
+	{ return h.slice(j+1); }
+      else
+	{ return h; }
+    }
+
     function tog() {
         var a = document.getElementById('nelbb');
         var b = document.getElementById('noscriptselect');
@@ -146,7 +155,7 @@
         scIil.setAttribute('title', scE);
         if ((location.hash=='#nsoff' || window.name.match(/ nsoff/))) {
         }
-        else if(myXOR((scE.indexOf(location.hostname) != -1),
+        else if(myXOR(get_domain(scE) == get_domain(location.hostname),
 		      ((z && z.indexOf(scIi.toString()) != -1) || (v && v.indexOf(scE) != -1))))
         {
         scA.push(scIil);
