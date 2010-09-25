@@ -2,10 +2,9 @@
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
     var blocksitescripts=false;
-
+    
     function createCookie(name, value, days, a_d, y) {
 // only calls with y='g'
-        name = 'noscript';
         if (days) {
             var date = new Date();
             date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
@@ -26,6 +25,10 @@
         }
         return '';
     }
+
+    // block_all, allow_current_domain, allow_all    
+    var mode = readCookie('noscript_mode', 'g');
+    if (mode == '') { mode = 'block_all'; }
 
     function eraseCookie(name) {
         createCookie(name, "", -1);
@@ -101,6 +104,37 @@
         }
     }
 
+    function should_allow(scr_domain) {
+      var v = readCookie('noscript', 'g');
+      if (mode == 'block_all') { return false; }
+      if (mode == 'allow_current_domain') {
+	return ((scr_domain == get_domain(location.hostname)) ||
+		(v && v.indexOf(scr_domain) != -1));
+      }
+      if (mode == 'allow_all') { return true; }
+      alert('should not be reached!');
+    }
+
+    function set_icon_style(img) {
+      var icon;      
+      if (mode == 'block_all') {
+	// icon = "Blocked";
+	// icon = "High Assurance Security Button Skin";
+	icon = "Smiley Tongue";
+      }      
+      if (mode == 'allow_current_domain') {
+//	icon = "Feed Mark as read";
+	icon = "Smiley Cool";
+      }
+//      { icon = "Panel Links"; }
+      if (mode == 'allow_all') {
+	// icon = "No Security";
+	icon = "Smiley Cry";
+      }
+
+      img.style = "width:22px;height:22px;background:-o-skin('" + icon + "');display:inline-block;";
+      // r.style = "background:-o-skin('" + icon + "');display:inline-block;";
+    }
 
     var scI = 0;
     var scA = [];
@@ -110,7 +144,7 @@
             return
         }
         var x = e.element.src;
-        var v = readCookie('noscript', 'g');
+
         var t = document.createElement('a');
         t.href = x;
         var scE = get_domain(t.hostname);
@@ -121,9 +155,7 @@
         scIil.setAttribute('title', scE);
         if ((location.hash=='#nsoff' || window.name.match(/ nsoff/))) {
         }
-        else if((scE == get_domain(location.hostname)) ||
-		(v && v.indexOf(scE) != -1)
-	       )
+        else if(should_allow(scE))
         {
 	  scA.push(scIil);
         }
@@ -180,10 +212,19 @@
         scIbut4.value = 'Server';
         scIbut4.onclick = cus;
         scIui.appendChild(scIbut4);
-        var r = document.createElement('input');
-        r.type = 'button';
-        r.style = "width:25px;height:25px;background:-o-skin('Panel Links');display:inline-block;";
+        var r = document.createElement('button');
+	var img = document.createElement('img');
+	r.appendChild(img);
+	set_icon_style(img);
+
         r.onclick = function() {
+	     if (mode == 'block_all') { mode = 'allow_current_domain'; }
+	else if (mode == 'allow_current_domain') { mode = 'allow_all'; }
+	else if (mode == 'allow_all') { mode = 'block_all'; }
+	     createCookie('noscript_mode', mode, 365, null, 'g');
+	     set_icon_style(img);
+	}
+        r.ondblclick = function() {
             var x = document.getElementById('noiframeui');
             if (x.style.display == 'none') {
                 x.style.display = 'inline-block';
@@ -194,6 +235,7 @@
                 x.style.display = 'none';
             }
         }
+	
         scIele.appendChild(scIui);
         scIele.appendChild(r);
         document.documentElement.appendChild(scIele);
