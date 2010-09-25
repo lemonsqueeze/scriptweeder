@@ -95,20 +95,18 @@
         var a = document.getElementById('nelbb');
         var b = document.getElementById('noscriptselect');
         if (b[b.selectedIndex].innerText.indexOf('#X# -') == 0)
-        {
-            a.value = 'Unblock';
-        }
+        { a.value = 'Unblock'; }
         else
-        {
-            a.value = 'Block';
-        }
+        { a.value = 'Block'; }
     }
 
+    var current_domain = get_domain(location.hostname);
+    
     function should_allow(scr_domain) {
       var v = readCookie('noscript', 'g');
       if (mode == 'block_all') { return false; }
       if (mode == 'allow_current_domain') {
-	return ((scr_domain == get_domain(location.hostname)) ||
+	return ((scr_domain == current_domain) ||
 		(v && v.indexOf(scr_domain) != -1));
       }
       if (mode == 'allow_all') { return true; }
@@ -138,10 +136,17 @@
 
     var scI = 0;
     var scA = [];
+
+    var blocked_current_domain = 0;
+    var total_current_domain = 0;
+    var blocked_external = 0;
+    var total_external = 0;
+    
     opera.addEventListener('BeforeExternalScript',
     function(e) {
         if (e.element.tagName != 'SCRIPT') {
-            return
+	  alert("non 'SCRIPT' tagname: " + e.element.tagName);
+	  return;
         }
         var x = e.element.src;
 
@@ -153,12 +158,21 @@
         scIil.value = scI + 's';
         scIil.innerText = x;
         scIil.setAttribute('title', scE);
-        if ((location.hash=='#nsoff' || window.name.match(/ nsoff/))) {
-        }
-        else if(should_allow(scE))
-        {
-	  scA.push(scIil);
-        }
+        if ((location.hash=='#nsoff' || window.name.match(/ nsoff/)))
+	{ return; }
+
+	var allowed = should_allow(scE);
+	
+	if (get_domain(scE) == current_domain) {
+	  total_current_domain++;
+	  if (!allowed) { blocked_current_domain++; }
+	} else {
+	  total_external++;
+	  if (!allowed) { blocked_external++; }
+	}
+	
+        if (allowed)
+        { scA.push(scIil); }
         else {
 	  e.preventDefault();
 	  scA.push(f(scIil, 'X', 'h'));
@@ -166,6 +180,7 @@
         scI++;
     },
     false);
+    
     document.addEventListener('DOMContentLoaded',
     function() {
         if (!scA.length) {
@@ -213,28 +228,40 @@
         scIbut4.onclick = cus;
         scIui.appendChild(scIbut4);
         var r = document.createElement('button');
+
+	var tooltip = "Scripts blocked: ";
+	tooltip += current_domain + " [" + blocked_current_domain +
+	  (blocked_current_domain == total_current_domain ? '' : "/" + total_current_domain) + "]";
+	tooltip += ", External: [" + blocked_external + 
+	  (blocked_external == total_external ? '' : "/" + total_external) + "]";
+	r.title = tooltip;
+	
 	var img = document.createElement('img');
 	r.appendChild(img);
 	set_icon_style(img);
 
         r.onclick = function() {
+	  if (event.ctrlKey)
+	  { // show/hide ui
+	    var x = document.getElementById('noiframeui');
+	    if (x.style.display == 'none') {
+	      x.style.display = 'inline-block';
+	      if (document.getElementById('noscriptselect').disabled == false) {
+		tog();
+	      }
+            } else {
+	    x.style.display = 'none';
+            }
+	    return;
+	  }	
+
+	  // normal click, change mode
 	     if (mode == 'block_all') { mode = 'allow_current_domain'; }
 	else if (mode == 'allow_current_domain') { mode = 'allow_all'; }
 	else if (mode == 'allow_all') { mode = 'block_all'; }
 	     createCookie('noscript_mode', mode, 365, null, 'g');
 	     set_icon_style(img);
 	}
-        r.ondblclick = function() {
-            var x = document.getElementById('noiframeui');
-            if (x.style.display == 'none') {
-                x.style.display = 'inline-block';
-                if (document.getElementById('noscriptselect').disabled == false) {
-                    tog();
-                }
-            } else {
-                x.style.display = 'none';
-            }
-        }
 	
         scIele.appendChild(scIui);
         scIele.appendChild(r);
