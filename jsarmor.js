@@ -145,48 +145,6 @@
     var loaded_external = 0;
     var total_external = 0;
     
-    opera.addEventListener('BeforeEvent',
-			   function(ujsevent) {
-      var e = ujsevent.event;
-
-      return;
-      
-      if (e.type == 'load')
-      {
-	if (e.target.nodeName == 'IMG')
-	{ return; }
-	if (e.target.nodeName == 'LINK')
-	{
-	  alert("link loaded, href: " + e.target.href);
-	  return;
-	}	
-	if (e.target.nodeName == 'SCRIPT')
-	{
-	  alert("script loaded: " + e.target.src);
-	  return;
-	}
-	alert("load event, nodeName:" + e.target.nodeName + " class:" + e.target.className);
-      }
-
-
-      
-      if (e.type != 'DOMFocusIn' &&
-	  e.type != 'DOMFocusOut' &&
-	  e.type != 'DOMContentLoaded' &&
-	  e.type != 'load' &&
-	  e.type != 'readystatechange' &&
-	  e.type != 'mousemove' &&
-	  e.type != 'mouseover' &&
-	  e.type != 'keyup' &&
-	  e.type != 'keydown' &&
-	  e.type != 'keypress' &&
-	  e.type != 'scroll' &&
-	  e.type != 'mouseout' &&
-	  e.type != 'focus' &&
-	  e.type != 'blur')
-      { alert("event type: " + e.type); }
-    }, false);
-			   
     opera.addEventListener('BeforeExternalScript',
     function(e) {
         if (e.element.tagName != 'SCRIPT') {
