@@ -2,6 +2,12 @@
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
     var blocksitescripts=false;
+
+    // block inline scripts by default ?
+    var default_block_inline_scripts = false;
+    
+    var inside_frame = 0;
+    if (window != window.top) { inside_frame = 1; }
     
     function createCookie(name, value, days, a_d, y) {
 // only calls with y='g'
@@ -37,6 +43,20 @@
     var mode = readCookie('noscript_mode', 'g');
     if (mode == '') { mode = 'block_all'; }
 
+    var block_inline_scripts;
+    var c = readCookie('noscript_inline', 'g');
+    if (c == '')
+      block_inline_scripts = default_block_inline_scripts;
+    else
+      block_inline_scripts = (c != 'y');
+
+    function toggle_allow_inline()
+    {
+      block_inline_scripts = !block_inline_scripts;
+      createCookie('noscript_inline', (block_inline_scripts ? 'n' : 'y'), 365, null, 'g');
+      reload_page();      
+    }
+    
     function set_mode(new_mode, reload)
     {
       mode = new_mode;
@@ -109,6 +129,7 @@
     }
 
     function get_domain(h) {
+      // FIXME handle .co.uk like domains
       var i = h.lastIndexOf(".");
       var j = h.lastIndexOf(".", i-1);
       if (j != -1)
@@ -165,12 +186,12 @@
       // r.style = "background:-o-skin('" + icon + "');display:inline-block;";
     }
 
-    function add_menu_item(nsmenu, text, indent, f, icon) {
+    function add_menu_item(nsmenu, text, indent, f, child) {
       // FIXME: add icon
       var item = document.createElement('div');
-      if (icon)
-        { item.appendChild(icon);
-//    	  item.style.display = 'inline';
+      if (child)
+        { 
+	  item.appendChild(child);
 	}            
 //      item.style = "margin-top:0px; margin-bottom:0px;" +
       if (indent)
@@ -188,6 +209,14 @@
       item.onmousedown = function(){ return false; };
       nsmenu.appendChild(item);
       return item;
+    }
+
+    function add_menu_separator()
+    {
+      var div = document.createElement('div');
+      //  width: 90%;
+      div.style = "height: 1px; display: block; background-color: #555555; margin-left: auto; margin-right: auto;";
+      nsmenu.appendChild(div);
     }
 
     var nsmenu;
@@ -220,14 +249,22 @@
 
 //	nsmenu.style = 'border-top-color:#dddddd; border-left-color:#dddddd; border-bottom-color:#888888; border-right-color:#888888; border-top-width:2px;';
 
-	var item = add_menu_item(nsmenu, "Noscript Mode:");
+	var item = add_menu_item(nsmenu, "Noscript Settings");
 	item.align = 'center';
 	item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
 //	item.style.backgroundColor = '#0000ff';
 //	item.style.color = '#ffffff';
 //	item.style.fontWeight = 'bold';
+
+	var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+	checkbox.defaultChecked = block_inline_scripts;
+        checkbox.onclick = toggle_allow_inline;
+	add_menu_item(nsmenu, "Block Inline Scripts", 0, toggle_allow_inline, checkbox);
+	add_menu_separator();
+	
 	add_menu_item(nsmenu, "Block All", 0, function(){ set_mode('block_all'); }, new_icon('block_all'));
-	add_menu_item(nsmenu, "Filtered:", 0, function(){ set_mode('filtered'); }, new_icon('filtered'));
+	add_menu_item(nsmenu, "Filter By Domain", 0, function(){ set_mode('filtered'); }, new_icon('filtered'));
 
 	for (var i = 0; i < domains.length; i++)
 	{
@@ -288,11 +325,28 @@
     var blocked_external = 0;
     var loaded_external = 0;
     var total_external = 0;
+
+    var total_inline = 0;
+    
+    // Handler for both inline *and* external scripts
+    opera.addEventListener('BeforeScript', function(e) {
+      if (e.element.src) // external script
+	return;
+      
+      total_inline++;
+
+      // FIXME: remove after we're done testing
+      if (nsmenu)
+	alert("BeforeScript after DOM loaded");
+      
+      if (block_inline_scripts)
+	e.preventDefault();
+    }, false);
     
     opera.addEventListener('BeforeExternalScript',
     function(e) {
         if (e.element.tagName != 'SCRIPT') {
-	  alert("non 'SCRIPT' tagname: " + e.element.tagName);
+	  alert("BeforeExternalScript: non 'SCRIPT' tagname: " + e.element.tagName);
 	  return;
         }
 
@@ -345,9 +399,10 @@
     
     document.addEventListener('DOMContentLoaded',
     function() {
-        if (!scA.length) {
+        if (!scA.length && !total_inline) {
             return
         }
+
 //        var scIele = document.createElement('cusnoiframe');
 	var scIele = document.createElement('table');
 	scIele.border = 0;
@@ -397,7 +452,9 @@
         scIui.appendChild(scIbut4);
         var r = document.createElement('button');
 
-        var tooltip = "External scripts on current page: [" + current_domain + "] " + blocked_current_domain;
+        var tooltip = "[Inline scripts] " + total_inline +
+	  (block_inline_scripts ? " blocked, ": ", ") +
+	  "[" + current_domain + "] " + blocked_current_domain;
 	if (blocked_current_domain != total_current_domain)
 	  {  tooltip += "/" + total_current_domain; }
 	tooltip += " blocked";
