@@ -40,7 +40,8 @@
     function set_mode(new_mode, reload)
     {
       mode = new_mode;
-      if (new_mode == 'filtered' && !readCookie('noscript', 'g'))
+      // if don't allow anything yet, add current domain (hack)
+      if (new_mode == 'filtered' && !filtered_mode_should_allow("."))
 	allow_domain(current_domain);
       createCookie('noscript_mode', mode, 365, null, 'g');
       set_icon_style(button_image, mode);
@@ -151,32 +152,32 @@
     function set_icon_style(img, mode) {
       var icon;      
       if (mode == 'block_all') {
-	// icon = "Blocked";
-	// icon = "High Assurance Security Button Skin";
 	icon = "Smiley Tongue";
       }      
       if (mode == 'filtered') {
-//	icon = "Feed Mark as read";
 	icon = "Smiley Cool";
       }
-//      { icon = "Panel Links"; }
       if (mode == 'allow_all') {
-	// icon = "No Security";
 	icon = "Smiley Cry";
       }
 
-      img.style = "width:22px;height:22px;background:-o-skin('" + icon + "');display:inline-block;";
+      img.style = "width:22px;height:22px;background:-o-skin('" + icon + "'); vertical-align:middle;";
       // r.style = "background:-o-skin('" + icon + "');display:inline-block;";
     }
 
     function add_menu_item(nsmenu, text, indent, f, icon) {
       // FIXME: add icon
-      var item = document.createElement('p');
-      item.style = "margin-top:0px; margin-bottom:0px;" +
-        (indent ? "padding-left:" + (indent * 10) + "px;": "");
+      var item = document.createElement('div');
+      if (icon)
+        { item.appendChild(icon);
+//    	  item.style.display = 'inline';
+	}            
+//      item.style = "margin-top:0px; margin-bottom:0px;" +
+      if (indent)
+	item.style = "padding-left:" + (indent * 10) + "px;";
 //      item.style.backgroundColor = 'transparent';
-      // FIXME; make text non selectable
-      item.text = text;
+//      item.text = text;
+      item.innerHTML += text;
       if (f)
       {
 	item.onmouseover = function(){ this.style.backgroundColor = '#dddddd'; };
@@ -185,8 +186,6 @@
       }
       // make text non selectable
       item.onmousedown = function(){ return false; };
-      if (icon)
-        { nsmenu.appendChild(icon); }
       nsmenu.appendChild(item);
       return item;
     }
@@ -221,25 +220,30 @@
 
 //	nsmenu.style = 'border-top-color:#dddddd; border-left-color:#dddddd; border-bottom-color:#888888; border-right-color:#888888; border-top-width:2px;';
 
-	add_menu_item(nsmenu, "Choose Mode:");
-	add_menu_item(nsmenu, "block all", 2, function(){ set_mode('block_all'); }, new_icon('block_all'));
-	add_menu_item(nsmenu, "filtered", 2, function(){ set_mode('filtered'); }, new_icon('filtered'));
+	var item = add_menu_item(nsmenu, "Noscript Mode:");
+	item.align = 'center';
+	item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
+//	item.style.backgroundColor = '#0000ff';
+//	item.style.color = '#ffffff';
+//	item.style.fontWeight = 'bold';
+	add_menu_item(nsmenu, "Block All", 0, function(){ set_mode('block_all'); }, new_icon('block_all'));
+	add_menu_item(nsmenu, "Filtered:", 0, function(){ set_mode('filtered'); }, new_icon('filtered'));
 
 	for (var i = 0; i < domains.length; i++)
 	{
-	  var ba = 'allow ';
+	  var ba = 'Allow ';
 	  var d = domains[i];
 	  var f = function() { allow_domain(this.domain); set_mode('filtered'); };
 	  if (filtered_mode_should_allow(d))
 	    {
-	      ba = 'block ';
+	      ba = 'Block ';
 	      f = function() { block_domain(this.domain); set_mode('filtered'); };
 	    }
-	  var item = add_menu_item(nsmenu, ba + d, 4, f);
+	  var item = add_menu_item(nsmenu, ba + d, 3, f);
 	  item.domain = d;
 	}
 	
-	add_menu_item(nsmenu, "allow all", 2, function(){ set_mode('allow_all'); }, new_icon('allow_all'));
+	add_menu_item(nsmenu, "Allow All", 0, function(){ set_mode('allow_all'); }, new_icon('allow_all'));
 
 	var td = document.getElementById('td_nsmenu');
 	td.appendChild(nsmenu);	
@@ -351,7 +355,7 @@
 	scIele.cellPadding = 0;	
 	// background:-o-skin("Browser Window Skin")
 //        scIele.style = 'position:fixed;' + (cornerposition < 3 ? 'top': 'bottom') + ':1px;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:9999;direction:ltr;';
-        scIele.style = 'position:fixed;' + (cornerposition < 3 ? 'top': 'bottom') + ':1px;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:9999;direction:ltr;';
+        scIele.style = 'position:fixed;' + (cornerposition < 3 ? 'top': 'bottom') + ':1px;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:9999;direction:ltr;font-family:sans-serif; font-size:small;';
         var scIui = document.createElement('noifui');
         scIui.id = 'noiframeui';
         scIui.style.display = 'none';
@@ -393,19 +397,20 @@
         scIui.appendChild(scIbut4);
         var r = document.createElement('button');
 
-        var tooltip = "Scripts on current page: [" + current_domain + "] " + blocked_current_domain;
+        var tooltip = "External scripts on current page: [" + current_domain + "] " + blocked_current_domain;
 	if (blocked_current_domain != total_current_domain)
 	  {  tooltip += "/" + total_current_domain; }
 	tooltip += " blocked";
 	if (loaded_current_domain)
 	  { tooltip += " (" + loaded_current_domain + " loaded)"; }
 
-        tooltip += ", [External] " + blocked_external;
+        tooltip += ", [Other domains] " + blocked_external;
 	if (blocked_external != total_external)
 	  {  tooltip += "/" + total_external; }
 	tooltip += " blocked";
 	if (loaded_external)
 	  { tooltip += " (" + loaded_external + " loaded)"; }
+	tooltip += ". Click for advanced interface."
 	r.title = tooltip;
 	
 	r.appendChild(button_image);
