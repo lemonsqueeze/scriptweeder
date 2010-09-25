@@ -138,16 +138,75 @@
     var scA = [];
 
     var blocked_current_domain = 0;
+    var loaded_current_domain = 0;
     var total_current_domain = 0;
+    
     var blocked_external = 0;
+    var loaded_external = 0;
     var total_external = 0;
     
+    opera.addEventListener('BeforeEvent',
+			   function(ujsevent) {
+      var e = ujsevent.event;
+
+      return;
+      
+      if (e.type == 'load')
+      {
+	if (e.target.nodeName == 'IMG')
+	{ return; }
+	if (e.target.nodeName == 'LINK')
+	{
+	  alert("link loaded, href: " + e.target.href);
+	  return;
+	}	
+	if (e.target.nodeName == 'SCRIPT')
+	{
+	  alert("script loaded: " + e.target.src);
+	  return;
+	}
+	alert("load event, nodeName:" + e.target.nodeName + " class:" + e.target.className);
+      }
+
+
+      
+      if (e.type != 'DOMFocusIn' &&
+	  e.type != 'DOMFocusOut' &&
+	  e.type != 'DOMContentLoaded' &&
+	  e.type != 'load' &&
+	  e.type != 'readystatechange' &&
+	  e.type != 'mousemove' &&
+	  e.type != 'mouseover' &&
+	  e.type != 'keyup' &&
+	  e.type != 'keydown' &&
+	  e.type != 'keypress' &&
+	  e.type != 'scroll' &&
+	  e.type != 'mouseout' &&
+	  e.type != 'focus' &&
+	  e.type != 'blur')
+      { alert("event type: " + e.type); }
+    }, false);
+			   
     opera.addEventListener('BeforeExternalScript',
     function(e) {
         if (e.element.tagName != 'SCRIPT') {
 	  alert("non 'SCRIPT' tagname: " + e.element.tagName);
 	  return;
         }
+
+	// find out which scripts are actually loaded,
+	// this way we can find out if *something else* is blocking (blocked content, hosts file ...)
+	// awesome!
+	e.element.onload = function(le) {
+//	  alert("in load handler! script:" + le.target.src);
+
+	  var t = document.createElement('a');
+	  t.href = le.target.src;
+	  var scE = get_domain(t.hostname);
+	  if (scE == current_domain) { loaded_current_domain++; }
+	  else { loaded_external++; }
+	}
+	
         var x = e.element.src;
 
         var t = document.createElement('a');
@@ -163,7 +222,7 @@
 
 	var allowed = should_allow(scE);
 	
-	if (get_domain(scE) == current_domain) {
+	if (scE == current_domain) {
 	  total_current_domain++;
 	  if (!allowed) { blocked_current_domain++; }
 	} else {
@@ -187,7 +246,8 @@
             return
         }
         var scIele = document.createElement('cusnoiframe');
-        scIele.style = 'position:fixed;' + (cornerposition < 3 ? 'top': 'bottom') + ':1px;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px;width:auto;height:auto;background:-o-skin("Browser Window Skin");white-space:nowrap;z-index:9999;direction:ltr;';
+	// background:-o-skin("Browser Window Skin")
+        scIele.style = 'position:fixed;' + (cornerposition < 3 ? 'top': 'bottom') + ':1px;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:9999;direction:ltr;';
         var scIui = document.createElement('noifui');
         scIui.id = 'noiframeui';
         scIui.style.display = 'none';
@@ -229,11 +289,19 @@
         scIui.appendChild(scIbut4);
         var r = document.createElement('button');
 
-	var tooltip = "Scripts blocked: ";
-	tooltip += current_domain + " [" + blocked_current_domain +
-	  (blocked_current_domain == total_current_domain ? '' : "/" + total_current_domain) + "]";
-	tooltip += ", External: [" + blocked_external + 
-	  (blocked_external == total_external ? '' : "/" + total_external) + "]";
+        var tooltip = "[" + current_domain + "] " + blocked_current_domain;
+	if (blocked_current_domain != total_current_domain)
+	  {  tooltip += "/" + total_current_domain; }
+	tooltip += " blocked";
+	if (loaded_current_domain)
+	  { tooltip += " (" + loaded_current_domain + " loaded)"; }
+
+        tooltip += ", [External] " + blocked_external;
+	if (blocked_external != total_external)
+	  {  tooltip += "/" + total_external; }
+	tooltip += " blocked";
+	if (loaded_external)
+	  { tooltip += " (" + loaded_external + " loaded)"; }
 	r.title = tooltip;
 	
 	var img = document.createElement('img');
