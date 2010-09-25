@@ -26,7 +26,7 @@
         return '';
     }
 
-    // block_all, allow_current_domain, allow_all    
+    // block_all, filtered, allow_all    
     var mode = readCookie('noscript_mode', 'g');
     if (mode == '') { mode = 'block_all'; }
 
@@ -105,7 +105,7 @@
     function should_allow(scr_domain) {
       var v = readCookie('noscript', 'g');
       if (mode == 'block_all') { return false; }
-      if (mode == 'allow_current_domain') {
+      if (mode == 'filtered') {
 	return ((scr_domain == current_domain) ||
 		(v && v.indexOf(scr_domain) != -1));
       }
@@ -120,7 +120,7 @@
 	// icon = "High Assurance Security Button Skin";
 	icon = "Smiley Tongue";
       }      
-      if (mode == 'allow_current_domain') {
+      if (mode == 'filtered') {
 //	icon = "Feed Mark as read";
 	icon = "Smiley Cool";
       }
@@ -132,6 +132,24 @@
 
       img.style = "width:22px;height:22px;background:-o-skin('" + icon + "');display:inline-block;";
       // r.style = "background:-o-skin('" + icon + "');display:inline-block;";
+    }
+
+    function add_menu_item(nsmenu, text, f) {
+      var item = document.createElement('p');
+      item.style = "margin-top:0px; margin-bottom:0px;";
+//      item.style.backgroundColor = 'transparent';
+      // FIXME; make text non selectable
+      item.text = text;
+      if (f)
+      {
+	item.onmouseover = function(){ this.style.backgroundColor = '#dddddd'; };
+	item.onmouseout  = function(){ this.style.backgroundColor = 'transparent'; };
+	item.onclick = f;
+      }
+      // make text non selectable
+      item.onmousedown = function(){ return false; };
+      nsmenu.appendChild(item);
+      return item;
     }
 
     var scI = 0;
@@ -203,8 +221,13 @@
         if (!scA.length) {
             return
         }
-        var scIele = document.createElement('cusnoiframe');
+//        var scIele = document.createElement('cusnoiframe');
+	var scIele = document.createElement('table');
+	scIele.border = 0;
+	scIele.cellSpacing = 0;
+	scIele.cellPadding = 0;	
 	// background:-o-skin("Browser Window Skin")
+//        scIele.style = 'position:fixed;' + (cornerposition < 3 ? 'top': 'bottom') + ':1px;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:9999;direction:ltr;';
         scIele.style = 'position:fixed;' + (cornerposition < 3 ? 'top': 'bottom') + ':1px;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:9999;direction:ltr;';
         var scIui = document.createElement('noifui');
         scIui.id = 'noiframeui';
@@ -266,6 +289,15 @@
 	r.appendChild(img);
 	set_icon_style(img);
 
+	function set_mode(new_mode, reload)
+	{
+	  mode = new_mode;
+	  createCookie('noscript_mode', mode, 365, null, 'g');
+	  set_icon_style(img);
+	  nsmenu.style.display = 'none';
+	  // FIXME, reload
+	}
+    
         r.onclick = function() {
 	  if (event.ctrlKey)
 	  { // show/hide ui
@@ -281,16 +313,60 @@
 	    return;
 	  }	
 
-	  // normal click, change mode
-	     if (mode == 'block_all') { mode = 'allow_current_domain'; }
-	else if (mode == 'allow_current_domain') { mode = 'allow_all'; }
-	else if (mode == 'allow_all') { mode = 'block_all'; }
-	     createCookie('noscript_mode', mode, 365, null, 'g');
-	     set_icon_style(img);
+	  if (event.shiftKey)
+	  { // cycle through the modes
+	    if (mode == 'block_all') { set_mode('filtered'); }
+	    else if (mode == 'filtered') { set_mode('allow_all'); }
+	    else if (mode == 'allow_all') { set_mode('block_all'); }
+	    return;
+	  }
+	  
+	  // normal click, show/hide menu
+	  if (nsmenu.style.display == 'inline-block')
+	    { nsmenu.style.display = 'none'; }
+	  else
+	    { nsmenu.style.display = 'inline-block'; }	
 	}
+
+//	document.write("<div id=mydiv;>Foo Bar Baz</div>");
+//	alert("trying to read div id")
 	
-        scIele.appendChild(scIui);
-        scIele.appendChild(r);
+	var nsmenu = document.createElement('div');
+	nsmenu.align = 'left';
+	nsmenu.style="border-width: 2px; border-style: outset; border-color: gray; background:#abb9ca;";
+        nsmenu.style.display = 'none';
+	
+//	nsmenu.border = '1';
+//	nsmenu.style = 'border-spacing:0; border-top-color:#dddddd; border-left-color:#dddddd; border-bottom-color:#888888; border-right-color:#888888;';
+
+//	nsmenu.style = 'border-top-color:#dddddd; border-left-color:#dddddd; border-bottom-color:#888888; border-right-color:#888888; border-top-width:2px;';
+
+	add_menu_item(nsmenu, "Choose Mode:");
+	var f = function(){ set_mode('block_all'); };	
+	add_menu_item(nsmenu, "block all", f);
+	var f = function(){ set_mode('filtered'); };		
+	add_menu_item(nsmenu, "filtered", f);
+	var f = function(){ set_mode('allow_all'); };		
+	add_menu_item(nsmenu, "allow all", f);
+
+	var tr = document.createElement('tr');
+	var td = document.createElement('td');
+	td.align = 'right';
+	td.appendChild(nsmenu);
+	tr.appendChild(td);
+        scIele.appendChild(tr);
+
+	var tr = document.createElement('tr');
+	var td = document.createElement('td');
+	td.align = 'right';	
+	td.appendChild(scIui);
+	td.appendChild(r);
+	tr.appendChild(td);
+        scIele.appendChild(tr);
+	
+//        scIele.appendChild(nsmenu);       	
+//        scIele.appendChild(scIui);
+//        scIele.appendChild(r);
         document.documentElement.appendChild(scIele);
     },
     false);
