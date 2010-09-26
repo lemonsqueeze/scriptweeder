@@ -219,6 +219,15 @@
       nsmenu.appendChild(div);
     }
 
+    function make_checkbox(checked, f)
+    {
+      var c = document.createElement('input');
+      c.type = 'checkbox';
+      c.defaultChecked = checked;
+      c.onclick = f;
+      return c;
+    }
+
     var nsmenu;
     function create_menu()
     {
@@ -256,27 +265,27 @@
 //	item.style.color = '#ffffff';
 //	item.style.fontWeight = 'bold';
 
-	var checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-	checkbox.defaultChecked = block_inline_scripts;
-        checkbox.onclick = toggle_allow_inline;
+	var checkbox = make_checkbox(block_inline_scripts, toggle_allow_inline);
 	add_menu_item(nsmenu, "Block Inline Scripts", 0, toggle_allow_inline, checkbox);
+
 	add_menu_separator();
-	
+	add_menu_item(nsmenu, "External Scripts:");	
 	add_menu_item(nsmenu, "Block All", 0, function(){ set_mode('block_all'); }, new_icon('block_all'));
 	add_menu_item(nsmenu, "Filter By Domain", 0, function(){ set_mode('filtered'); }, new_icon('filtered'));
-
+	
+	var f = function() {
+	  var d = (this.domain ? this.domain : this.parentNode.domain);
+	  if (filtered_mode_should_allow(d))
+	    block_domain(d);
+	  else
+	    allow_domain(d);
+	  set_mode('filtered');
+	};	  	
 	for (var i = 0; i < domains.length; i++)
 	{
-	  var ba = 'Allow ';
 	  var d = domains[i];
-	  var f = function() { allow_domain(this.domain); set_mode('filtered'); };
-	  if (filtered_mode_should_allow(d))
-	    {
-	      ba = 'Block ';
-	      f = function() { block_domain(this.domain); set_mode('filtered'); };
-	    }
-	  var item = add_menu_item(nsmenu, ba + d, 3, f);
+	  var checkbox = make_checkbox(filtered_mode_should_allow(d), f);
+	  var item = add_menu_item(nsmenu, "Allow " + d, 3, f, checkbox);
 	  item.domain = d;
 	}
 	
