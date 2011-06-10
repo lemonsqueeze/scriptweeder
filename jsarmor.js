@@ -128,10 +128,11 @@
 	  return ( a || b ) && !( a && b );
     }
 
-    function get_domain(h) {
-      // FIXME handle .co.uk like domains
+    function get_domain(h) {      
       var i = h.lastIndexOf(".");
       var j = h.lastIndexOf(".", i-1);
+      if (i - j == 3) // .co.uk style domain
+      { j = h.lastIndexOf(".", j-1); }
       if (j != -1)
 	{ return h.slice(j+1); }
       else
