@@ -1,4 +1,6 @@
 (function() {
+//    var whitelisted_domains = [ "gstatic.com" ];
+    
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
     var blocksitescripts=false;
@@ -55,6 +57,62 @@
       block_inline_scripts = !block_inline_scripts;
       createCookie('noscript_inline', (block_inline_scripts ? 'n' : 'y'), 365, null, 'g');
       reload_page();      
+    }
+
+    
+    
+    function show_details()
+    {	
+	var nsdetails = document.createElement('div');
+	nsdetails.align = 'left';
+	nsdetails.style="border-width: 2px; border-style: outset; border-color: gray; background:#abb9ca;";
+//        nsdetails.style.display = 'inline-block';
+
+	nsdetails.onmouseout = function(e) {
+
+	  if (!e) var e = window.event;
+	  // object we're moving out of
+	  // var tg = (window.event) ? e.srcElement : e.target;
+	  // if (tg != nsdetails) // moving out of one its children.
+	  //  return; we actually need that case!
+	  
+	  // e.relatedTarget: object we're moving to.
+	  var reltg = e.relatedTarget;
+	  while (reltg != nsdetails && reltg.nodeName != 'HTML')
+	    reltg= reltg.parentNode
+	  if (reltg == nsdetails) return; // moving out of the div into a child layer
+	  
+	  td.removeChild(nsdetails);	  
+	};
+	
+	var item = add_menu_item(nsdetails, "Scripts:");
+	item.align = 'center';
+	item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
+	add_menu_separator(nsdetails);	
+
+	for (var i = 0; i < domains.length; i++)
+	{
+	  var d = domains[i];
+	  var item = add_menu_item(nsdetails, d + ":");	  
+	  
+	  var s = scripts[i];
+	  s.sort();
+	  for (var j = 0; j < s.length; j++)
+	  {
+	      var item = add_truncated_menu_item(nsdetails, s[j], 3);
+	      // blocked ?
+	      var checkbox = make_checkbox(should_allow(d));
+	      checkbox.disabled = true;
+	      checkbox.title = "Blocked ?";
+	      item.appendChild(checkbox);
+	  }
+	}
+	
+	var td = document.getElementById('td_nsmenu');
+	td.appendChild(nsdetails);
+
+	show_hide_menu(false);
+        nsdetails.style.display = 'inline-block';
     }
     
     function set_mode(new_mode, reload)
@@ -156,6 +214,8 @@
     }
     
     function should_allow(scr_domain) {
+//      if (whitelisted_domain(scr_domain)) { return true; }
+	  
       if (mode == 'block_all') { return false; }
       if (mode == 'filtered') { return filtered_mode_should_allow(scr_domain); }
       if (mode == 'allow_all') { return true; }
@@ -186,7 +246,7 @@
       img.style = "width:22px;height:22px;background:-o-skin('" + icon + "'); vertical-align:middle;";
       // r.style = "background:-o-skin('" + icon + "');display:inline-block;";
     }
-
+    
     function add_menu_item(nsmenu, text, indent, f, child) {
       // FIXME: add icon
       var item = document.createElement('div');
@@ -212,12 +272,24 @@
       return item;
     }
 
-    function add_menu_separator()
+    function add_truncated_menu_item(menu, text, indent) {
+	var max_item_length = 60;
+	if (text.length > max_item_length)
+	{ // text too long, truncate and display full one in tooltip
+	    var item = add_menu_item(menu, text.slice(0, max_item_length) + "...", indent);
+	    item.title = text;
+	    return item;
+	}
+
+	return add_menu_item(menu, text, indent);
+    }
+    
+    function add_menu_separator(menu)
     {
       var div = document.createElement('div');
       //  width: 90%;
       div.style = "height: 1px; display: block; background-color: #555555; margin-left: auto; margin-right: auto;";
-      nsmenu.appendChild(div);
+      menu.appendChild(div);
     }
 
     function make_checkbox(checked, f)
@@ -269,7 +341,7 @@
 	var checkbox = make_checkbox(block_inline_scripts, toggle_allow_inline);
 	add_menu_item(nsmenu, "Block Inline Scripts", 0, toggle_allow_inline, checkbox);
 
-	add_menu_separator();
+	add_menu_separator(nsmenu);
 	add_menu_item(nsmenu, "External Scripts:");	
 	add_menu_item(nsmenu, "Block All", 0, function(){ set_mode('block_all'); }, new_icon('block_all'));
 	add_menu_item(nsmenu, "Filter By Domain", 0, function(){ set_mode('filtered'); }, new_icon('filtered'));
@@ -292,6 +364,8 @@
 	
 	add_menu_item(nsmenu, "Allow All", 0, function(){ set_mode('allow_all'); }, new_icon('allow_all'));
 
+	add_menu_item(nsmenu, "Show details ...", 0, show_details);
+	
 	var td = document.getElementById('td_nsmenu');
 	td.appendChild(nsmenu);	
     }
@@ -322,7 +396,7 @@
 
       domains.push(domain);
       scripts.push([]);
-      scripts[i].push(url);      
+      scripts[i].push(url);
     }
 
     var scI = 0;
@@ -396,7 +470,7 @@
 	  if (!allowed) { blocked_external++; }
 	}
 
-	add_script(x, scE);
+	add_script(x.slice(7), scE); // strip http://
         if (allowed)
         { scA.push(scIil); }
         else {
