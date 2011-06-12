@@ -91,21 +91,30 @@
 	add_menu_separator(nsdetails);	
 
 	for (var i = 0; i < domains.length; i++)
-	{
+	{	    	    
 	  var d = domains[i];
 	  var item = add_menu_item(nsdetails, d + ":");	  
-	  
+
 	  var s = scripts[i];
-	  s.sort();
+	  sort_scripts(s);
 	  for (var j = 0; j < s.length; j++)
 	  {
-	      var item = add_truncated_menu_item(nsdetails, s[j], 3);
-	      // blocked ?
-	      var checkbox = make_checkbox(should_allow(d));
-	      checkbox.disabled = true;
-	      checkbox.title = "Blocked ?";
-	      item.appendChild(checkbox);
-	  }
+	      var item = add_truncated_menu_item(nsdetails, s[j].url, 2);
+	      // script status
+	      var icon = new_icon();
+	      var image = 'Transfer Stopped';
+	      if (should_allow(d))
+	      {   // FIXME when adding whitelisting support, add icon for it here
+		  image = 'Transfer Success';
+		  if (!s[j].loaded)
+		  { image = 'Transfer Size Mismatch';
+		    icon.title = "Script allowed but not loaded, something else is blocking it.";
+		  }
+	      }
+	      set_icon_image(icon, image);
+
+	      item.insertBefore(icon, item.childNodes[0]);
+	  }	  
 	}
 	
 	var td = document.getElementById('td_nsmenu');
@@ -122,7 +131,7 @@
       if (new_mode == 'filtered' && !filtered_mode_should_allow("."))
 	allow_domain(current_domain);
       createCookie('noscript_mode', mode, 365, null, 'g');
-      set_icon_style(button_image, mode);
+      set_icon_mode(button_image, mode);
       show_hide_menu(false);
       reload_page();
     }    
@@ -222,29 +231,41 @@
       alert('should not be reached!');
     }
 
-    function new_icon(mode)
+    function new_icon(image)
     {
       var icon = document.createElement('img');
-      set_icon_style(icon, mode);
-      return icon;
+//      icon.style = "width:22px;height:22px;background:-o-skin('" + image + "'); vertical-align:middle;";
+      icon.style = "width:22px;height:22px; vertical-align:middle;";
+      if (image)  { set_icon_image(icon, image); }
+      return icon;	
+    }
+
+    function set_icon_image(icon, image_name) {
+	icon.style.background = "-o-skin('" + image_name + "')";
     }
     
-    var button_image = new_icon(mode);
+    function new_icon_mode(mode)
+    {
+	var icon = new_icon();
+	set_icon_mode(icon, mode);
+	return icon;
+    }
     
-    function set_icon_style(img, mode) {
-      var icon;      
+    var button_image = new_icon_mode(mode);
+
+    function set_icon_mode(icon, mode) {
+      var image;
       if (mode == 'block_all') {
-	icon = "Smiley Tongue";
+	image = "Smiley Tongue";
       }      
       if (mode == 'filtered') {
-	icon = "Smiley Cool";
+	image = "Smiley Cool";
       }
       if (mode == 'allow_all') {
-	icon = "Smiley Cry";
+	image = "Smiley Cry";
       }
 
-      img.style = "width:22px;height:22px;background:-o-skin('" + icon + "'); vertical-align:middle;";
-      // r.style = "background:-o-skin('" + icon + "');display:inline-block;";
+      set_icon_image(icon, image);
     }
     
     function add_menu_item(nsmenu, text, indent, f, child) {
@@ -343,8 +364,8 @@
 
 	add_menu_separator(nsmenu);
 	add_menu_item(nsmenu, "External Scripts:");	
-	add_menu_item(nsmenu, "Block All", 0, function(){ set_mode('block_all'); }, new_icon('block_all'));
-	add_menu_item(nsmenu, "Filter By Domain", 0, function(){ set_mode('filtered'); }, new_icon('filtered'));
+	add_menu_item(nsmenu, "Block All", 0, function(){ set_mode('block_all'); }, new_icon_mode('block_all'));
+	add_menu_item(nsmenu, "Filter By Domain", 0, function(){ set_mode('filtered'); }, new_icon_mode('filtered'));
 	
 	var f = function() {
 	  var d = (this.domain ? this.domain : this.parentNode.domain);
@@ -358,13 +379,13 @@
 	{
 	  var d = domains[i];
 	  var checkbox = make_checkbox(filtered_mode_should_allow(d), f);
-	  var item = add_menu_item(nsmenu, "Allow " + d, 3, f, checkbox);
+	  var item = add_menu_item(nsmenu, "Allow " + d, 2, f, checkbox);
 	  item.domain = d;
 	}
 	
-	add_menu_item(nsmenu, "Allow All", 0, function(){ set_mode('allow_all'); }, new_icon('allow_all'));
+	add_menu_item(nsmenu, "Allow All", 0, function(){ set_mode('allow_all'); }, new_icon_mode('allow_all'));
 
-	add_menu_item(nsmenu, "Show details ...", 0, show_details);
+	add_menu_item(nsmenu, "Details ...", 0, show_details);
 	
 	var td = document.getElementById('td_nsmenu');
 	td.appendChild(nsmenu);	
@@ -380,23 +401,44 @@
       nsmenu.style.display = d;
     }
     
-    // array of arrays: scripts[0] has all the scripts for domain domains[0] etc
+    // array of arrays of objects: scripts[0] has all the scripts for domain domains[0] etc
+    // fields: url, loaded
     var scripts = [];
     var domains = [];
+
+    function new_script(url)
+    {
+	var o = new Object();
+	o.url = url;
+	return o;
+    }
+
+    function compare_scripts(s1, s2)
+    {
+	return (s1.url < s2.url ? -1 : 1);
+    }
+    
+    function sort_scripts(scr_array)
+    {
+	scr_array.sort(compare_scripts);
+    }
+    
     function add_script(url, domain)
     {
+      var s = new_script(url);
       for (var i = 0; i < domains.length; i++)
       {
 	if (domains[i] == domain)
 	{
-	  scripts[i].push(url);
-	  return;
+	  scripts[i].push(s);
+	  return s;
 	}
       }
 
       domains.push(domain);
       scripts.push([]);
-      scripts[i].push(url);
+      scripts[i].push(s);
+      return s;
     }
 
     var scI = 0;
@@ -433,19 +475,6 @@
 	  alert("BeforeExternalScript: non 'SCRIPT' tagname: " + e.element.tagName);
 	  return;
         }
-
-	// find out which scripts are actually loaded,
-	// this way we can find out if *something else* is blocking (blocked content, hosts file ...)
-	// awesome!
-	e.element.onload = function(le) {
-//	  alert("in load handler! script:" + le.target.src);
-
-	  var t = document.createElement('a');
-	  t.href = le.target.src;
-	  var scE = get_domain(t.hostname);
-	  if (scE == current_domain) { loaded_current_domain++; }
-	  else { loaded_external++; }
-	}
 	
         var x = e.element.src;
 
@@ -470,7 +499,23 @@
 	  if (!allowed) { blocked_external++; }
 	}
 
-	add_script(x.slice(7), scE); // strip http://
+	var script = add_script(x.slice(7), scE); // strip http://
+	
+	// find out which scripts are actually loaded,
+	// this way we can find out if *something else* is blocking (blocked content, hosts file ...)
+	// awesome!
+	e.element.onload = function(le) {
+//	  alert("in load handler! script:" + le.target.src);
+
+	  var t = document.createElement('a');
+	  t.href = le.target.src;
+	  var scE = get_domain(t.hostname);
+	  if (scE == current_domain) { loaded_current_domain++; }
+	  else { loaded_external++; }
+	  script.loaded = 1;
+	}
+	
+	
         if (allowed)
         { scA.push(scIil); }
         else {
