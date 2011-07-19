@@ -99,7 +99,7 @@
 	  sort_scripts(s);
 	  for (var j = 0; j < s.length; j++)
 	  {
-	      var item = add_truncated_menu_item(nsdetails, s[j].url, 2);
+	      var item = add_link_menu_item(nsdetails, "http://" + s[j].url, s[j].url, 2);
 	      // script status
 	      var icon = new_icon();
 	      var image = 'Transfer Stopped';
@@ -293,16 +293,21 @@
       return item;
     }
 
-    function add_truncated_menu_item(menu, text, indent) {
+    function add_right_aligned_text(parent, text)
+    {
+	var d = document.createElement('div');
+	d.style = "float:right;";
+	d.innerText = text;
+	parent.appendChild(d);
+	return d;
+    }
+    
+    function add_link_menu_item(menu, url, label, indent) {
 	var max_item_length = 60;
-	if (text.length > max_item_length)
-	{ // text too long, truncate and display full one in tooltip
-	    var item = add_menu_item(menu, text.slice(0, max_item_length) + "...", indent);
-	    item.title = text;
-	    return item;
-	}
-
-	return add_menu_item(menu, text, indent);
+	// truncate displayed url if too long
+	if (label.length > max_item_length) { label = label.slice(0, max_item_length) + "..."; }       
+	var link = '<a href="' + url + '">' + label + '</a>';
+	return add_menu_item(menu, link, indent);
     }
     
     function add_menu_separator(menu)
@@ -360,7 +365,9 @@
 //	item.style.fontWeight = 'bold';
 
 	var checkbox = make_checkbox(block_inline_scripts, toggle_allow_inline);
-	add_menu_item(nsmenu, "Block Inline Scripts", 0, toggle_allow_inline, checkbox);
+	var label = "Block Inline Scripts";
+	item = add_menu_item(nsmenu, label, 0, toggle_allow_inline, checkbox);
+	add_right_aligned_text(item, " [" + get_size_kb(total_inline_size) + "k]");
 
 	add_menu_separator(nsmenu);
 	add_menu_item(nsmenu, "External Scripts:");	
@@ -379,7 +386,9 @@
 	{
 	  var d = domains[i];
 	  var checkbox = make_checkbox(filtered_mode_should_allow(d), f);
-	  var item = add_menu_item(nsmenu, "Allow " + d, 2, f, checkbox);
+	  var label = "Allow " + d;
+	  var item = add_menu_item(nsmenu, label, 2, f, checkbox);
+	  add_right_aligned_text(item, " [" + scripts[i].length + "]");	  
 	  item.domain = d;
 	}
 	
@@ -453,14 +462,25 @@
     var total_external = 0;
 
     var total_inline = 0;
+    var total_inline_size = 0;
+
+    function get_size_kb(x)
+    {
+	var k = new String(x / 1000);
+	var d = k.indexOf('.');
+	if (d)
+	{ return k.slice(0, d + 2); }
+	return k;
+    }
     
     // Handler for both inline *and* external scripts
     opera.addEventListener('BeforeScript', function(e) {
       if (e.element.src) // external script
-	return;
+      { return; }
       
       total_inline++;
-
+      total_inline_size += e.element.text.length;
+      
       // FIXME: remove after we're done testing
       if (nsmenu)
 	alert("BeforeScript after DOM loaded");
@@ -471,7 +491,7 @@
     
     opera.addEventListener('BeforeExternalScript',
     function(e) {
-        if (e.element.tagName != 'SCRIPT') {
+        if (e.element.tagName != 'SCRIPT' && e.element.tagName != 'script') {
 	  alert("BeforeExternalScript: non 'SCRIPT' tagname: " + e.element.tagName);
 	  return;
         }
@@ -507,12 +527,9 @@
 	e.element.onload = function(le) {
 //	  alert("in load handler! script:" + le.target.src);
 
-	  var t = document.createElement('a');
-	  t.href = le.target.src;
-	  var scE = get_domain(t.hostname);
 	  if (scE == current_domain) { loaded_current_domain++; }
 	  else { loaded_external++; }
-	  script.loaded = 1;
+	  script.loaded = 1; // what a hack, javascript rules!
 	}
 	
 	
@@ -582,7 +599,8 @@
         var r = document.createElement('button');
 
         var tooltip = "[Inline scripts] " + total_inline +
-	  (block_inline_scripts ? " blocked, ": ", ") +
+	  (block_inline_scripts ? " blocked": "") +
+	  " (" + get_size_kb(total_inline_size) + "k), " +
 	  "[" + current_domain + "] " + blocked_current_domain;
 	if (blocked_current_domain != total_current_domain)
 	  {  tooltip += "/" + total_current_domain; }
