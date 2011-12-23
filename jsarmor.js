@@ -5,6 +5,10 @@
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
     var blocksitescripts=false;
 
+    // default mode for new pages:
+    //   block_all, filtered, or allow_all    
+    var default_mode = 'filtered';
+
     // block inline scripts by default ?
     var default_block_inline_scripts = false;
     
@@ -40,10 +44,14 @@
 
     function reload_page()
     { history.go(0); }
+
+    var current_domain = get_domain(location.hostname);
+    var button_image = new_icon_mode('block_all');
     
     // block_all, filtered, allow_all    
     var mode = readCookie('noscript_mode', 'g');
-    if (mode == '') { mode = 'block_all'; }
+    if (mode == '') { mode = default_mode; }
+    set_mode_no_update(mode);
 
     var block_inline_scripts;
     var c = readCookie('noscript_inline', 'g');
@@ -123,8 +131,8 @@
 	show_hide_menu(false);
         nsdetails.style.display = 'inline-block';
     }
-    
-    function set_mode(new_mode, reload)
+
+    function set_mode_no_update(new_mode)
     {
       mode = new_mode;
       // if don't allow anything yet, add current domain (hack)
@@ -132,6 +140,11 @@
 	allow_domain(current_domain);
       createCookie('noscript_mode', mode, 365, null, 'g');
       set_icon_mode(button_image, mode);
+    }
+    
+    function set_mode(new_mode)
+    {
+      set_mode_no_update(new_mode);
       show_hide_menu(false);
       reload_page();
     }    
@@ -215,8 +228,6 @@
         { a.value = 'Block'; }
     }
 
-    var current_domain = get_domain(location.hostname);
-
     function filtered_mode_should_allow(scr_domain) {
       var v = readCookie('noscript', 'g');
       return (v && v.indexOf(scr_domain) != -1);
@@ -250,8 +261,6 @@
 	set_icon_mode(icon, mode);
 	return icon;
     }
-    
-    var button_image = new_icon_mode(mode);
 
     function set_icon_mode(icon, mode) {
       var image;
@@ -472,6 +481,8 @@
 	{ return k.slice(0, d + 2); }
 	return k;
     }
+
+    var beforescript_alert = false;
     
     // Handler for both inline *and* external scripts
     opera.addEventListener('BeforeScript', function(e) {
@@ -482,8 +493,10 @@
       total_inline_size += e.element.text.length;
       
       // FIXME: remove after we're done testing
-      if (nsmenu)
-	alert("BeforeScript after DOM loaded");
+      if (nsmenu && !beforescript_alert)
+      { alert("BeforeScript after DOM loaded");
+	beforescript_alert = true;
+      }
       
       if (block_inline_scripts)
 	e.preventDefault();
