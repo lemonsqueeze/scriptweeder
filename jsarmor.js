@@ -1,5 +1,5 @@
 (function() {
-//    var whitelisted_domains = [ "gstatic.com" ];
+    var version = 'Noscript v1.20';
     
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
@@ -12,33 +12,39 @@
     // block inline scripts by default ?
     var default_block_inline_scripts = false;
     
-    var inside_frame = 0;
-    if (window != window.top) { inside_frame = 1; }
+//    var inside_frame = 0;
+//    if (window != window.top) { inside_frame = 1; }
     
-    function createCookie(name, value, days, a_d, y) {
-// only calls with y='g'
-        if (days) {
+    function createCookie(name, value, days, a_d, y)
+    {   // only calls with y='g'
+        if (days)
+	{
             var date = new Date();
             date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
             var expires = "; expires=" + date.toGMTString();
         }
-        else var expires = "";
+        else
+	    var expires = "";
         document.cookie = name + "=" + value + (a_d ? ' ' + a_d: '') + expires + "; path=/";
     }
 
-    function readCookie(name, y) {
-// only calls with y='g'
+    function readCookie(name, y)
+    {   // only calls with y='g'       
         var nameEQ = name + "=";
         var ca = document.cookie.split(';');
-        for (var i = 0; i < ca.length; i++) {
+        for (var i = 0; i < ca.length; i++)
+	{
             var c = ca[i];
-            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+            while (c.charAt(0) == ' ')
+		c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) == 0)
+		return c.substring(nameEQ.length, c.length);
         }
         return '';
     }
     
-    function eraseCookie(name) {
+    function eraseCookie(name)
+    {
         createCookie(name, "", -1);
     }
 
@@ -50,7 +56,8 @@
     
     // block_all, filtered, allow_all    
     var mode = readCookie('noscript_mode', 'g');
-    if (mode == '') { mode = default_mode; }
+    if (mode == '')
+	mode = default_mode; 
     set_mode_no_update(mode);
 
     var block_inline_scripts;
@@ -67,8 +74,6 @@
       reload_page();      
     }
 
-    
-    
     function show_details()
     {	
 	var nsdetails = document.createElement('div');
@@ -78,7 +83,8 @@
 
 	nsdetails.onmouseout = function(e) {
 
-	  if (!e) var e = window.event;
+	  if (!e)
+	      var e = window.event;
 	  // object we're moving out of
 	  // var tg = (window.event) ? e.srcElement : e.target;
 	  // if (tg != nsdetails) // moving out of one its children.
@@ -88,7 +94,8 @@
 	  var reltg = e.relatedTarget;
 	  while (reltg != nsdetails && reltg.nodeName != 'HTML')
 	    reltg= reltg.parentNode
-	  if (reltg == nsdetails) return; // moving out of the div into a child layer
+	  if (reltg == nsdetails)
+	      return; // moving out of the div into a child layer
 	  
 	  td.removeChild(nsdetails);	  
 	};
@@ -115,8 +122,9 @@
 	      {   // FIXME when adding whitelisting support, add icon for it here
 		  image = 'Transfer Success';
 		  if (!s[j].loaded)
-		  { image = 'Transfer Size Mismatch';
-		    icon.title = "Script allowed but not loaded, something else is blocking it.";
+		  {
+		      image = 'Transfer Size Mismatch';
+		      icon.title = "Script allowed but not loaded, something else is blocking it.";
 		  }
 	      }
 	      set_icon_image(icon, image);
@@ -137,7 +145,7 @@
       mode = new_mode;
       // if don't allow anything yet, add current domain (hack)
       if (new_mode == 'filtered' && !filtered_mode_should_allow("."))
-	allow_domain(current_domain);
+	  allow_domain(current_domain);
       createCookie('noscript_mode', mode, 365, null, 'g');
       set_icon_mode(button_image, mode);
     }
@@ -148,21 +156,6 @@
       show_hide_menu(false);
       reload_page();
     }    
-
-    function f(x, y, z) {
-        var r = (x.innerText.indexOf('#X# -') == 0);
-        if (!r && y == 'X')
-        {
-            x.innerText = '#X# -' + x.innerText;
-        }
-        else if (r && !y)
-        {
-            x.innerText = x.innerText.substr(5);
-        }
-        if (z) {
-            return x
-        }
-    }
 
     function allow_domain(domain)
     {
@@ -177,81 +170,42 @@
       createCookie('noscript', h, (h == '' ? -1: 365), null, 'g');      
     }
     
-    function cus() {
-        var b = document.getElementById('noscriptselect');
-        var zi = (event.ctrlKey || this.value == 'Server') ? b[b.selectedIndex].getAttribute('title') : (event.shiftKey || this.value == 'All') ? '': b.value;
-
-        if (document.getElementById('nelbb').value == 'Block')
-        {
-	  // block server
-	  for (var i = b.length - 1; i >= 0, x = b[i]; i--) {
-	    if (zi.indexOf(x.title) != -1) {
-	      f(x, 'X');
-	    }
-	  }
-	  block_domain(zi);
-        }
-        else
-	{
-	  for (var i = b.length - 1; i >= 0, x = b[i]; i--) {
-	    if (zi.indexOf(x.title) != -1) {
-	      f(x);
-	    }
-	  }
-	  allow_domain(zi);
-	}
-        tog();
-    }
-
-
-    function myXOR(a,b) {
-	  return ( a || b ) && !( a && b );
-    }
-
-    function get_domain(h) {      
+    function get_domain(h)
+    {
       var i = h.lastIndexOf(".");
       var j = h.lastIndexOf(".", i-1);
       if (i - j == 3) // .co.uk style domain
-      { j = h.lastIndexOf(".", j-1); }
+	  j = h.lastIndexOf(".", j-1); 
       if (j != -1)
-	{ return h.slice(j+1); }
-      else
-	{ return h; }
+	  return h.slice(j+1);     
+      return h;
     }
 
-    function tog() {
-        var a = document.getElementById('nelbb');
-        var b = document.getElementById('noscriptselect');
-        if (b[b.selectedIndex].innerText.indexOf('#X# -') == 0)
-        { a.value = 'Unblock'; }
-        else
-        { a.value = 'Block'; }
-    }
-
-    function filtered_mode_should_allow(scr_domain) {
+    function filtered_mode_should_allow(scr_domain)
+    {
       var v = readCookie('noscript', 'g');
       return (v && v.indexOf(scr_domain) != -1);
     }
     
-    function should_allow(scr_domain) {
-//      if (whitelisted_domain(scr_domain)) { return true; }
-	  
-      if (mode == 'block_all') { return false; }
-      if (mode == 'filtered') { return filtered_mode_should_allow(scr_domain); }
-      if (mode == 'allow_all') { return true; }
+    function should_allow(scr_domain)
+    {
+      if (mode == 'block_all') return false; 
+      if (mode == 'filtered')  return filtered_mode_should_allow(scr_domain); 
+      if (mode == 'allow_all') return true;
       alert('should not be reached!');
     }
 
     function new_icon(image)
     {
       var icon = document.createElement('img');
-//      icon.style = "width:22px;height:22px;background:-o-skin('" + image + "'); vertical-align:middle;";
       icon.style = "width:22px;height:22px; vertical-align:middle;";
-      if (image)  { set_icon_image(icon, image); }
+      if (image)
+	  set_icon_image(icon, image);
       return icon;	
     }
 
-    function set_icon_image(icon, image_name) {
+    function set_icon_image(icon, image_name)
+    {
 	icon.style.background = "-o-skin('" + image_name + "')";
     }
     
@@ -262,33 +216,23 @@
 	return icon;
     }
 
-    function set_icon_mode(icon, mode) {
+    function set_icon_mode(icon, mode)
+    {
       var image;
-      if (mode == 'block_all') {
-	image = "Smiley Tongue";
-      }      
-      if (mode == 'filtered') {
-	image = "Smiley Cool";
-      }
-      if (mode == 'allow_all') {
-	image = "Smiley Cry";
-      }
-
+      if (mode == 'block_all') 	image = "Smiley Tongue";
+      if (mode == 'filtered') 	image = "Smiley Cool";
+      if (mode == 'allow_all') 	image = "Smiley Cry";
       set_icon_image(icon, image);
     }
     
-    function add_menu_item(nsmenu, text, indent, f, child) {
+    function add_menu_item(nsmenu, text, indent, f, child)
+    {
       // FIXME: add icon
       var item = document.createElement('div');
       if (child)
-        { 
 	  item.appendChild(child);
-	}            
-//      item.style = "margin-top:0px; margin-bottom:0px;" +
       if (indent)
-	item.style = "padding-left:" + (indent * 10) + "px;";
-//      item.style.backgroundColor = 'transparent';
-//      item.text = text;
+	  item.style = "padding-left:" + (indent * 10) + "px;";
       item.innerHTML += text;
       if (f)
       {
@@ -311,7 +255,8 @@
 	return d;
     }
     
-    function add_link_menu_item(menu, url, label, indent) {
+    function add_link_menu_item(menu, url, label, indent)
+    {
 	var max_item_length = 60;
 	// truncate displayed url if too long
 	if (label.length > max_item_length) { label = label.slice(0, max_item_length) + "..."; }       
@@ -344,8 +289,8 @@
 	nsmenu.style="border-width: 2px; border-style: outset; border-color: gray; background:#abb9ca;";
         nsmenu.style.display = 'none';
 
-	nsmenu.onmouseout = function(e) {
-
+	nsmenu.onmouseout = function(e)
+	{	
 	  if (!e) var e = window.event;
 	  // object we're moving out of
 	  // var tg = (window.event) ? e.srcElement : e.target;
@@ -355,23 +300,18 @@
 	  // e.relatedTarget: object we're moving to.
 	  var reltg = e.relatedTarget;
 	  while (reltg != nsmenu && reltg.nodeName != 'HTML')
-	    reltg= reltg.parentNode
-	  if (reltg == nsmenu) return; // moving out of the div into a child layer
+	      reltg= reltg.parentNode;
+	  if (reltg == nsmenu)
+	      return; // moving out of the div into a child layer
 	  
 	  show_hide_menu(false);
 	};
 	
-//	nsmenu.border = '1';
-//	nsmenu.style = 'border-spacing:0; border-top-color:#dddddd; border-left-color:#dddddd; border-bottom-color:#888888; border-right-color:#888888;';
-
-//	nsmenu.style = 'border-top-color:#dddddd; border-left-color:#dddddd; border-bottom-color:#888888; border-right-color:#888888; border-top-width:2px;';
-
 	var item = add_menu_item(nsmenu, "Noscript Settings");
+//	add_right_aligned_text(item, version);
+	item.title = version;
 	item.align = 'center';
 	item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
-//	item.style.backgroundColor = '#0000ff';
-//	item.style.color = '#ffffff';
-//	item.style.fontWeight = 'bold';
 
 	var checkbox = make_checkbox(block_inline_scripts, toggle_allow_inline);
 	var label = "Block Inline Scripts";
@@ -383,14 +323,16 @@
 	add_menu_item(nsmenu, "Block All", 0, function(){ set_mode('block_all'); }, new_icon_mode('block_all'));
 	add_menu_item(nsmenu, "Filter By Domain", 0, function(){ set_mode('filtered'); }, new_icon_mode('filtered'));
 	
-	var f = function() {
+	var f = function()
+	{
 	  var d = (this.domain ? this.domain : this.parentNode.domain);
 	  if (filtered_mode_should_allow(d))
 	    block_domain(d);
 	  else
 	    allow_domain(d);
 	  set_mode('filtered');
-	};	  	
+	};
+	
 	for (var i = 0; i < domains.length; i++)
 	{
 	  var d = domains[i];
@@ -402,7 +344,6 @@
 	}
 	
 	add_menu_item(nsmenu, "Allow All", 0, function(){ set_mode('allow_all'); }, new_icon_mode('allow_all'));
-
 	add_menu_item(nsmenu, "Details ...", 0, show_details);
 	
 	var td = document.getElementById('td_nsmenu');
@@ -412,10 +353,10 @@
     function show_hide_menu(show, toggle)
     {
       if (!nsmenu)
-	create_menu();
+	  create_menu();
       var d = (show ? 'inline-block' : 'none');
       if (toggle) 
-        { d = (nsmenu.style.display == 'none' ? 'inline-block' : 'none'); }
+	  d = (nsmenu.style.display == 'none' ? 'inline-block' : 'none');
       nsmenu.style.display = d;
     }
     
@@ -459,9 +400,6 @@
       return s;
     }
 
-    var scI = 0;
-    var scA = [];
-
     var blocked_current_domain = 0;
     var loaded_current_domain = 0;
     var total_current_domain = 0;
@@ -478,24 +416,27 @@
 	var k = new String(x / 1000);
 	var d = k.indexOf('.');
 	if (d)
-	{ return k.slice(0, d + 2); }
+	    return k.slice(0, d + 2);
 	return k;
     }
 
     var beforescript_alert = false;
     
     // Handler for both inline *and* external scripts
-    opera.addEventListener('BeforeScript', function(e) {
+    opera.addEventListener('BeforeScript',
+    function(e)
+    {
       if (e.element.src) // external script
-      { return; }
+	  return;
       
       total_inline++;
       total_inline_size += e.element.text.length;
       
       // FIXME: remove after we're done testing
       if (nsmenu && !beforescript_alert)
-      { alert("BeforeScript after DOM loaded");
-	beforescript_alert = true;
+      {
+	  alert("BeforeScript after DOM loaded");
+	  beforescript_alert = true;
       }
       
       if (block_inline_scripts)
@@ -503,162 +444,100 @@
     }, false);
     
     opera.addEventListener('BeforeExternalScript',
-    function(e) {
-        if (e.element.tagName != 'SCRIPT' && e.element.tagName != 'script') {
+    function(e)
+    {
+        if (e.element.tagName != 'SCRIPT' && e.element.tagName != 'script')
+	{
 	  alert("BeforeExternalScript: non 'SCRIPT' tagname: " + e.element.tagName);
 	  return;
         }
 	
         var x = e.element.src;
-
         var t = document.createElement('a');
         t.href = x;
-        var scE = get_domain(t.hostname);
-        scIi = scI + 's';
-        var scIil = document.createElement('option');
-        scIil.value = scI + 's';
-        scIil.innerText = x;
-        scIil.setAttribute('title', scE);
-        if ((location.hash=='#nsoff' || window.name.match(/ nsoff/)))
-	{ return; }
-
-	var allowed = should_allow(scE);
+        var domain = get_domain(t.hostname);
+	var allowed = should_allow(domain);
 	
-	if (scE == current_domain) {
+	if (domain == current_domain)
+	{
 	  total_current_domain++;
-	  if (!allowed) { blocked_current_domain++; }
-	} else {
+	  if (!allowed)
+	      blocked_current_domain++;
+	}
+	else
+	{
 	  total_external++;
-	  if (!allowed) { blocked_external++; }
+	  if (!allowed)
+	      blocked_external++;
 	}
 
-	var script = add_script(x.slice(7), scE); // strip http://
+	var script = add_script(x.slice(7), domain); // strip http://
 	
 	// find out which scripts are actually loaded,
 	// this way we can find out if *something else* is blocking (blocked content, hosts file ...)
 	// awesome!
-	e.element.onload = function(le) {
+	e.element.onload = function(le)
+	{
 //	  alert("in load handler! script:" + le.target.src);
 
-	  if (scE == current_domain) { loaded_current_domain++; }
-	  else { loaded_external++; }
+	  if (domain == current_domain)
+	      loaded_current_domain++; 
+	  else
+	      loaded_external++;
 	  script.loaded = 1; // what a hack, javascript rules!
-	}
+	}	
 	
-	
-        if (allowed)
-        { scA.push(scIil); }
-        else {
-	  e.preventDefault();
-	  scA.push(f(scIil, 'X', 'h'));
-        }
-        scI++;
+        if (!allowed)
+	    e.preventDefault();
     },
     false);
     
     document.addEventListener('DOMContentLoaded',
-    function() {
-        if (!scA.length && !total_inline) {
-            return
-        }
-
-//        var scIele = document.createElement('cusnoiframe');
-	var scIele = document.createElement('table');
-	scIele.border = 0;
-	scIele.cellSpacing = 0;
-	scIele.cellPadding = 0;	
+    function()
+    {
+        if (!scripts.length && !total_inline) 
+            return;
+	
+	var table = document.createElement('table');
+	table.border = 0;
+	table.cellSpacing = 0;
+	table.cellPadding = 0;	
 	// background:-o-skin("Browser Window Skin")
-//        scIele.style = 'position:fixed;' + (cornerposition < 3 ? 'top': 'bottom') + ':1px;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:9999;direction:ltr;';
-        scIele.style = 'position:fixed;' + (cornerposition < 3 ? 'top': 'bottom') + ':1px;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:9999;direction:ltr;font-family:sans-serif; font-size:small;';
-        var scIui = document.createElement('noifui');
-        scIui.id = 'noiframeui';
-        scIui.style.display = 'none';
-        //scIui.appendChild(document.createElement('br'));
-        var scIop = document.createElement('select');
-        scIop.onchange = tog;
-        scIop.id = "noscriptselect";
-        scIop.style = 'width:300px !important;';
-        for (var i = scA.length - 1; i > -1; i--)
-        {
-            scIop.appendChild(scA[i]);
-        }
-        if (scIop.innerHTML == '') {
-            scIop.disabled = true;
-        }
-        scIui.appendChild(scIop);
-        var scIbut0 = document.createElement('input');
-        scIbut0.type = 'button';
-        scIbut0.id = 'nelbb';
-        scIbut0.value = 'Block';
-        scIbut0.onclick = cus;
-        scIui.appendChild(scIbut0);
-        var scIbut1 = document.createElement('input');
-        scIbut1.type = 'button';
-        scIbut1.value = 'All';
-        scIbut1.onclick = cus;
-        scIui.appendChild(scIbut1);
-        if(location.hash!='#nsoff'){var scIbut3 = document.createElement('input');
-        scIbut3.type = 'button';
-        scIbut3.value = 'T-unblock';
-        scIbut3.title = 'Temporarily unblocks scripts for tab,WARNING: page will reload, shift click for this webpage only. To turn script blocking back on, either remove #nsoff from url and hit enter or close tab and re-open it.';
-        scIbut3.onclick = function(e){if(e.shiftKey)location.hash='#nsoff';else window.name=window.name+' nsoff';history.go(0);};
-        scIui.appendChild(scIbut3);}
-        var scIbut4 = document.createElement('input');
-        scIbut4.type = 'button';
-        scIbut4.id= 'nelser';
-        scIbut4.value = 'Server';
-        scIbut4.onclick = cus;
-        scIui.appendChild(scIbut4);
-        var r = document.createElement('button');
+        table.style = 'position:fixed;' + (cornerposition < 3 ? 'top': 'bottom') + ':1px;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:9999;direction:ltr;font-family:sans-serif; font-size:small;';
 
         var tooltip = "[Inline scripts] " + total_inline +
 	  (block_inline_scripts ? " blocked": "") +
 	  " (" + get_size_kb(total_inline_size) + "k), " +
 	  "[" + current_domain + "] " + blocked_current_domain;
 	if (blocked_current_domain != total_current_domain)
-	  {  tooltip += "/" + total_current_domain; }
+	    tooltip += "/" + total_current_domain;
 	tooltip += " blocked";
 	if (loaded_current_domain)
-	  { tooltip += " (" + loaded_current_domain + " loaded)"; }
+	    tooltip += " (" + loaded_current_domain + " loaded)";
 
         tooltip += ", [Other domains] " + blocked_external;
 	if (blocked_external != total_external)
-	  {  tooltip += "/" + total_external; }
+	    tooltip += "/" + total_external; 
 	tooltip += " blocked";
 	if (loaded_external)
-	  { tooltip += " (" + loaded_external + " loaded)"; }
+	    tooltip += " (" + loaded_external + " loaded)";
 	tooltip += ". Click for advanced interface."
-	r.title = tooltip;
-	
+
+        var r = document.createElement('button');	
+	r.title = tooltip;	
 	r.appendChild(button_image);
-    
-        r.onclick = function() {
+	r.onmouseover = function() { show_hide_menu(true); };	
+        r.onclick = function()
+	{
 	  if (event.shiftKey)
 	  { // cycle through the modes
 	    // FIXME: should wait until shift is released to reload page
-	    if (mode == 'block_all') { set_mode('filtered'); }
-	    else if (mode == 'filtered') { set_mode('allow_all'); }
-	    else if (mode == 'allow_all') { set_mode('block_all'); }
+	    if (mode == 'block_all')      set_mode('filtered');
+	    else if (mode == 'filtered')  set_mode('allow_all');
+	    else if (mode == 'allow_all') set_mode('block_all');
 	    return;
 	  }
-
-//	  if (event.ctrlKey)
-	  if (1)
-	  { // show/hide extended ui
-	    var x = document.getElementById('noiframeui');
-	    if (x.style.display == 'none') {
-	      x.style.display = 'inline-block';
-	      if (document.getElementById('noscriptselect').disabled == false) {
-		tog();
-	      }
-            } else {
-	    x.style.display = 'none';
-            }
-	    return;
-	  }		  
 	}
-
-	r.onmouseover = function() { show_hide_menu(true); };
 	
 	var tr = document.createElement('tr');
 	var td = document.createElement('td');
@@ -666,20 +545,16 @@
 	td.align = 'right';
 
 	tr.appendChild(td);
-        scIele.appendChild(tr);
+        table.appendChild(tr);
 
 	var tr = document.createElement('tr');
 	var td = document.createElement('td');
 	td.align = 'right';	
-	td.appendChild(scIui);
 	td.appendChild(r);
 	tr.appendChild(td);
-        scIele.appendChild(tr);
+        table.appendChild(tr);
 	
-//        scIele.appendChild(nsmenu);       	
-//        scIele.appendChild(scIui);
-//        scIele.appendChild(r);
-        document.documentElement.appendChild(scIele);
+        document.documentElement.appendChild(table);
     },
     false);
 })()
