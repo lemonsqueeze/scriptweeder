@@ -1,5 +1,5 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.23';
+    var version = 'Noscript v1.24';
 
     /************************* Default Settings *******************************/
     
@@ -394,7 +394,11 @@
     {
 	nsmenu = document.createElement('div');		
 	nsmenu.align = 'left';
-	nsmenu.style="border-width: 2px; border-style: outset; border-color: gray; background:#abb9ca;";
+	nsmenu.style="border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray; background:#abb9ca;" +
+	" background: #ccc;\
+   box-shadow: 8px 10px 10px rgba(0,0,0,0.5),\
+   inset 2px 3px 3px rgba(255,255,255,0.75);\
+";
         nsmenu.style.display = 'none';
 
 	nsmenu.onmouseout = function(e)
@@ -642,7 +646,7 @@
 "\n\
 #noscript_table { position:fixed;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:99999999;direction:ltr;font-family:sans-serif; font-size:small; margin-bottom:0px; }  \n\
 #noscript_table tr td { text-align: right; padding: 0px 0px 0px 0px;} \n\
-.noscript_title { background-color:#0000ff; color:#ffffff; font-weight:bold; } \n\
+.noscript_title { background-color:#d80; color:#ffffff; font-weight:bold; } \n\
 #noscript_button { border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } \n\
 .noscript_item  { color: #000000;  } \n\
 #noscript_table div { width: auto; } \n\
