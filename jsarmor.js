@@ -1,5 +1,5 @@
 (function() {
-    var version = 'Noscript v1.21';
+    var version = 'Noscript v1.22';
     
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
@@ -15,6 +15,8 @@
 //    var inside_frame = 0;
 //    if (window != window.top) { inside_frame = 1; }
 
+    var current_domain = get_domain(location.hostname);
+    
     function new_style(str)
     {
 	var pa= document.getElementsByTagName('head')[0] ;
@@ -36,7 +38,8 @@
         }
         else
 	    var expires = "";
-        document.cookie = name + "=" + value + (a_d ? ' ' + a_d: '') + expires + "; path=/";
+	var domain = "; domain=" + current_domain; // omit for per site cookies
+        document.cookie = name + "=" + value + (a_d ? ' ' + a_d: '') + expires + domain + "; path=/";
     }
 
     function readCookie(name, y)
@@ -54,25 +57,31 @@
         return '';
     }
     
-    function eraseCookie(name)
+    /*************************************/
+    
+    function load_setting(name)
     {
-        createCookie(name, "", -1);
+	return readCookie(name, 'g');
+    }
+
+    function save_setting(name, value)
+    {
+	createCookie(name, value, 365, null, 'g');
     }
 
     function reload_page()
     { history.go(0); }
 
-    var current_domain = get_domain(location.hostname);
     var button_image = new_icon_mode('block_all');
     
     // block_all, filtered, allow_all    
-    var mode = readCookie('noscript_mode', 'g');
+    var mode = load_setting('noscript_mode');
     if (mode == '')
 	mode = default_mode; 
     set_mode_no_update(mode);
 
     var block_inline_scripts;
-    var c = readCookie('noscript_inline', 'g');
+    var c = load_setting('noscript_inline');
     if (c == '')
       block_inline_scripts = default_block_inline_scripts;
     else
@@ -81,7 +90,7 @@
     function toggle_allow_inline()
     {
       block_inline_scripts = !block_inline_scripts;
-      createCookie('noscript_inline', (block_inline_scripts ? 'n' : 'y'), 365, null, 'g');
+      save_setting('noscript_inline', (block_inline_scripts ? 'n' : 'y'));
       reload_page();      
     }
 
@@ -157,7 +166,7 @@
       // if don't allow anything yet, add current domain (hack)
       if (new_mode == 'filtered' && !filtered_mode_should_allow("."))
 	  allow_domain(current_domain);
-      createCookie('noscript_mode', mode, 365, null, 'g');
+      save_setting('noscript_mode', mode);
       set_icon_mode(button_image, mode);
     }
     
@@ -170,15 +179,15 @@
 
     function allow_domain(domain)
     {
-      var h = readCookie('noscript', 'g') ? readCookie('noscript', 'g') : '';
-      createCookie('noscript', domain, 365, h, 'g');
+      var h = load_setting('noscript');
+      save_setting('noscript', h + ' ' + domain);
     }
 
     function block_domain(domain)
     {
-      var h = readCookie('noscript', 'g') ? readCookie('noscript', 'g') : '';
-      h = h.replace(domain, '');
-      createCookie('noscript', h, (h == '' ? -1: 365), null, 'g');      
+      var h = load_setting('noscript');
+      h = h.replace(' ' + domain, '');
+      save_setting('noscript', h);
     }
     
     function get_domain(h)
@@ -194,7 +203,7 @@
 
     function filtered_mode_should_allow(scr_domain)
     {
-      var v = readCookie('noscript', 'g');
+      var v = load_setting('noscript');
       return (v && v.indexOf(scr_domain) != -1);
     }
     
