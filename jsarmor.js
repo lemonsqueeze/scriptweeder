@@ -1,5 +1,5 @@
 (function() {
-    var version = 'Noscript v1.20';
+    var version = 'Noscript v1.21';
     
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
@@ -14,6 +14,17 @@
     
 //    var inside_frame = 0;
 //    if (window != window.top) { inside_frame = 1; }
+
+    function new_style(str)
+    {
+	var pa= document.getElementsByTagName('head')[0] ;
+	var el= document.createElement('style');
+	el.type= 'text/css';
+	el.media= 'screen';
+	el.appendChild(document.createTextNode(str));
+	pa.appendChild(el);
+	return el;
+    }
     
     function createCookie(name, value, days, a_d, y)
     {   // only calls with y='g'
@@ -229,6 +240,7 @@
     {
       // FIXME: add icon
       var item = document.createElement('div');
+      item.className = 'noscript_item';
       if (child)
 	  item.appendChild(child);
       if (indent)
@@ -311,7 +323,8 @@
 //	add_right_aligned_text(item, version);
 	item.title = version;
 	item.align = 'center';
-	item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
+	item.className = 'noscript_title'
+//	item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
 
 	var checkbox = make_checkbox(block_inline_scripts, toggle_allow_inline);
 	var label = "Block Inline Scripts";
@@ -497,13 +510,28 @@
     {
         if (!scripts.length && !total_inline) 
             return;
+
+	var noscript_style =
+"\n\
+#noscript_table { position:fixed;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:99999999;direction:ltr;font-family:sans-serif; font-size:small; margin-bottom:0px; }  \n\
+#noscript_table tr td { text-align: right; padding: 0px 0px 0px 0px;} \n\
+.noscript_title { background-color:#0000ff; color:#ffffff; font-weight:bold; } \n\
+#noscript_button { border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } \n\
+.noscript_item  { color: #000000;  } \n\
+#noscript_table div { width: auto; } \n\
+";
+
+	// -o-linear-gradient(top, #FFFFFF 0px, #CCCCCC 100%) #E5E5E5;
+	
+	new_style(noscript_style);
 	
 	var table = document.createElement('table');
+	table.id = 'noscript_table';
 	table.border = 0;
 	table.cellSpacing = 0;
 	table.cellPadding = 0;	
 	// background:-o-skin("Browser Window Skin")
-        table.style = 'position:fixed;' + (cornerposition < 3 ? 'top': 'bottom') + ':1px;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:9999;direction:ltr;font-family:sans-serif; font-size:small;';
+        table.style = (cornerposition < 3 ? 'top': 'bottom') + ':1px;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px;';
 
         var tooltip = "[Inline scripts] " + total_inline +
 	  (block_inline_scripts ? " blocked": "") +
@@ -523,10 +551,11 @@
 	    tooltip += " (" + loaded_external + " loaded)";
 	tooltip += ". Click for advanced interface."
 
-        var r = document.createElement('button');	
+        var r = document.createElement('button');
+	r.id = 'noscript_button';
 	r.title = tooltip;	
 	r.appendChild(button_image);
-	r.onmouseover = function() { show_hide_menu(true); };	
+	r.onmouseover = function() { show_hide_menu(true); };
         r.onclick = function()
 	{
 	  if (event.shiftKey)
@@ -542,14 +571,12 @@
 	var tr = document.createElement('tr');
 	var td = document.createElement('td');
 	td.id = 'td_nsmenu';
-	td.align = 'right';
-
+	
 	tr.appendChild(td);
         table.appendChild(tr);
 
 	var tr = document.createElement('tr');
 	var td = document.createElement('td');
-	td.align = 'right';	
 	td.appendChild(r);
 	tr.appendChild(td);
         table.appendChild(tr);
