@@ -1,10 +1,10 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.24';
+    var version = 'Noscript v1.25';
 
     /************************* Default Settings *******************************/
     
     var default_globally_allowed_domains =
-    ['google.com', 'googleapis.com', 'images-amazon.com', 'ytimg.com', 'gstatic.com', 'media-imdb.com'];
+    ['googleapis.com', 'images-amazon.com', 'ytimg.com', 'media-imdb.com', 'deviantart.net', 'jquery.com'];
     
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
@@ -43,51 +43,18 @@
 	pa.appendChild(el);
 	return el;
     }
-    
-    /*************************************/
-    
-    function createCookie(name, value, days, a_d, y)
-    {   // only calls with y='g'
-        if (days)
-	{
-            var date = new Date();
-            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-            var expires = "; expires=" + date.toGMTString();
-        }
-        else
-	    var expires = "";
-	// var domain = "; domain=" + current_domain; // omit for per site cookies
-	var domain = '';
-        document.cookie = name + "=" + value + (a_d ? ' ' + a_d: '') + expires + domain + "; path=/";
-    }
 
-    function readCookie(name, y)
-    {   // only calls with y='g'       
-        var nameEQ = name + "=";
-        var ca = document.cookie.split(';');
-        for (var i = 0; i < ca.length; i++)
-	{
-            var c = ca[i];
-            while (c.charAt(0) == ' ')
-		c = c.substring(1, c.length);
-            if (c.indexOf(nameEQ) == 0)
-		return c.substring(nameEQ.length, c.length);
-        }
-        return '';
-    }
-
-    /*************************************/
-
+    // local settings are per host
     function local_setting(name)
     {
-	return readCookie(name, 'g');	
+	return global_setting(location.hostname + ':' + name);
     }
 
     function set_local_setting(name, value)
     {
-	createCookie(name, value, 365, null, 'g');
+	set_global_setting(location.hostname + ':' + name, value);
     }
-    
+
     function global_setting(name)
     {
 	// to view content -> opera:webstorage  
