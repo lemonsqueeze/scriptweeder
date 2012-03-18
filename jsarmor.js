@@ -1,5 +1,5 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.25';
+    var version = 'Noscript v1.26';
 
     /************************* Default Settings *******************************/
     
@@ -17,8 +17,12 @@
     // block inline scripts by default ?
     var default_block_inline_scripts = false;
 
+    // when inline scripts are blocked, handle <noscript> tags
+    // as if javascript was disabled in opera
+    var default_handle_noscript_tags = true;
+    
     /**************************************************************************/    
-
+    
     if (global_setting('noscript') == '')
     {
 	alert("Noscript:\nNo prior settings found.\n" +
@@ -89,6 +93,8 @@
     else
       block_inline_scripts = (c != 'y');
 
+    var handle_noscript_tags;
+
     function toggle_allow_inline()
     {
       block_inline_scripts = !block_inline_scripts;
@@ -96,6 +102,13 @@
       reload_page();      
     }
 
+    function toggle_handle_noscript_tags()
+    {
+      handle_noscript_tags = !handle_noscript_tags;
+      set_local_setting('noscript_nstags', (handle_noscript_tags ? 'y' : 'n'));
+      reload_page();      
+    }
+    
     function show_details()
     {	
 	var nsdetails = document.createElement('div');
@@ -146,7 +159,7 @@
 		  if (!s[j].loaded)
 		  {
 		      image = 'Transfer Size Mismatch';
-		      icon.title = "Script allowed but not loaded, something else is blocking it.";
+		      icon.title = "Script allowed but not loaded, bad url or something else is blocking it.";
 		  }
 	      }
 	      set_icon_image(icon, image);
@@ -253,6 +266,31 @@
       alert('noscript.js: mode="' + mode + '", this should not happen!');
     }
 
+    function check_handle_noscript_tags()
+    {
+	handle_noscript_tags = local_setting('noscript_nstags');
+	if (handle_noscript_tags == '')
+	    handle_noscript_tags = default_handle_noscript_tags;
+	else
+	    handle_noscript_tags = (handle_noscript_tags == 'y');
+	if (!handle_noscript_tags)
+	    return;
+	
+	// javascript is blocked on this page, 
+	// interpret <noscript> tags as if javascript was disabled in opera	    
+	
+	for (var j = document.getElementsByTagName('noscript'); j[0];
+	     j = document.getElementsByTagName('noscript')) 
+	{
+	    var nstag = document.createElement('wasnoscript');
+	    nstag.innerHTML = j[0].innerText;
+	    
+	    j[0].parentNode.replaceChild(nstag, j[0]);
+	    // once reparenting is done, we have to get tags again
+	    // otherwise it misses some. weird ...		
+	}
+    }
+    
     function new_icon(image)
     {
       var icon = document.createElement('img');
@@ -409,6 +447,14 @@
 	item = add_menu_item(nsmenu, label, 0, toggle_allow_inline, checkbox);
 	add_right_aligned_text(item, " [" + get_size_kb(total_inline_size) + "k]");
 
+	if (block_inline_scripts)
+	{
+	    var checkbox = make_checkbox(handle_noscript_tags, toggle_handle_noscript_tags);
+	    var label = "Pretend Javascript Disabled";
+	    item = add_menu_item(nsmenu, label, 2, toggle_handle_noscript_tags, checkbox);
+	    item.title = "Interpret noscript tags as if javascript was disabled in opera."
+	}
+
 	add_menu_separator(nsmenu);
 	add_menu_item(nsmenu, "External Scripts:");	
 	add_menu_item(nsmenu, "Block All", 0, function(){ set_mode('block_all'); }, new_icon_mode('block_all'));
@@ -554,6 +600,8 @@
 	e.preventDefault();
     }, false);
     
+    var beforeexternalscript_alert = false;
+    
     opera.addEventListener('BeforeExternalScript',
     function(e)
     {
@@ -562,6 +610,13 @@
 	  alert("noscript.js: BeforeExternalScript: non 'SCRIPT' tagname: " + e.element.tagName);
 	  return;
         }
+
+	// FIXME: remove after we're done testing
+	if (nsmenu && !beforeexternalscript_alert)
+	{
+	    alert("noscript.js: BeforeExternalScript after DOM loaded");
+	    beforeexternalscript_alert = true;
+	}
 	
         var x = e.element.src;
         var t = document.createElement('a');
@@ -609,6 +664,9 @@
         if (!scripts.length && !total_inline) 
             return;
 
+	if (block_inline_scripts)
+	    check_handle_noscript_tags();
+	
 	var noscript_style =
 "\n\
 #noscript_table { position:fixed;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:99999999;direction:ltr;font-family:sans-serif; font-size:small; margin-bottom:0px; }  \n\
@@ -649,7 +707,6 @@
 	tooltip += " blocked";
 	if (loaded_external)
 	    tooltip += " (" + loaded_external + " loaded)";
-	tooltip += ". Click for advanced interface."
 
         var r = document.createElement('button');
 	r.id = 'noscript_button';
