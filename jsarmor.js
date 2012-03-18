@@ -1,10 +1,11 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.26';
+    var version = 'Noscript v1.26b';
 
     /************************* Default Settings *******************************/
-    
-    var default_globally_allowed_domains =
-    ['googleapis.com', 'images-amazon.com', 'ytimg.com', 'media-imdb.com', 'deviantart.net', 'jquery.com'];
+
+// WARNING: global domains functionality disabled in this version
+//    var default_globally_allowed_domains =
+//    ['googleapis.com', 'images-amazon.com', 'ytimg.com', 'media-imdb.com', 'deviantart.net', 'jquery.com'];
     
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
@@ -23,18 +24,18 @@
     
     /**************************************************************************/    
     
-    if (global_setting('noscript') == '')
-    {
-	alert("Noscript:\nNo prior settings found.\n" +
-	      "Setting globally allowed domains to:\n[" +
-	      default_globally_allowed_domains + "]");
-	set_global_setting('noscript', '. ' + default_globally_allowed_domains.join(' '));
-    }
+//    if (global_setting('noscript') == '')
+//    {
+//	alert("Noscript:\nNo prior settings found.\n" +
+//	      "Setting globally allowed domains to:\n[" +
+//	      default_globally_allowed_domains + "]");
+//	set_global_setting('noscript', '. ' + default_globally_allowed_domains.join(' '));
+//    }
     
 //    var inside_frame = 0;
 //    if (window != window.top) { inside_frame = 1; }
 
-    var current_domain = get_domain(location.hostname);
+    var current_host = location.hostname;
 
     
     function new_style(str)
@@ -140,12 +141,12 @@
 	item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
 	add_menu_separator(nsdetails);	
 
-	for (var i = 0; i < domains.length; i++)
-	{	    	    
-	  var d = domains[i];
-	  var item = add_menu_item(nsdetails, d + ":");	  
+	foreach_host_node(function(host_node)
+	{
+	  var h = host_node.name;
+	  var s = host_node.scripts;
+	  // var item = add_menu_item(nsdetails, h + ":");	  
 
-	  var s = scripts[i];
 	  sort_scripts(s);
 	  for (var j = 0; j < s.length; j++)
 	  {
@@ -153,7 +154,7 @@
 	      // script status
 	      var icon = new_icon();
 	      var image = 'Transfer Stopped';
-	      if (should_allow(d))
+	      if (allowed_host(h))
 	      {   // FIXME when adding whitelisting support, add icon for it here
 		  image = 'Transfer Success';
 		  if (!s[j].loaded)
@@ -166,7 +167,7 @@
 
 	      item.insertBefore(icon, item.childNodes[0]);
 	  }	  
-	}
+	});
 	
 	var td = document.getElementById('td_nsmenu');
 	td.appendChild(nsdetails);
@@ -178,9 +179,9 @@
     function set_mode_no_update(new_mode)
     {
       mode = new_mode;
-      // allow local domain by default
-      if (new_mode == 'filtered' && local_setting('noscript') == '')
-	  allow_domain(current_domain);
+      // allow current host by default
+      if (new_mode == 'filtered' && local_setting('ns_hosts') == '')
+	  allow_host(current_host);
       set_local_setting('noscript_mode', mode);
       set_icon_mode(button_image, mode);
     }
@@ -192,38 +193,47 @@
       reload_page();
     }    
 
-    function allow_domain(domain)
+    function allow_host(host)
     {
-	var l = local_setting('noscript');
+	var l = local_setting('ns_hosts');
 	l = (l == '' ? '.' : l);
-	if (domain_in_list(domain, l))
+	if (list_contains(l, host))
 	    return;
-	set_local_setting('noscript', l + ' ' + domain);
+	set_local_setting('ns_hosts', l + ' ' + host);
     }
 
-    function global_allow_domain(domain)
+//    function global_allow_host(host)
+//    {
+// FIXME
+//	var l = global_setting('noscript');
+//	l = (l == '' ? '.' : l);	
+//	if (list_conains(l, domain))
+//	    return;
+//	set_global_setting('noscript', l + ' ' + domain);
+//    }
+    
+    function remove_host(host)
     {
-	var l = global_setting('noscript');
-	l = (l == '' ? '.' : l);	
-	if (domain_in_list(domain, l))
-	    return;
-	set_global_setting('noscript', l + ' ' + domain);
+      var l = local_setting('ns_hosts');
+      l = l.replace(' ' + host, '');
+      set_local_setting('ns_hosts', l);
+    }
+
+//    function global_remove_host(host)
+//    {
+// FIXME    
+//      var l = global_setting('noscript');
+//      l = l.replace(' ' + domain, '');
+//      set_global_setting('noscript', l);
+//    }
+
+    function url_hostname(url)
+    {
+        var t = document.createElement('a');
+        t.href = url;
+        return t.hostname;
     }
     
-    function remove_domain(domain)
-    {
-      var l = local_setting('noscript');
-      l = l.replace(' ' + domain, '');
-      set_local_setting('noscript', l);
-    }
-
-    function global_remove_domain(domain)
-    {
-      var l = global_setting('noscript');
-      l = l.replace(' ' + domain, '');
-      set_global_setting('noscript', l);
-    }
-
     function get_domain(h)
     {
       var i = h.lastIndexOf(".");
@@ -235,33 +245,34 @@
       return h;
     }
 
-    function domain_in_list(domain, list)
+    function list_contains(list, str)
     {
-      return (list && list.indexOf(' ' + domain) != -1);
+      return (list && list.indexOf(' ' + str) != -1);
     }
 
-    function domain_allowed_globally(domain)
+//    function domain_allowed_globally(domain)
+//    {
+//	var l = global_setting('noscript');
+//	return list_contains(l, domain);
+//    }
+    
+    function host_allowed_locally(host)
     {
-	var l = global_setting('noscript');
-	return domain_in_list(domain, l);
+	var l = local_setting('ns_hosts');
+	return list_contains(l, host);
     }
     
-    function domain_allowed_locally(domain)
+    function filtered_mode_allowed_host(host)
     {
-	var l = local_setting('noscript');
-	return domain_in_list(domain, l);
+	return (
+//	    domain_allowed_globally(domain) ||
+	    host_allowed_locally(host));
     }
     
-    function filtered_mode_should_allow(domain)
-    {
-	return (domain_allowed_globally(domain) ||
-		domain_allowed_locally(domain));
-    }
-    
-    function should_allow(scr_domain)
+    function allowed_host(host)
     {
       if (mode == 'block_all') return false; 
-      if (mode == 'filtered')  return filtered_mode_should_allow(scr_domain); 
+      if (mode == 'filtered')  return filtered_mode_allowed_host(host); 
       if (mode == 'allow_all') return true;
       alert('noscript.js: mode="' + mode + '", this should not happen!');
     }
@@ -378,11 +389,11 @@
       return c;
     }
 
-    function domain_list_to_string(domains)
+    function list_to_string(list)
     {
 	var d = '';
 	var comma = '';
-	var a=domains.split(' ');
+	var a=list.split(' ');
 	for (var i = 0; i < a.length; i++)
 	{ 
 	    if (a[i] != '.')
@@ -428,19 +439,19 @@
 	item.title = version + ". Click to view global settings.";
 	item.align = 'center';
 	item.className = 'noscript_title'
-//	item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
-	item.onclick = function()
-	{       
-  	  if (!event.ctrlKey)
-	  {
-	    var d = domain_list_to_string(global_setting('noscript'));
-	    alert("Noscript \nDomains allowed globally: \n" + d);
-	  
-	    return;
-	  }
-	  var d = domain_list_to_string(local_setting('noscript'));
-	  alert("Noscript \nDomains allowed locally: \n" + d);
-	};
+        // item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
+//	item.onclick = function()
+//	{       
+//  	  if (!event.ctrlKey)
+//	  {
+//	    var d = list_to_string(global_setting('noscript'));
+//	    alert("Noscript \nDomains allowed globally: \n" + d);
+//	  
+//	    return;
+//	  }
+//	  var d = list_to_string(local_setting('noscript'));
+//	  alert("Noscript \nDomains allowed locally: \n" + d);
+//	};
 
 	var checkbox = make_checkbox(block_inline_scripts, toggle_allow_inline);
 	var label = "Block Inline Scripts";
@@ -458,47 +469,48 @@
 	add_menu_separator(nsmenu);
 	add_menu_item(nsmenu, "External Scripts:");	
 	add_menu_item(nsmenu, "Block All", 0, function(){ set_mode('block_all'); }, new_icon_mode('block_all'));
-	add_menu_item(nsmenu, "Filter By Domain", 0, function(){ set_mode('filtered'); }, new_icon_mode('filtered'));
+	add_menu_item(nsmenu, "Filter By Host", 0, function(){ set_mode('filtered'); }, new_icon_mode('filtered'));
 	
 	var f = function()
 	{
-	  var d = (this.domain ? this.domain : this.parentNode.domain);
+	  var h = (this.host ? this.host : this.parentNode.host);
 	  var checkbox_clicked = (event.target.tagName == 'INPUT');
 	  
-	  if (filtered_mode_should_allow(d))
+	  if (filtered_mode_allowed_host(h))
 	  {
-	      global_remove_domain(d);
-	      remove_domain(d);	      
+//	      global_remove_domain(d);
+	      remove_host(h);	      
 	  }
 	  else
 	  {
 	      if (!checkbox_clicked)
-		  allow_domain(d);
-	      else
-		  global_allow_domain(d);
+		  allow_host(h);
+//	      else
+//		  global_allow_domain(d);
 	  }
 	  set_mode('filtered');
 	};
-	
-	for (var i = 0; i < domains.length; i++)
+
+	foreach_host_node(function(host_node)
 	{
-	  var d = domains[i];
-	  var checkbox = make_checkbox(filtered_mode_should_allow(d), null);
+	  var h = host_node.name;
+	  var s = host_node.scripts;
+	  var checkbox = make_checkbox(filtered_mode_allowed_host(h), null);
 	  
-	  var label = "Allow " + d;
-	  var item = add_menu_item(nsmenu, label, 2, f, checkbox);
+	  //var label = "Allow " + h;	 
+	  var item = add_menu_item(nsmenu, "Allow ", 2, f, checkbox);
 	  item.title = "Click checkbox to allow globally.";
-	  add_right_aligned_text(item, " [" + scripts[i].length + "]");
+	  add_right_aligned_text(item, h + "   [" + s.length + "]");
 	  
-	  if (domain_allowed_globally(d))
-	  {
-	      var icon = document.createElement('img');
-	      icon.className = "noscript_global";
-	      icon.title = "Allowed Globally";
-	      item.appendChild(icon);
-	  }
-	  item.domain = d;
-	}
+//	  if (domain_allowed_globally(d))
+//	  {
+//	      var icon = document.createElement('img');
+//	      icon.className = "noscript_global";
+//	      icon.title = "Allowed Globally";
+//	      item.appendChild(icon);
+//	  }
+	  item.host = h;
+	});
 	
 	add_menu_item(nsmenu, "Allow All", 0, function(){ set_mode('allow_all'); }, new_icon_mode('allow_all'));
 	add_menu_item(nsmenu, "Details ...", 0, show_details);
@@ -517,11 +529,6 @@
       nsmenu.style.display = d;
     }
     
-    // array of arrays of objects: scripts[0] has all the scripts for domain domains[0] etc
-    // fields: url, loaded
-    var scripts = [];
-    var domains = [];
-
     function new_script(url)
     {
 	var o = new Object();
@@ -538,28 +545,70 @@
     {
 	scr_array.sort(compare_scripts);
     }
-    
-    function add_script(url, domain)
-    {
-      var s = new_script(url);
-      for (var i = 0; i < domains.length; i++)
-      {
-	if (domains[i] == domain)
-	{
-	  scripts[i].push(s);
-	  return s;
-	}
-      }
 
-      domains.push(domain);
-      scripts.push([]);
-      scripts[i].push(s);
-      return s;
+    // External scripts are stored in a 3 level tree (domain/host/script)
+    // Ex: domain_nodes[0].hosts[0].scripts[0]
+    // Domain/Host name: domain_nodes[0].name etc
+    // FIXME: can't we use some kind of hash table ??
+    var domain_nodes = [];
+
+    function add_domain_node(domain)
+    {
+	for (var i = 0; i < domain_nodes.length; i++)
+	{
+	    if (domain_nodes[i].name == domain)
+		return domain_nodes[i];
+	}
+	var n = new Object();
+	n.name = domain;
+	n.hosts = [];
+	domain_nodes.push(n);
+	return n;
     }
 
-    var blocked_current_domain = 0;
-    var loaded_current_domain = 0;
-    var total_current_domain = 0;
+    function add_host_node(host, domain_node)
+    {
+	var hosts = domain_node.hosts;
+	for (var i = 0; i < hosts.length; i++)
+	{
+	    if (hosts[i].name == host)
+		return hosts[i];
+	}
+	var n = new Object();
+	n.name = host;
+	n.scripts = [];
+	hosts.push(n);
+	return n;
+    }
+
+    function add_script(fullurl, host)
+    {
+	// FIXME: could start with something else than "http://" (https ...)	
+	var url = fullurl.slice(7); // strip http://
+	var domain = get_domain(host);
+	var s = new_script(url);
+
+	var domain_node = add_domain_node(domain);
+	var host_node = add_host_node(host, domain_node);
+	host_node.scripts.push(s);
+	return s;
+    }
+
+    function foreach_host_node(f)
+    {
+	for (var i = 0; i < domain_nodes.length; i++)
+	{
+	    var hosts = domain_nodes[i].hosts;
+	    for (var j = 0; j < hosts.length; j++)
+	    {
+		f(hosts[j], domain_nodes[i].name);
+	    }
+	}
+    }
+
+    var blocked_current_host = 0;
+    var loaded_current_host = 0;
+    var total_current_host = 0;
     
     var blocked_external = 0;
     var loaded_external = 0;
@@ -599,7 +648,7 @@
       if (block_inline_scripts)
 	e.preventDefault();
     }, false);
-    
+
     var beforeexternalscript_alert = false;
     
     opera.addEventListener('BeforeExternalScript',
@@ -617,18 +666,17 @@
 	    alert("noscript.js: BeforeExternalScript after DOM loaded");
 	    beforeexternalscript_alert = true;
 	}
+
+	var url = e.element.src;
+	var host = url_hostname(url);
+	var allowed = allowed_host(host);
+	var script = add_script(url, host);	
 	
-        var x = e.element.src;
-        var t = document.createElement('a');
-        t.href = x;
-        var domain = get_domain(t.hostname);
-	var allowed = should_allow(domain);
-	
-	if (domain == current_domain)
+	if (host == current_host)
 	{
-	  total_current_domain++;
+	  total_current_host++;
 	  if (!allowed)
-	      blocked_current_domain++;
+	      blocked_current_host++;
 	}
 	else
 	{
@@ -636,8 +684,6 @@
 	  if (!allowed)
 	      blocked_external++;
 	}
-
-	var script = add_script(x.slice(7), domain); // strip http://
 	
 	// find out which scripts are actually loaded,
 	// this way we can find out if *something else* is blocking (blocked content, hosts file ...)
@@ -646,8 +692,8 @@
 	{
 //	  alert("noscript.js: in load handler! script:" + le.target.src);
 
-	  if (domain == current_domain)
-	      loaded_current_domain++; 
+	  if (host == current_host)
+	      loaded_current_host++; 
 	  else
 	      loaded_external++;
 	  script.loaded = 1; // what a hack, javascript rules!
@@ -661,7 +707,7 @@
     document.addEventListener('DOMContentLoaded',
     function()
     {
-        if (!scripts.length && !total_inline) 
+        if (!domain_nodes.length && !total_inline) 
             return;
 
 	if (block_inline_scripts)
@@ -694,14 +740,14 @@
         var tooltip = "[Inline scripts] " + total_inline +
 	  (block_inline_scripts ? " blocked": "") +
 	  " (" + get_size_kb(total_inline_size) + "k), " +
-	  "[" + current_domain + "] " + blocked_current_domain;
-	if (blocked_current_domain != total_current_domain)
-	    tooltip += "/" + total_current_domain;
+	  "[" + current_host + "] " + blocked_current_host;
+	if (blocked_current_host != total_current_host)
+	    tooltip += "/" + total_current_host;
 	tooltip += " blocked";
-	if (loaded_current_domain)
-	    tooltip += " (" + loaded_current_domain + " loaded)";
+	if (loaded_current_host)
+	    tooltip += " (" + loaded_current_host + " loaded)";
 
-        tooltip += ", [Other domains] " + blocked_external;
+        tooltip += ", [Other hosts] " + blocked_external;
 	if (blocked_external != total_external)
 	    tooltip += "/" + total_external; 
 	tooltip += " blocked";
