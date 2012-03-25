@@ -1,5 +1,5 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.26b';
+    var version = 'Noscript v1.26c';
 
     /************************* Default Settings *******************************/
 
@@ -36,7 +36,7 @@
 //    if (window != window.top) { inside_frame = 1; }
 
     var current_host = location.hostname;
-
+    var current_domain = get_domain(location.hostname);
     
     function new_style(str)
     {
@@ -98,13 +98,21 @@
 
     function toggle_allow_inline()
     {
+      // FIXME: refactor checkbox logic
+      var item = (this.checkbox ? this : this.parentNode);
+      var checkbox = item.checkbox;
+      var checkbox_clicked = (event.target.tagName == 'INPUT');      
+      if (!checkbox_clicked)
+	  checkbox.checked = !checkbox.checked;
       block_inline_scripts = !block_inline_scripts;
+      item.nextSibling.style = "display:" + (block_inline_scripts ? "block;" : "none;");
       set_local_setting('noscript_inline', (block_inline_scripts ? 'n' : 'y'));
-      reload_page();      
+      need_reload = true;
     }
 
     function toggle_handle_noscript_tags()
     {
+      // FIXME: defer reloading
       handle_noscript_tags = !handle_noscript_tags;
       set_local_setting('noscript_nstags', (handle_noscript_tags ? 'y' : 'n'));
       reload_page();      
@@ -238,11 +246,39 @@
     {
       var i = h.lastIndexOf(".");
       var j = h.lastIndexOf(".", i-1);
-      if (i - j == 3) // .co.uk style domain
+      if (i - j == 3 && h.length - i == 3) // .co.uk style domain
 	  j = h.lastIndexOf(".", j-1); 
       if (j != -1)
 	  return h.slice(j+1);     
       return h;
+    }
+    
+    // return true if d1 and d2 are "related domains"
+    // Ex: media-imdb.com is related to imdb.com
+    function related_domains(d1, d2)
+    {
+	if (d2.length > d1.length)
+	    return related_domains(d2, d1);
+	var name = d2.slice(0, d2.indexOf("."));
+	if (d1.indexOf(name) != -1)
+	    return true;
+	if (name.length > 2 &&
+	    d1.slice(0, 3) == name.slice(0, 3))
+	    return true;
+	return false;
+    }
+
+    // googleapis
+    function helper_domain(d)
+    {
+	if (d.indexOf("apis") != -1 ||
+	    d.indexOf("cdn") != -1 ||
+	    d.indexOf("img") != -1 ||
+	    d == "google.com" ||
+	    d == "googlecode.com" ||
+	    d == "gstatic.com")
+	    return true;
+	return false;
     }
 
     function list_contains(list, str)
@@ -354,6 +390,43 @@
       return item;
     }
 
+    function to_html(e)
+    {
+	if (e.outerHTML)
+	    return e.outerHTML;
+	
+	var d = document.createElement('div');
+	d.innerText = e;
+	return d.innerHTML;
+    }
+
+    function add_table_item(table, col1, col2, col3, col4, f, color)
+    {
+	var tr = document.createElement('tr');
+	var s = "";
+	s += "<td>&nbsp;&nbsp;</td>";
+	s += "<td>" + to_html(col1) + "</td>";
+	s += "<td>" + to_html(col2) + "</td>";
+	s += "<td>" + to_html(col3) + "</td>";
+	s += "<td>" + to_html(col4) + "</td>";
+	tr.innerHTML = s;
+//	tr.childNodes[0].style = "padding-left:" + (indent * 10) + "px;";
+	tr.childNodes[2].style = "color: #888888; text-align:right;";
+	if (color != '')
+	    tr.childNodes[3].style.color = color;
+	tr.childNodes[4].style = "text-align:right;";
+	if (f)
+	{
+	    tr.onmouseover = function(){ this.style.backgroundColor = '#dddddd'; };
+	    tr.onmouseout  = function(){ this.style.backgroundColor = 'transparent'; };
+	    tr.onclick = f;
+	}
+	// make text non selectable
+	tr.onmousedown = function(){ return false; };
+	table.appendChild(tr);
+	return tr;
+    }
+
     function add_right_aligned_text(parent, text)
     {
 	var d = document.createElement('div');
@@ -406,11 +479,12 @@
     }
     
     var nsmenu;
+    var need_reload = false;
     function create_menu()
     {
 	nsmenu = document.createElement('div');		
 	nsmenu.align = 'left';
-	nsmenu.style="border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray; background:#abb9ca;" +
+	nsmenu.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray; background:#abb9ca;" +
 	" background: #ccc;\
    box-shadow: 8px 10px 10px rgba(0,0,0,0.5),\
    inset 2px 3px 3px rgba(255,255,255,0.75);\
@@ -433,6 +507,8 @@
 	      return; // moving out of the div into a child layer
 	  
 	  show_hide_menu(false);
+	  if (need_reload)
+	      reload_page();
 	};
 	
 	var item = add_menu_item(nsmenu, "Noscript Settings ...");
@@ -453,18 +529,18 @@
 //	  alert("Noscript \nDomains allowed locally: \n" + d);
 //	};
 
-	var checkbox = make_checkbox(block_inline_scripts, toggle_allow_inline);
+	var checkbox = make_checkbox(block_inline_scripts, null);
 	var label = "Block Inline Scripts";
 	item = add_menu_item(nsmenu, label, 0, toggle_allow_inline, checkbox);
+	item.checkbox = item.firstChild;
 	add_right_aligned_text(item, " [" + get_size_kb(total_inline_size) + "k]");
 
-	if (block_inline_scripts)
-	{
-	    var checkbox = make_checkbox(handle_noscript_tags, toggle_handle_noscript_tags);
-	    var label = "Pretend Javascript Disabled";
-	    item = add_menu_item(nsmenu, label, 2, toggle_handle_noscript_tags, checkbox);
-	    item.title = "Interpret noscript tags as if javascript was disabled in opera."
-	}
+	var checkbox = make_checkbox(handle_noscript_tags, toggle_handle_noscript_tags);
+	var label = "Pretend Javascript Disabled";
+	item = add_menu_item(nsmenu, label, 2, toggle_handle_noscript_tags, checkbox);
+	item.title = "Interpret noscript tags as if javascript was disabled in opera."
+	if (!block_inline_scripts)
+	    item.style = "display:none;";	    
 
 	add_menu_separator(nsmenu);
 	add_menu_item(nsmenu, "External Scripts:");	
@@ -473,8 +549,14 @@
 	
 	var f = function()
 	{
-	  var h = (this.host ? this.host : this.parentNode.host);
+	  // FIXME: refactor checkbox logic
+	  var item = (this.host ? this : this.parentNode);
+	  var h = item.host;
+	  var checkbox = item.checkbox;
 	  var checkbox_clicked = (event.target.tagName == 'INPUT');
+
+	  if (!checkbox_clicked)
+	      checkbox.checked = !checkbox.checked;
 	  
 	  if (filtered_mode_allowed_host(h))
 	  {
@@ -488,20 +570,34 @@
 //	      else
 //		  global_allow_domain(d);
 	  }
-	  set_mode('filtered');
+	  set_mode_no_update('filtered');
+	  need_reload = true;
 	};
 
-	foreach_host_node(function(host_node)
+	var table = document.createElement('table');
+	table.id = "noscript_ftable";
+	table.cellSpacing = 0;
+	nsmenu.appendChild(table);
+
+	sort_domains();
+	
+	for (var i = 0; i < domain_nodes.length; i++)
 	{
-	  var h = host_node.name;
-	  var s = host_node.scripts;
-	  var checkbox = make_checkbox(filtered_mode_allowed_host(h), null);
-	  
-	  //var label = "Allow " + h;	 
-	  var item = add_menu_item(nsmenu, "Allow ", 2, f, checkbox);
-	  item.title = "Click checkbox to allow globally.";
-	  add_right_aligned_text(item, h + "   [" + s.length + "]");
-	  
+	  var dn = domain_nodes[i];	    
+	  var d = dn.name;
+	  var hosts = domain_nodes[i].hosts;
+
+	  for (var j = 0; j < hosts.length; j++)
+	  {
+	    var h = hosts[j].name;
+	    var s = hosts[j].scripts;
+	    var checkbox = make_checkbox(filtered_mode_allowed_host(h), null);
+	    var host_part = h.slice(0, h.length - d.length);
+	    var count = "[" + s.length + "]";
+	    var color = (dn.related || dn.helper ? '#000' : '');
+	    var item = add_table_item(table, checkbox, host_part, d, count, f, color);
+	    item.title = "Click checkbox to allow globally.";
+	    
 //	  if (domain_allowed_globally(d))
 //	  {
 //	      var icon = document.createElement('img');
@@ -509,8 +605,10 @@
 //	      icon.title = "Allowed Globally";
 //	      item.appendChild(icon);
 //	  }
-	  item.host = h;
-	});
+	    item.checkbox = item.childNodes[1].firstChild;
+	    item.host = h;
+	  }
+	}
 	
 	add_menu_item(nsmenu, "Allow All", 0, function(){ set_mode('allow_all'); }, new_icon_mode('allow_all'));
 	add_menu_item(nsmenu, "Details ...", 0, show_details);
@@ -536,16 +634,11 @@
 	return o;
     }
 
-    function compare_scripts(s1, s2)
+    function sort_scripts(s)
     {
-	return (s1.url < s2.url ? -1 : 1);
+	s.sort(function(s1,s2){ return (s1.url < s2.url ? -1 : 1); });
     }
     
-    function sort_scripts(scr_array)
-    {
-	scr_array.sort(compare_scripts);
-    }
-
     // External scripts are stored in a 3 level tree (domain/host/script)
     // Ex: domain_nodes[0].hosts[0].scripts[0]
     // Domain/Host name: domain_nodes[0].name etc
@@ -561,6 +654,8 @@
 	}
 	var n = new Object();
 	n.name = domain;
+	n.related = related_domains(domain, current_domain);
+	n.helper = helper_domain(domain);
 	n.hosts = [];
 	domain_nodes.push(n);
 	return n;
@@ -604,6 +699,23 @@
 		f(hosts[j], domain_nodes[i].name);
 	    }
 	}
+    }
+
+    function sort_domains()
+    {
+	domain_nodes.sort(function(d1,d2)
+	{
+	    // current domain goes first
+	    if (d1.name == current_domain || d2.name == current_domain)
+		return (d1.name == current_domain ? -1 : 1);
+	    // then related domains 
+	    if (d1.related ^ d2.related)
+		return (d1.related ? -1 : 1);
+	    // then helper domains
+	    if (d1.helper ^ d2.helper)
+		return (d1.helper ? -1 : 1);
+	    return (d1.name < d2.name ? -1 : 1);
+	});
     }
 
     var blocked_current_host = 0;
@@ -716,10 +828,10 @@
 	var noscript_style =
 "\n\
 #noscript_table { position:fixed;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:99999999;direction:ltr;font-family:sans-serif; font-size:small; margin-bottom:0px; }  \n\
-#noscript_table tr td { text-align: right; padding: 0px 0px 0px 0px;} \n\
+#noscript_table > tr > td { text-align: right; padding: 0px 0px 0px 0px;} \n\
+#noscript_ftable > tr > td { padding: 0px 0px 1px 0px;} \n\
 .noscript_title { background-color:#d80; color:#ffffff; font-weight:bold; } \n\
 #noscript_button { border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } \n\
-.noscript_item  { color: #000000;  } \n\
 #noscript_table div { width: auto; } \n\
 .noscript_global { padding: 0px 3px; width:14px; height:14px; vertical-align:middle; \
     background: -o-skin('RSS'); } \n\
