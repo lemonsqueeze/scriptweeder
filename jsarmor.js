@@ -1,5 +1,5 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.26c';
+    var version = 'Noscript v1.27';
 
     /************************* Default Settings *******************************/
 
@@ -31,6 +31,13 @@
 //	      default_globally_allowed_domains + "]");
 //	set_global_setting('noscript', '. ' + default_globally_allowed_domains.join(' '));
 //    }
+
+
+    // FIXME !!
+    if (window != window.top)
+    {
+	return; // for now
+    }
     
 //    var inside_frame = 0;
 //    if (window != window.top) { inside_frame = 1; }
@@ -40,11 +47,11 @@
     
     function new_style(str)
     {
-	var pa= document.getElementsByTagName('head')[0] ;
-	var el= document.createElement('style');
+	var pa= idoc.getElementsByTagName('head')[0] ;
+	var el= idoc.createElement('style');
 	el.type= 'text/css';
 	el.media= 'screen';
-	el.appendChild(document.createTextNode(str));
+	el.appendChild(idoc.createTextNode(str));
 	pa.appendChild(el);
 	return el;
     }
@@ -79,7 +86,7 @@
 	location.reload();
     }
 
-    var button_image = new_icon_mode('block_all');
+    var button_image = null;
     
     // block_all, filtered, allow_all    
     var mode = local_setting('noscript_mode');
@@ -120,7 +127,7 @@
     
     function show_details()
     {	
-	var nsdetails = document.createElement('div');
+	var nsdetails = idoc.createElement('div');
 	nsdetails.align = 'left';
 	nsdetails.style="border-width: 2px; border-style: outset; border-color: gray; background:#abb9ca;";
 //        nsdetails.style.display = 'inline-block';
@@ -177,7 +184,7 @@
 	  }	  
 	});
 	
-	var td = document.getElementById('td_nsmenu');
+	var td = idoc.getElementById('td_nsmenu');
 	td.appendChild(nsdetails);
 
 	show_hide_menu(false);
@@ -191,7 +198,8 @@
       if (new_mode == 'filtered' && local_setting('ns_hosts') == '')
 	  allow_host(current_host);
       set_local_setting('noscript_mode', mode);
-      set_icon_mode(button_image, mode);
+      if (button_image)
+	  set_icon_mode(button_image, mode);
     }
     
     function set_mode(new_mode)
@@ -340,7 +348,7 @@
     
     function new_icon(image)
     {
-      var icon = document.createElement('img');
+      var icon = idoc.createElement('img');
       icon.style = "width:22px;height:22px; vertical-align:middle;";
       if (image)
 	  set_icon_image(icon, image);
@@ -371,7 +379,7 @@
     function add_menu_item(nsmenu, text, indent, f, child)
     {
       // FIXME: add icon
-      var item = document.createElement('div');
+      var item = idoc.createElement('div');
       item.className = 'noscript_item';
       if (child)
 	  item.appendChild(child);
@@ -395,14 +403,14 @@
 	if (e.outerHTML)
 	    return e.outerHTML;
 	
-	var d = document.createElement('div');
+	var d = idoc.createElement('div');
 	d.innerText = e;
 	return d.innerHTML;
     }
 
     function add_table_item(table, col1, col2, col3, col4, f, color)
     {
-	var tr = document.createElement('tr');
+	var tr = idoc.createElement('tr');
 	var s = "";
 	s += "<td>&nbsp;&nbsp;</td>";
 	s += "<td>" + to_html(col1) + "</td>";
@@ -429,7 +437,7 @@
 
     function add_right_aligned_text(parent, text)
     {
-	var d = document.createElement('div');
+	var d = idoc.createElement('div');
 	d.style = "float:right;";
 	d.innerText = text;
 	parent.appendChild(d);
@@ -447,7 +455,7 @@
     
     function add_menu_separator(menu)
     {
-      var div = document.createElement('div');
+      var div = idoc.createElement('div');
       //  width: 90%;
       div.style = "height: 1px; display: block; background-color: #555555; margin-left: auto; margin-right: auto;";
       menu.appendChild(div);
@@ -455,7 +463,7 @@
 
     function make_checkbox(checked, f)
     {
-      var c = document.createElement('input');
+      var c = idoc.createElement('input');
       c.type = 'checkbox';
       c.defaultChecked = checked;
       c.onclick = f;
@@ -482,7 +490,7 @@
     var need_reload = false;
     function create_menu()
     {
-	nsmenu = document.createElement('div');		
+	nsmenu = idoc.createElement('div');		
 	nsmenu.align = 'left';
 	nsmenu.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray; background:#abb9ca;" +
 	" background: #ccc;\
@@ -501,11 +509,14 @@
 	  
 	  // e.relatedTarget: object we're moving to.
 	  var reltg = e.relatedTarget;
-	  while (reltg != nsmenu && reltg.nodeName != 'HTML')
-	      reltg= reltg.parentNode;
-	  if (reltg == nsmenu)
-	      return; // moving out of the div into a child layer
-	  
+	  if (reltg)
+	  {
+	      while (reltg != nsmenu && reltg.nodeName != 'HTML')
+		  reltg= reltg.parentNode;
+	      if (reltg == nsmenu)
+		  return; // moving out of the div into a child layer
+	  }
+	      
 	  show_hide_menu(false);
 	  if (need_reload)
 	      reload_page();
@@ -574,7 +585,7 @@
 	  need_reload = true;
 	};
 
-	var table = document.createElement('table');
+	var table = idoc.createElement('table');
 	table.id = "noscript_ftable";
 	table.cellSpacing = 0;
 	nsmenu.appendChild(table);
@@ -600,7 +611,7 @@
 	    
 //	  if (domain_allowed_globally(d))
 //	  {
-//	      var icon = document.createElement('img');
+//	      var icon = idoc.createElement('img');
 //	      icon.className = "noscript_global";
 //	      icon.title = "Allowed Globally";
 //	      item.appendChild(icon);
@@ -613,7 +624,7 @@
 	add_menu_item(nsmenu, "Allow All", 0, function(){ set_mode('allow_all'); }, new_icon_mode('allow_all'));
 	add_menu_item(nsmenu, "Details ...", 0, show_details);
 	
-	var td = document.getElementById('td_nsmenu');
+	var td = idoc.getElementById('td_nsmenu');
 	td.appendChild(nsmenu);	
     }
 
@@ -625,6 +636,7 @@
       if (toggle) 
 	  d = (nsmenu.style.display == 'none' ? 'inline-block' : 'none');
       nsmenu.style.display = d;
+      resize_iframe();
     }
     
     function new_script(url)
@@ -815,15 +827,10 @@
 	    e.preventDefault();
     },
     false);
-    
-    document.addEventListener('DOMContentLoaded',
-    function()
-    {
-        if (!domain_nodes.length && !total_inline) 
-            return;
 
-	if (block_inline_scripts)
-	    check_handle_noscript_tags();
+    function populate_iframe()
+    {
+	idoc = iframe.contentWindow.document;
 	
 	var noscript_style =
 "\n\
@@ -841,13 +848,12 @@
 	
 	new_style(noscript_style);
 	
-	var table = document.createElement('table');
+	var table = idoc.createElement('table');
 	table.id = 'noscript_table';
 	table.border = 0;
 	table.cellSpacing = 0;
 	table.cellPadding = 0;	
-	// background:-o-skin("Browser Window Skin")
-        table.style = (cornerposition < 3 ? 'top': 'bottom') + ':1px;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px;';
+	// background:-o-skin("Browser Window Skin")        
 
         var tooltip = "[Inline scripts] " + total_inline +
 	  (block_inline_scripts ? " blocked": "") +
@@ -866,9 +872,10 @@
 	if (loaded_external)
 	    tooltip += " (" + loaded_external + " loaded)";
 
-        var r = document.createElement('button');
+        var r = idoc.createElement('button');
 	r.id = 'noscript_button';
-	r.title = tooltip;	
+	r.title = tooltip;
+	button_image = new_icon_mode(mode);
 	r.appendChild(button_image);
 	r.onmouseover = function() { show_hide_menu(true); };
         r.onclick = function()
@@ -883,20 +890,68 @@
 	  }
 	}
 
-	var tr = document.createElement('tr');
-	var td = document.createElement('td');
+	var tr = idoc.createElement('tr');
+	var td = idoc.createElement('td');
 	td.id = 'td_nsmenu';
 	
 	tr.appendChild(td);
         table.appendChild(tr);
 
-	var tr = document.createElement('tr');
-	var td = document.createElement('td');
+	var tr = idoc.createElement('tr');
+	var td = idoc.createElement('td');
 	td.appendChild(r);
 	tr.appendChild(td);
         table.appendChild(tr);
+
+	ibody = idoc.getElementsByTagName('body')[0];	
+	ibody.appendChild(table);
+	ibody.style.margin = '0px';
+
+	//console.log("table clientWidth: " + table.clientWidth);
+//	iframe.style = "width:" + table.clientWidth +
+//	"px; height:" + table.clientHeight + "px;";
+
+	resize_iframe();
+    }
+
+    function resize_iframe()
+    {
+	var content = ibody.firstChild;
+	//iframe.style.width = content.clientWidth + 'px';
+	//iframe.style.height = content.clientHeight + 'px';
+	iframe.style.width = content.scrollWidth + 'px';
+	iframe.style.height = content.scrollHeight + 'px';
+    }
+    
+    var iframe = null;
+    var idoc = null;
+    var ibody = null;
+    document.addEventListener('DOMContentLoaded',
+    function()
+    {
+        if (!domain_nodes.length && !total_inline) 
+            return;
+
+	if (block_inline_scripts)
+	    check_handle_noscript_tags();
 	
-        document.documentElement.appendChild(table);
+	iframe = document.createElement('iframe');
+	iframe.style = "position:fixed !important;width:auto !important;height:auto !important;background:transparent !important;white-space:nowrap !important;z-index:99999999 !important;direction:ltr !important;font-family:sans-serif !important; font-size:small !important; margin-bottom:0px !important;" +
+	
+// "width: 300px !important; height: 100px !important;"
+	"margin-top: 0px !important; margin-right: 0px !important; margin-bottom: 0px !important; margin-left: 0px !important; padding-top: 0px !important; padding-right: 0px !important; padding-bottom: 0px !important; padding-left: 0px !important; border-top-width: 0px !important; border-right-width: 0px !important; border-bottom-width: 0px !important; border-left-width: 0px !important; border-top-style: none !important; border-right-style: none !important; border-bottom-style: none !important; border-left-style: none !important; background-color: transparent !important; visibility: visible !important; content: normal !important; outline-width: medium !important; outline-style: none !important; background-image: none !important; min-width: 0px !important; min-height: 0px !important; " +
+	
+//	"border: 1px solid #CCC !important; " +	
+	(cornerposition < 3 ? 'top': 'bottom') + ':1px !important;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px !important;';
+	iframe.scrolling="no";
+//	iframe.frameborder="0";
+	iframe.allowtransparency="true";
+	//iframe.class="aomi"
+	//iframe.src=""; id="i0" title="about:blank
+
+	iframe.onload = populate_iframe;
+	var body = document.getElementsByTagName('body')[0];
+	body.appendChild(iframe);
     },
     false);
 })(opera, opera.scriptStorage);
