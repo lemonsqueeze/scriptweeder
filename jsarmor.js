@@ -1,5 +1,5 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.27';
+    var version = 'Noscript v1.28';
 
     /************************* Default Settings *******************************/
 
@@ -33,11 +33,15 @@
 //    }
 
 
-    // FIXME !!
-    if (window != window.top)
-    {
-	return; // for now
-    }
+    // FIXME handle frames
+    // if (window != window.top)
+    //   running in frame
+
+    // noscript ui's iframe, don't run in there
+    if (window != window.top &&
+	window.name == 'noscript_iframe')
+	return; 
+
     
 //    var inside_frame = 0;
 //    if (window != window.top) { inside_frame = 1; }
@@ -103,7 +107,7 @@
 
     var handle_noscript_tags;
 
-    function toggle_allow_inline()
+    function toggle_allow_inline(event)
     {
       // FIXME: refactor checkbox logic
       var item = (this.checkbox ? this : this.parentNode);
@@ -132,23 +136,12 @@
 	nsdetails.style="border-width: 2px; border-style: outset; border-color: gray; background:#abb9ca;";
 //        nsdetails.style.display = 'inline-block';
 
-	nsdetails.onmouseout = function(e) {
-
-	  if (!e)
-	      var e = window.event;
-	  // object we're moving out of
-	  // var tg = (window.event) ? e.srcElement : e.target;
-	  // if (tg != nsdetails) // moving out of one its children.
-	  //  return; we actually need that case!
-	  
-	  // e.relatedTarget: object we're moving to.
-	  var reltg = e.relatedTarget;
-	  while (reltg != nsdetails && reltg.nodeName != 'HTML')
-	    reltg= reltg.parentNode
-	  if (reltg == nsdetails)
-	      return; // moving out of the div into a child layer
-	  
-	  td.removeChild(nsdetails);	  
+	nsdetails.onmouseout = function(e)
+	{
+	   if (!mouseout_leaving_menu(e, nsdetails))
+	       return;	   
+	   td.removeChild(nsdetails);
+	   resize_iframe();	   
 	};
 	
 	var item = add_menu_item(nsdetails, "Scripts:");
@@ -191,6 +184,28 @@
         nsdetails.style.display = 'inline-block';
     }
 
+    function mouseout_leaving_menu(e, menu)
+    {
+	// if (!e)
+	//    var e = window.event;
+	
+	// object we're moving out of
+	// var tg = (window.event) ? e.srcElement : e.target;
+	// if (tg != nsdetails) // moving out of one its children.
+	//  return; we actually need that case!
+	
+	// e.relatedTarget: object we're moving to.
+	var reltg = e.relatedTarget;
+	if (reltg)
+	{
+	    while (reltg != menu && reltg.nodeName != 'HTML')
+		reltg = reltg.parentNode;
+	    if (reltg == menu)
+		return false; // moving out of the div into a child layer
+	}
+	return true;
+    }
+    
     function set_mode_no_update(new_mode)
     {
       mode = new_mode;
@@ -500,23 +515,10 @@
         nsmenu.style.display = 'none';
 
 	nsmenu.onmouseout = function(e)
-	{	
-	  if (!e) var e = window.event;
-	  // object we're moving out of
-	  // var tg = (window.event) ? e.srcElement : e.target;
-	  // if (tg != nsmenu) // moving out of one its children.
-	  //  return; we actually need that case!
-	  
-	  // e.relatedTarget: object we're moving to.
-	  var reltg = e.relatedTarget;
-	  if (reltg)
-	  {
-	      while (reltg != nsmenu && reltg.nodeName != 'HTML')
-		  reltg= reltg.parentNode;
-	      if (reltg == nsmenu)
-		  return; // moving out of the div into a child layer
-	  }
-	      
+	{
+	  if (!mouseout_leaving_menu(e, nsmenu))
+	      return;
+
 	  show_hide_menu(false);
 	  if (need_reload)
 	      reload_page();
@@ -558,7 +560,7 @@
 	add_menu_item(nsmenu, "Block All", 0, function(){ set_mode('block_all'); }, new_icon_mode('block_all'));
 	add_menu_item(nsmenu, "Filter By Host", 0, function(){ set_mode('filtered'); }, new_icon_mode('filtered'));
 	
-	var f = function()
+	var f = function(event)
 	{
 	  // FIXME: refactor checkbox logic
 	  var item = (this.host ? this : this.parentNode);
@@ -830,7 +832,13 @@
 
     function populate_iframe()
     {
+	iframe.contentWindow.name = 'noscript_iframe';
 	idoc = iframe.contentWindow.document;
+
+	// set doctype, we want strict mode, not quirks mode!
+	idoc.open();
+	idoc.write("<!DOCTYPE HTML>\n<html><head></head><body></body></html>");
+	idoc.close();
 	
 	var noscript_style =
 "\n\
@@ -878,7 +886,7 @@
 	button_image = new_icon_mode(mode);
 	r.appendChild(button_image);
 	r.onmouseover = function() { show_hide_menu(true); };
-        r.onclick = function()
+        r.onclick = function(event)
 	{
 	  if (event.shiftKey)
 	  { // cycle through the modes
@@ -903,7 +911,7 @@
 	tr.appendChild(td);
         table.appendChild(tr);
 
-	ibody = idoc.getElementsByTagName('body')[0];	
+	ibody = idoc.getElementsByTagName('body')[0];
 	ibody.appendChild(table);
 	ibody.style.margin = '0px';
 
@@ -936,6 +944,7 @@
 	    check_handle_noscript_tags();
 	
 	iframe = document.createElement('iframe');
+	iframe.id = 'noscript_iframe';
 	iframe.style = "position:fixed !important;width:auto !important;height:auto !important;background:transparent !important;white-space:nowrap !important;z-index:99999999 !important;direction:ltr !important;font-family:sans-serif !important; font-size:small !important; margin-bottom:0px !important;" +
 	
 // "width: 300px !important; height: 100px !important;"
