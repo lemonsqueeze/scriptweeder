@@ -1,11 +1,10 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.28';
+    var version = 'Noscript v1.29';
 
     /************************* Default Settings *******************************/
 
-// WARNING: global domains functionality disabled in this version
-//    var default_globally_allowed_domains =
-//    ['googleapis.com', 'images-amazon.com', 'ytimg.com', 'media-imdb.com', 'deviantart.net', 'jquery.com'];
+    var default_globally_allowed_hosts =
+    ['ajax.googleapis.com', 's.ytimg.com', 'code.jquery.com', 'z-ecx.images-amazon.com', 'st.deviantart.net'];
     
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
@@ -24,13 +23,13 @@
     
     /**************************************************************************/    
     
-//    if (global_setting('noscript') == '')
-//    {
-//	alert("Noscript:\nNo prior settings found.\n" +
-//	      "Setting globally allowed domains to:\n[" +
-//	      default_globally_allowed_domains + "]");
-//	set_global_setting('noscript', '. ' + default_globally_allowed_domains.join(' '));
-//    }
+    if (global_setting('noscript') == '')
+    {
+	alert("Noscript:\nNo prior settings found.\n" +
+	      "Setting global whitelist to:\n[" +
+	      default_globally_allowed_hosts + "]");
+	set_global_setting('noscript', '. ' + default_globally_allowed_hosts.join(' '));
+    }
 
 
     // FIXME handle frames
@@ -109,24 +108,19 @@
 
     function toggle_allow_inline(event)
     {
-      // FIXME: refactor checkbox logic
-      var item = (this.checkbox ? this : this.parentNode);
-      var checkbox = item.checkbox;
-      var checkbox_clicked = (event.target.tagName == 'INPUT');      
-      if (!checkbox_clicked)
-	  checkbox.checked = !checkbox.checked;
       block_inline_scripts = !block_inline_scripts;
-      item.nextSibling.style = "display:" + (block_inline_scripts ? "block;" : "none;");
+      this.checkbox.checked = block_inline_scripts;
+      this.nextSibling.style = "display:" + (block_inline_scripts ? "block;" : "none;");
       set_local_setting('noscript_inline', (block_inline_scripts ? 'n' : 'y'));
       need_reload = true;
     }
 
     function toggle_handle_noscript_tags()
     {
-      // FIXME: defer reloading
       handle_noscript_tags = !handle_noscript_tags;
+      this.checkbox.checked = handle_noscript_tags;
       set_local_setting('noscript_nstags', (handle_noscript_tags ? 'y' : 'n'));
-      reload_page();      
+      need_reload = true;
     }
     
     function show_details()
@@ -158,17 +152,17 @@
 	  sort_scripts(s);
 	  for (var j = 0; j < s.length; j++)
 	  {
-	      var item = add_link_menu_item(nsdetails, "http://" + s[j].url, s[j].url, 2);
+	      var item = add_link_menu_item(nsdetails, s[j].url, short_url(s[j].url), 2);
 	      // script status
 	      var icon = new_icon();
 	      var image = 'Transfer Stopped';
 	      if (allowed_host(h))
-	      {   // FIXME when adding whitelisting support, add icon for it here
+	      {
 		  image = 'Transfer Success';
 		  if (!s[j].loaded)
 		  {
 		      image = 'Transfer Size Mismatch';
-		      icon.title = "Script allowed but not loaded, bad url or something else is blocking it.";
+		      icon.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
 		  }
 	      }
 	      set_icon_image(icon, image);
@@ -233,15 +227,14 @@
 	set_local_setting('ns_hosts', l + ' ' + host);
     }
 
-//    function global_allow_host(host)
-//    {
-// FIXME
-//	var l = global_setting('noscript');
-//	l = (l == '' ? '.' : l);	
-//	if (list_conains(l, domain))
-//	    return;
-//	set_global_setting('noscript', l + ' ' + domain);
-//    }
+    function global_allow_host(host)
+    {
+	var l = global_setting('noscript');
+	l = (l == '' ? '.' : l);	
+	if (list_contains(l, host))
+	    return;
+	set_global_setting('noscript', l + ' ' + host);
+    }
     
     function remove_host(host)
     {
@@ -250,19 +243,26 @@
       set_local_setting('ns_hosts', l);
     }
 
-//    function global_remove_host(host)
-//    {
-// FIXME    
-//      var l = global_setting('noscript');
-//      l = l.replace(' ' + domain, '');
-//      set_global_setting('noscript', l);
-//    }
+    function global_remove_host(host)
+    {
+      var l = global_setting('noscript');
+      l = l.replace(' ' + host, '');
+      set_global_setting('noscript', l);
+    }
 
     function url_hostname(url)
     {
         var t = document.createElement('a');
         t.href = url;
         return t.hostname;
+    }
+
+    function short_url(u)
+    {
+	var i = u.indexOf('://');
+	if (i != -1)
+	    return u.slice(i+3);
+	return u;
     }
     
     function get_domain(h)
@@ -309,11 +309,11 @@
       return (list && list.indexOf(' ' + str) != -1);
     }
 
-//    function domain_allowed_globally(domain)
-//    {
-//	var l = global_setting('noscript');
-//	return list_contains(l, domain);
-//    }
+    function host_allowed_globally(host)
+    {
+	var l = global_setting('noscript');
+	return list_contains(l, host);
+    }
     
     function host_allowed_locally(host)
     {
@@ -324,7 +324,7 @@
     function filtered_mode_allowed_host(host)
     {
 	return (
-//	    domain_allowed_globally(domain) ||
+	    host_allowed_globally(host) ||
 	    host_allowed_locally(host));
     }
     
@@ -393,7 +393,6 @@
     
     function add_menu_item(nsmenu, text, indent, f, child)
     {
-      // FIXME: add icon
       var item = idoc.createElement('div');
       item.className = 'noscript_item';
       if (child)
@@ -415,6 +414,8 @@
 
     function to_html(e)
     {
+	if (!e)
+	    return "";
 	if (e.outerHTML)
 	    return e.outerHTML;
 	
@@ -423,21 +424,22 @@
 	return d.innerHTML;
     }
 
-    function add_table_item(table, col1, col2, col3, col4, f, color)
+    function add_table_item(table, col1, col2, col3, col4, col5, f, color)
     {
 	var tr = idoc.createElement('tr');
 	var s = "";
-	s += "<td>&nbsp;&nbsp;</td>";
-	s += "<td>" + to_html(col1) + "</td>";
-	s += "<td>" + to_html(col2) + "</td>";
+	s += "<td width=1%>&nbsp;&nbsp;</td>";
+	s += "<td width=1%>" + to_html(col1) + "</td>";
+	s += "<td width=1%>" + to_html(col2) + "</td>";
 	s += "<td>" + to_html(col3) + "</td>";
-	s += "<td>" + to_html(col4) + "</td>";
+	s += "<td width=1%>" + to_html(col4) + "</td>";
+	s += "<td width=1%>" + to_html(col5) + "</td>";
 	tr.innerHTML = s;
 //	tr.childNodes[0].style = "padding-left:" + (indent * 10) + "px;";
 	tr.childNodes[2].style = "color: #888888; text-align:right;";
 	if (color != '')
 	    tr.childNodes[3].style.color = color;
-	tr.childNodes[4].style = "text-align:right;";
+	tr.childNodes[5].style = "text-align:right;";
 	if (f)
 	{
 	    tr.onmouseover = function(){ this.style.backgroundColor = '#dddddd'; };
@@ -476,13 +478,43 @@
       menu.appendChild(div);
     }
 
-    function make_checkbox(checked, f)
+    function make_checkbox(checked)
     {
       var c = idoc.createElement('input');
       c.type = 'checkbox';
       c.defaultChecked = checked;
-      c.onclick = f;
       return c;
+    }
+
+    function show_global_icon()
+    { this.firstChild.style = "visibility: visible;";  }
+    function hide_global_icon()
+    { this.firstChild.style = "visibility: hidden;";  }
+    
+    function set_global_icon_ui(icon, visible)
+    {
+	var td = icon.parentNode;
+	if (visible)
+	{
+	    td.onmouseout = null;
+	    td.onmouseover = null;
+	    return;
+	}
+	icon.style.visibility = "hidden";
+	td.onmouseout = hide_global_icon;
+	td.onmouseover = show_global_icon;	
+    }
+    
+    function init_global_icon(icon, h)
+    {
+	icon.className = "noscript_global";
+	icon.title = "Allowed Globally";
+	if (!host_allowed_globally(h))
+	{
+	    icon.style = "visibility: hidden;";
+	    icon.parentNode.onmouseover = show_global_icon;
+	    icon.parentNode.onmouseout = hide_global_icon;
+	}
     }
 
     function list_to_string(list)
@@ -529,28 +561,29 @@
 	item.align = 'center';
 	item.className = 'noscript_title'
         // item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
-//	item.onclick = function()
-//	{       
-//  	  if (!event.ctrlKey)
-//	  {
-//	    var d = list_to_string(global_setting('noscript'));
-//	    alert("Noscript \nDomains allowed globally: \n" + d);
-//	  
-//	    return;
-//	  }
-//	  var d = list_to_string(local_setting('noscript'));
-//	  alert("Noscript \nDomains allowed locally: \n" + d);
-//	};
+	item.onclick = function(event)
+	{       
+  	  if (!event.ctrlKey)
+	  {
+	    var d = list_to_string(global_setting('noscript'));
+	    alert("Noscript \nGlobal whitelist: \n" + d);
+	  
+	    return;
+	  }
+	  var d = list_to_string(local_setting('noscript'));
+	  alert("Noscript \nHosts allowed for this page: \n" + d);
+	};
 
-	var checkbox = make_checkbox(block_inline_scripts, null);
+	var checkbox = make_checkbox(block_inline_scripts);
 	var label = "Block Inline Scripts";
 	item = add_menu_item(nsmenu, label, 0, toggle_allow_inline, checkbox);
 	item.checkbox = item.firstChild;
 	add_right_aligned_text(item, " [" + get_size_kb(total_inline_size) + "k]");
 
-	var checkbox = make_checkbox(handle_noscript_tags, toggle_handle_noscript_tags);
+	var checkbox = make_checkbox(handle_noscript_tags);
 	var label = "Pretend Javascript Disabled";
 	item = add_menu_item(nsmenu, label, 2, toggle_handle_noscript_tags, checkbox);
+	item.checkbox = item.firstChild;
 	item.title = "Interpret noscript tags as if javascript was disabled in opera."
 	if (!block_inline_scripts)
 	    item.style = "display:none;";	    
@@ -559,30 +592,32 @@
 	add_menu_item(nsmenu, "External Scripts:");	
 	add_menu_item(nsmenu, "Block All", 0, function(){ set_mode('block_all'); }, new_icon_mode('block_all'));
 	add_menu_item(nsmenu, "Filter By Host", 0, function(){ set_mode('filtered'); }, new_icon_mode('filtered'));
-	
+
 	var f = function(event)
 	{
-	  // FIXME: refactor checkbox logic
-	  var item = (this.host ? this : this.parentNode);
-	  var h = item.host;
-	  var checkbox = item.checkbox;
-	  var checkbox_clicked = (event.target.tagName == 'INPUT');
+	  var h = this.host;
+	  var icon_clicked = (event.target.tagName == 'IMG');
 
-	  if (!checkbox_clicked)
-	      checkbox.checked = !checkbox.checked;
-	  
-	  if (filtered_mode_allowed_host(h))
+	  if (icon_clicked)
 	  {
-//	      global_remove_domain(d);
-	      remove_host(h);	      
+	      remove_host(h);
+	      if (host_allowed_globally(h))
+		  global_remove_host(h);
+	      else
+		  global_allow_host(h);
 	  }
 	  else
 	  {
-	      if (!checkbox_clicked)
+	      if (filtered_mode_allowed_host(h))
+		  remove_host(h);
+	      else
 		  allow_host(h);
-//	      else
-//		  global_allow_domain(d);
-	  }
+	      global_remove_host(h);	      
+	  }	 
+	  
+	  this.checkbox.checked = filtered_mode_allowed_host(h);
+	  set_global_icon_ui(this.icon, host_allowed_globally(h))
+	  
 	  set_mode_no_update('filtered');
 	  need_reload = true;
 	};
@@ -604,21 +639,18 @@
 	  {
 	    var h = hosts[j].name;
 	    var s = hosts[j].scripts;
-	    var checkbox = make_checkbox(filtered_mode_allowed_host(h), null);
+	    var checkbox = make_checkbox(filtered_mode_allowed_host(h));
 	    var host_part = h.slice(0, h.length - d.length);
 	    var count = "[" + s.length + "]";
 	    var color = (dn.related || dn.helper ? '#000' : '');
-	    var item = add_table_item(table, checkbox, host_part, d, count, f, color);
-	    item.title = "Click checkbox to allow globally.";
-	    
-//	  if (domain_allowed_globally(d))
-//	  {
-//	      var icon = idoc.createElement('img');
-//	      icon.className = "noscript_global";
-//	      icon.title = "Allowed Globally";
-//	      item.appendChild(icon);
-//	  }
+	    var icon = idoc.createElement('img');	    
+	    var item = add_table_item(table, checkbox, host_part, d, icon, count, f, color);
+
+	    icon = item.childNodes[4].firstChild;
+	    init_global_icon(icon, h);
+
 	    item.checkbox = item.childNodes[1].firstChild;
+	    item.icon = icon;
 	    item.host = h;
 	  }
 	}
@@ -690,10 +722,8 @@
 	return n;
     }
 
-    function add_script(fullurl, host)
+    function add_script(url, host)
     {
-	// FIXME: could start with something else than "http://" (https ...)	
-	var url = fullurl.slice(7); // strip http://
 	var domain = get_domain(host);
 	var s = new_script(url);
 
@@ -844,6 +874,7 @@
 "\n\
 #noscript_table { position:fixed;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:99999999;direction:ltr;font-family:sans-serif; font-size:small; margin-bottom:0px; }  \n\
 #noscript_table > tr > td { text-align: right; padding: 0px 0px 0px 0px;} \n\
+#noscript_ftable { width:100%; } \n\
 #noscript_ftable > tr > td { padding: 0px 0px 1px 0px;} \n\
 .noscript_title { background-color:#d80; color:#ffffff; font-weight:bold; } \n\
 #noscript_button { border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } \n\
@@ -888,14 +919,7 @@
 	r.onmouseover = function() { show_hide_menu(true); };
         r.onclick = function(event)
 	{
-	  if (event.shiftKey)
-	  { // cycle through the modes
-	    // FIXME: should wait until shift is released to reload page
-	    if (mode == 'block_all')      set_mode('filtered');
-	    else if (mode == 'filtered')  set_mode('allow_all');
-	    else if (mode == 'allow_all') set_mode('block_all');
-	    return;
-	  }
+	   // FIXME: do something useful!
 	}
 
 	var tr = idoc.createElement('tr');
