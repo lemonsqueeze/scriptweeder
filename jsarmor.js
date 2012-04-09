@@ -1,5 +1,5 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.29';
+    var version = 'Noscript v1.30';
 
     /************************* Default Settings *******************************/
 
@@ -657,6 +657,9 @@
 	
 	add_menu_item(nsmenu, "Allow All", 0, function(){ set_mode('allow_all'); }, new_icon_mode('allow_all'));
 	add_menu_item(nsmenu, "Details ...", 0, show_details);
+
+	for (var i = 0; i < plugin_items.length; i++)
+	    add_menu_item(nsmenu, plugin_items[i], 0, null);	
 	
 	var td = idoc.getElementById('td_nsmenu');
 	td.appendChild(nsmenu);	
@@ -859,6 +862,22 @@
 	    e.preventDefault();
     },
     false);
+
+    // Message interface for plugins to add UI items.
+    var plugin_items = [];
+    var event_alert = false;
+    window.addEventListener('message', function(e)
+    {
+	//console.log("noscript: got message: " + e.data);
+	plugin_items.push(e.data);
+
+	if (nsmenu && !event_alert)
+	{
+	    event_alert = true;
+	    alert("noscript.js: New event after DOM loaded.");
+	}
+	
+    }, false);
 
     function populate_iframe()
     {
