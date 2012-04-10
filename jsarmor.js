@@ -1,5 +1,5 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.31';
+    var version = 'Noscript v1.32';
 
     /************************* Default Settings *******************************/
 
@@ -11,8 +11,8 @@
     var blocksitescripts=false;
 
     // default mode for new pages:
-    //   block_all, filtered, or allow_all    
-    var default_mode = 'filtered';
+    //   block_all, filtered, relaxed or allow_all    
+    var default_mode = 'relaxed';
 
     // block inline scripts by default ?
     var default_block_inline_scripts = false;
@@ -57,33 +57,35 @@
 
     // scoped settings are either per page, site, domain, or global.
     var scope;                     // (0,     1,     2,      3)
-    var scoped_setting_prefix = [location.href+':', location.hostname+':', current_domain+':', ''];
+    var scoped_prefixes =
+      [strip_url_tail(location.href) + ':', location.hostname + ':', current_domain + ':', ''];
     function init_scope()
     {
-	for (scope = 0; scope <= 3; scope++)
+	for (scope = 0; scope < 3; scope++)
 	    if (scoped_setting('noscript_mode') != '')
 		break;
     }
-    
+
     function scoped_setting(name)
     {
-	if (name == 'ns_hosts' && scope == 3)
-	    return global_setting(scoped_setting_prefix[1] + name);
-	return global_setting(scoped_setting_prefix[scope] + name);
+	if (name == setting_hosts && scope == 3)
+	    return global_setting(scoped_prefixes[1] + name);
+	return global_setting(scoped_prefixes[scope] + name);
     }
 
     function set_scoped_setting(name, value)
     {	
-	if (name == 'ns_hosts' && scope == 3)
+	if (name == setting_hosts && scope == 3)
 	{
-	    set_global_setting(scoped_setting_prefix[1] + name, value);
+	    set_global_setting(scoped_prefixes[1] + name, value);
 	    return;
 	}
-	set_global_setting(scoped_setting_prefix[scope] + name, value);
+	set_global_setting(scoped_prefixes[scope] + name, value);
     }
 
     // copy settings over and change scope.
-    var scoped_settings = ['noscript_mode', 'noscript_inline', 'noscript_nstags', 'ns_hosts'];
+    var scoped_settings =
+      ['noscript_mode', 'noscript_inline', 'noscript_nstags', 'filtered_hosts', 'relaxed_hosts'];
     function change_scope(new_scope)
     {
 	if (scope == new_scope)
@@ -118,8 +120,10 @@
 
     init_scope();
     
-    // block_all, filtered, allow_all    
+    // block_all, filtered, relaxed, allow_all    
     var mode = scoped_setting('noscript_mode');
+    var setting_hosts = (mode == 'relaxed' ? 'relaxed_hosts' : 'filtered_hosts');
+    var initializing_relaxed_mode = false;
     if (mode == '')
 	mode = default_mode; 
     set_mode_no_update(mode);
@@ -195,7 +199,7 @@
 	  sort_scripts(s);
 	  for (var j = 0; j < s.length; j++)
 	  {
-	      var item = add_link_menu_item(nsdetails, s[j].url, short_url(s[j].url), 2);
+	      var item = add_link_menu_item(nsdetails, s[j].url, strip_http(s[j].url), 2);
 	      // script status
 	      var icon = new_icon();
 	      var image = 'Transfer Stopped';
@@ -246,9 +250,15 @@
     function set_mode_no_update(new_mode)
     {
       mode = new_mode;
-      // allow current host by default
-      if (new_mode == 'filtered' && scoped_setting('ns_hosts') == '')
+
+      // filtered default settings: allow current host
+      if (new_mode == 'filtered' && scoped_setting(setting_hosts) == '')
 	  allow_host(current_host);
+      
+      // relaxed default settings: allow related and helper domains
+      if (new_mode == 'relaxed' && scoped_setting(setting_hosts) == '')
+	  initializing_relaxed_mode = true;	  
+      
       set_scoped_setting('noscript_mode', mode);
       if (button_image)
 	  set_icon_mode(button_image, mode);
@@ -263,11 +273,11 @@
 
     function allow_host(host)
     {
-	var l = scoped_setting('ns_hosts');
+	var l = scoped_setting(setting_hosts);
 	l = (l == '' ? '.' : l);
 	if (list_contains(l, host))
 	    return;
-	set_scoped_setting('ns_hosts', l + ' ' + host, true);
+	set_scoped_setting(setting_hosts, l + ' ' + host);
     }
 
     function global_allow_host(host)
@@ -281,9 +291,9 @@
     
     function remove_host(host)
     {
-	var l = scoped_setting('ns_hosts');
+	var l = scoped_setting(setting_hosts);
 	l = l.replace(' ' + host, '');
-	set_scoped_setting('ns_hosts', l);
+	set_scoped_setting(setting_hosts, l);
     }
 
     function global_remove_host(host)
@@ -300,12 +310,29 @@
         return t.hostname;
     }
 
-    function short_url(u)
+    // strip http(s):// from url
+    function strip_http(u)
     {
 	var i = u.indexOf('://');
 	if (i != -1)
 	    return u.slice(i+3);
 	return u;
+    }
+
+    // split url into [dir, file, tail]
+    function split_url(u)
+    {
+	u = strip_http(u);
+	var a = u.match(/^([^?&:]*)\/([^/?&:]*)(.*)$/);
+	if (!a)
+	    alert("noscript.js: shouldn't happen");
+	return a.slice(1);
+    }
+    
+    function strip_url_tail(u)
+    {
+	var a = split_url(u);
+	return a[0] + '/' + a[1]; // dir + file
     }
     
     function get_domain(h)
@@ -360,7 +387,7 @@
     
     function host_allowed_locally(host)
     {
-	var l = scoped_setting('ns_hosts');
+	var l = scoped_setting(setting_hosts);
 	return list_contains(l, host);
     }
     
@@ -370,11 +397,26 @@
 	    host_allowed_globally(host) ||
 	    host_allowed_locally(host));
     }
+
+    function relaxed_mode_allowed_host(host)
+    {
+	if (!initializing_relaxed_mode)
+	    return filtered_mode_allowed_host(host);
+	
+	if (host_allowed_globally(host))
+	    return true;
+	
+	var dn = get_domain_node(get_domain(host));
+	if (dn.related || dn.helper)
+	    allow_host(host);
+	return (dn.related || dn.helper);
+    }
     
     function allowed_host(host)
     {
       if (mode == 'block_all') return false; 
-      if (mode == 'filtered')  return filtered_mode_allowed_host(host); 
+      if (mode == 'filtered')  return filtered_mode_allowed_host(host);
+      if (mode == 'relaxed')   return relaxed_mode_allowed_host(host); 
       if (mode == 'allow_all') return true;
       alert('noscript.js: mode="' + mode + '", this should not happen!');
     }
@@ -428,8 +470,9 @@
     function set_icon_mode(icon, mode)
     {
       var image;
-      if (mode == 'block_all') 	image = "Smiley Tongue";
+      if (mode == 'block_all') 	image = "Smiley Pacman";
       if (mode == 'filtered') 	image = "Smiley Cool";
+      if (mode == 'relaxed') 	image = "Smiley Tongue";
       if (mode == 'allow_all') 	image = "Smiley Cry";
       set_icon_image(icon, image);
     }
@@ -445,7 +488,8 @@
       item.innerHTML += text;
       if (f)
       {
-	item.onmouseover = function(){ this.style.backgroundColor = '#dddddd'; };
+//	item.onmouseover = function(){ this.style.backgroundColor = '#dddddd'; };
+	item.onmouseover = function(){ this.style.backgroundColor = '#fa4'; };
 	item.onmouseout  = function(){ this.style.backgroundColor = 'transparent'; };
 	item.onclick = f;
       }
@@ -485,7 +529,8 @@
 	tr.childNodes[5].style = "text-align:right;";
 	if (f)
 	{
-	    tr.onmouseover = function(){ this.style.backgroundColor = '#dddddd'; };
+//	    tr.onmouseover = function(){ this.style.backgroundColor = '#dddddd'; };
+	    tr.onmouseover = function(){ this.style.backgroundColor = '#fa4'; };
 	    tr.onmouseout  = function(){ this.style.backgroundColor = 'transparent'; };
 	    tr.onclick = f;
 	}
@@ -511,18 +556,18 @@
 	d.name = 'radio_group';
 	d.scope = target_scope;
 	d.checked = (scope == target_scope);
-	d.style = "float:right;";
+	//d.style = "float:right;";
 	d.onclick = function()
 	{
 	   change_scope(this.scope);
 	};
 
 	var t = idoc.createElement('label');
-	t.style = "float:right;";	
+	//t.style = "float:right;";	
 	t.innerText = text;
 
+	parent.appendChild(d);	
 	parent.appendChild(t);	
-	parent.appendChild(d);
 	return d;
     }
 
@@ -597,73 +642,9 @@
 	}
 	return '[' + d + ']';
     }
-    
-    var nsmenu;
-    var need_reload = false;
-    function create_menu()
+
+    function add_ftable(nsmenu)
     {
-	nsmenu = idoc.createElement('div');		
-	nsmenu.align = 'left';
-	nsmenu.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray; background:#abb9ca;" +
-	" background: #ccc;\
-   box-shadow: 8px 10px 10px rgba(0,0,0,0.5),\
-   inset 2px 3px 3px rgba(255,255,255,0.75);\
-";
-        nsmenu.style.display = 'none';
-
-	nsmenu.onmouseout = function(e)
-	{
-	  if (!mouseout_leaving_menu(e, nsmenu))
-	      return;
-
-	  show_hide_menu(false);
-	  if (need_reload)
-	      reload_page();
-	};
-	
-	var item = add_menu_item(nsmenu, "Noscript Settings ...");
-	item.title = version + ". Click to view global settings.";
-	item.align = 'center';
-	item.className = 'noscript_title'
-        // item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
-	item.onclick = function(event)
-	{       
-  	  if (!event.ctrlKey)
-	  {
-	    var d = list_to_string(global_setting('noscript'));
-	    alert("Noscript \nGlobal whitelist: \n" + d);
-	  
-	    return;
-	  }
-	  var d = list_to_string(scoped_setting('ns_hosts'));
-	  alert("Noscript \nHosts allowed for this page: \n" + d);
-	};
-
-	item = add_menu_item(nsmenu, "Scope:", 0, null);
-	add_right_aligned_button(item, "Global", 3);
-	add_right_aligned_button(item, "Domain", 2);
-	add_right_aligned_button(item, "Site", 1);	
-	add_right_aligned_button(item, "Page", 0);	
-
-	var checkbox = make_checkbox(block_inline_scripts);
-	var label = "Block Inline Scripts";
-	item = add_menu_item(nsmenu, label, 0, toggle_allow_inline, checkbox);
-	item.checkbox = item.firstChild;
-	add_right_aligned_text(item, " [" + get_size_kb(total_inline_size) + "k]");
-
-	var checkbox = make_checkbox(handle_noscript_tags);
-	var label = "Pretend Javascript Disabled";
-	item = add_menu_item(nsmenu, label, 2, toggle_handle_noscript_tags, checkbox);
-	item.checkbox = item.firstChild;
-	item.title = "Interpret noscript tags as if javascript was disabled in opera."
-	if (!block_inline_scripts)
-	    item.style = "display:none;";	    
-
-	add_menu_separator(nsmenu);
-	add_menu_item(nsmenu, "External Scripts:");	
-	add_menu_item(nsmenu, "Block All", 0, function(){ set_mode('block_all'); }, new_icon_mode('block_all'));
-	add_menu_item(nsmenu, "Filter By Host", 0, function(){ set_mode('filtered'); }, new_icon_mode('filtered'));
-
 	var f = function(event)
 	{
 	  var h = this.host;
@@ -688,8 +669,9 @@
 	  
 	  this.checkbox.checked = filtered_mode_allowed_host(h);
 	  set_global_icon_ui(this.icon, host_allowed_globally(h))
-	  
-	  set_mode_no_update('filtered');
+
+	  if (mode != 'filtered' && mode != 'relaxed')
+	      set_mode_no_update('filtered');
 	  need_reload = true;
 	};
 
@@ -725,6 +707,82 @@
 	    item.host = h;
 	  }
 	}
+    }
+    
+    var nsmenu;
+    var need_reload = false;
+    function create_menu()
+    {
+	initializing_relaxed_mode = false;
+	
+	nsmenu = idoc.createElement('div');
+	nsmenu.align = 'left';
+	nsmenu.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;" +
+	// "background:#abb9ca;" +
+        "background: #ccc;" +
+	// "background: #efebe7;" +
+	"box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);";
+	
+        nsmenu.style.display = 'none';
+
+	nsmenu.onmouseout = function(e)
+	{
+	  if (!mouseout_leaving_menu(e, nsmenu))
+	      return;
+
+	  show_hide_menu(false);
+	  if (need_reload)
+	      reload_page();
+	};
+	
+	var item = add_menu_item(nsmenu, "Noscript Settings ...");
+	item.title = version + ". Click to view global settings.";
+	item.align = 'center';
+	item.className = 'noscript_title'
+        // item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
+	item.onclick = function(event)
+	{       
+  	  if (!event.ctrlKey)
+	  {
+	    var d = list_to_string(global_setting('noscript'));
+	    alert("Noscript \nGlobal whitelist: \n" + d);
+	  
+	    return;
+	  }
+	  var d = list_to_string(scoped_setting(setting_hosts));
+	  alert("Noscript \nHosts allowed for this page: \n" + d);
+	};
+
+	item = add_menu_item(nsmenu, "Scope:", 0, null);
+	add_right_aligned_button(item, "Page", 0);
+	add_right_aligned_button(item, "Site", 1);
+	add_right_aligned_button(item, "Domain", 2);	
+	add_right_aligned_button(item, "Global", 3);
+
+	var checkbox = make_checkbox(block_inline_scripts);
+	var label = "Block Inline Scripts";
+	item = add_menu_item(nsmenu, label, 0, toggle_allow_inline, checkbox);
+	item.checkbox = item.firstChild;
+	add_right_aligned_text(item, " [" + get_size_kb(total_inline_size) + "k]");
+
+	var checkbox = make_checkbox(handle_noscript_tags);
+	var label = "Pretend Javascript Disabled";
+	item = add_menu_item(nsmenu, label, 2, toggle_handle_noscript_tags, checkbox);
+	item.checkbox = item.firstChild;
+	item.title = "Interpret noscript tags as if javascript was disabled in opera."
+	if (!block_inline_scripts)
+	    item.style = "display:none;";	    
+
+	add_menu_separator(nsmenu);
+	add_menu_item(nsmenu, "External Scripts:");	
+	add_menu_item(nsmenu, "Block All", 0, function(){ set_mode('block_all'); }, new_icon_mode('block_all'));
+	add_menu_item(nsmenu, "Filter By Host", 0, function(){ set_mode('filtered'); }, new_icon_mode('filtered'));
+	if (mode == 'filtered')
+	    add_ftable(nsmenu);
+	
+	add_menu_item(nsmenu, "Relaxed", 0, function(){ set_mode('relaxed'); }, new_icon_mode('relaxed'));
+	if (mode != 'filtered')
+	    add_ftable(nsmenu);
 	
 	add_menu_item(nsmenu, "Allow All", 0, function(){ set_mode('allow_all'); }, new_icon_mode('allow_all'));
 	add_menu_item(nsmenu, "Details ...", 0, show_details);
@@ -765,13 +823,15 @@
     // FIXME: can't we use some kind of hash table ??
     var domain_nodes = [];
 
-    function add_domain_node(domain)
+    function get_domain_node(domain, create)
     {
 	for (var i = 0; i < domain_nodes.length; i++)
 	{
 	    if (domain_nodes[i].name == domain)
 		return domain_nodes[i];
 	}
+	if (!create)
+	    return null;
 	var n = new Object();
 	n.name = domain;
 	n.related = related_domains(domain, current_domain);
@@ -781,7 +841,7 @@
 	return n;
     }
 
-    function add_host_node(host, domain_node)
+    function get_host_node(host, domain_node, create)
     {
 	var hosts = domain_node.hosts;
 	for (var i = 0; i < hosts.length; i++)
@@ -789,6 +849,8 @@
 	    if (hosts[i].name == host)
 		return hosts[i];
 	}
+	if (!create)
+	    return null;
 	var n = new Object();
 	n.name = host;
 	n.scripts = [];
@@ -801,8 +863,8 @@
 	var domain = get_domain(host);
 	var s = new_script(url);
 
-	var domain_node = add_domain_node(domain);
-	var host_node = add_host_node(host, domain_node);
+	var domain_node = get_domain_node(domain, true);
+	var host_node = get_host_node(host, domain_node, true);
 	host_node.scripts.push(s);
 	return s;
     }
@@ -899,8 +961,8 @@
 
 	var url = e.element.src;
 	var host = url_hostname(url);
+	var script = add_script(url, host);
 	var allowed = allowed_host(host);
-	var script = add_script(url, host);	
 	
 	if (host == current_host)
 	{
@@ -1030,7 +1092,6 @@
 	ibody.appendChild(table);
 	ibody.style.margin = '0px';
 
-	//console.log("table clientWidth: " + table.clientWidth);
 //	iframe.style = "width:" + table.clientWidth +
 //	"px; height:" + table.clientHeight + "px;";
 
