@@ -1,5 +1,5 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.32';
+    var version = 'Noscript v1.33';
 
     /************************* Default Settings *******************************/
 
@@ -85,7 +85,7 @@
 
     // copy settings over and change scope.
     var scoped_settings =
-      ['noscript_mode', 'noscript_inline', 'noscript_nstags', 'filtered_hosts', 'relaxed_hosts'];
+      ['noscript_mode', 'noscript_inline', 'noscript_nstags', 'noscript_hosts'];
     function change_scope(new_scope)
     {
 	if (scope == new_scope)
@@ -122,8 +122,8 @@
     
     // block_all, filtered, relaxed, allow_all    
     var mode = scoped_setting('noscript_mode');
-    var setting_hosts = (mode == 'relaxed' ? 'relaxed_hosts' : 'filtered_hosts');
-    var initializing_relaxed_mode = false;
+    // FIXME: setting_hosts is constant now. replace it.
+    var setting_hosts = 'noscript_hosts';
     if (mode == '')
 	mode = default_mode; 
     set_mode_no_update(mode);
@@ -255,10 +255,6 @@
       if (new_mode == 'filtered' && scoped_setting(setting_hosts) == '')
 	  allow_host(current_host);
       
-      // relaxed default settings: allow related and helper domains
-      if (new_mode == 'relaxed' && scoped_setting(setting_hosts) == '')
-	  initializing_relaxed_mode = true;	  
-      
       set_scoped_setting('noscript_mode', mode);
       if (button_image)
 	  set_icon_mode(button_image, mode);
@@ -334,6 +330,11 @@
 	var a = split_url(u);
 	return a[0] + '/' + a[1]; // dir + file
     }
+
+    function is_prefix(p, str)
+    {
+	return (str.slice(0, p.length) == p);
+    }
     
     function get_domain(h)
     {
@@ -374,6 +375,13 @@
 	return false;
     }
 
+    function helper_host(h)
+    {
+	return (is_prefix("api.", h) ||
+		is_prefix("apis.", h) ||
+		is_prefix("code.", h));
+    }
+
     function list_contains(list, str)
     {
       return (list && list.indexOf(' ' + str) != -1);
@@ -398,18 +406,36 @@
 	    host_allowed_locally(host));
     }
 
+    // allow related and helper domains
     function relaxed_mode_allowed_host(host)
     {
-	if (!initializing_relaxed_mode)
-	    return filtered_mode_allowed_host(host);
-	
-	if (host_allowed_globally(host))
+	var dn = get_domain_node(get_domain(host));
+	if (dn.related || dn.helper ||
+	    helper_host(host))
 	    return true;
 	
-	var dn = get_domain_node(get_domain(host));
-	if (dn.related || dn.helper)
-	    allow_host(host);
-	return (dn.related || dn.helper);
+	return filtered_mode_allowed_host(host);
+    }
+
+    // switch to filtered mode for this site,
+    // allow every host allowed in relaxed mode, except host
+    function relaxed_mode_to_filtered_mode(host)
+    {
+	if (scope == 3)  // FIXME: should we handle others ?
+	    change_scope(1);
+	set_mode_no_update('filtered');
+	
+	foreach_host_node(function(hn)
+	{
+	  var h = hn.name;
+	  if (relaxed_mode_allowed_host(h))
+	  {
+	      if (h == host)
+		  remove_host(h);
+	      else
+		  allow_host(h);
+	  }
+	});      
     }
     
     function allowed_host(host)
@@ -660,18 +686,26 @@
 	  }
 	  else
 	  {
-	      if (filtered_mode_allowed_host(h))
+	      if (allowed_host(h))
 		  remove_host(h);
 	      else
 		  allow_host(h);
 	      global_remove_host(h);	      
 	  }	 
-	  
+
+	  // update ui
 	  this.checkbox.checked = filtered_mode_allowed_host(h);
 	  set_global_icon_ui(this.icon, host_allowed_globally(h))
 
 	  if (mode != 'filtered' && mode != 'relaxed')
 	      set_mode_no_update('filtered');
+
+	  // blocking related/helper host in relaxed mode ? switch to filtered mode.
+	  // (related/helper hosts are always allowed in relaxed mode)
+	  if (mode == 'relaxed' &&
+	      (relaxed_mode_allowed_host(h) && !filtered_mode_allowed_host(h)))
+	      relaxed_mode_to_filtered_mode(h);
+	  
 	  need_reload = true;
 	};
 
@@ -681,40 +715,31 @@
 	nsmenu.appendChild(table);
 
 	sort_domains();
-	
-	for (var i = 0; i < domain_nodes.length; i++)
-	{
-	  var dn = domain_nodes[i];	    
-	  var d = dn.name;
-	  var hosts = domain_nodes[i].hosts;
 
-	  for (var j = 0; j < hosts.length; j++)
-	  {
-	    var h = hosts[j].name;
-	    var s = hosts[j].scripts;
-	    var checkbox = make_checkbox(filtered_mode_allowed_host(h));
+	foreach_host_node(function (hn, dn)
+	{
+	    var d = dn.name;
+	    var h = hn.name;
+	    var checkbox = make_checkbox(allowed_host(h));
 	    var host_part = h.slice(0, h.length - d.length);
-	    var count = "[" + s.length + "]";
+	    var count = "[" + hn.scripts.length + "]";
 	    var color = (dn.related || dn.helper ? '#000' : '');
 	    var icon = idoc.createElement('img');	    
 	    var item = add_table_item(table, checkbox, host_part, d, icon, count, f, color);
-
+	    
 	    icon = item.childNodes[4].firstChild;
 	    init_global_icon(icon, h);
-
+	    
 	    item.checkbox = item.childNodes[1].firstChild;
 	    item.icon = icon;
 	    item.host = h;
-	  }
-	}
+	});
     }
     
     var nsmenu;
     var need_reload = false;
     function create_menu()
     {
-	initializing_relaxed_mode = false;
-	
 	nsmenu = idoc.createElement('div');
 	nsmenu.align = 'left';
 	nsmenu.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;" +
@@ -869,20 +894,27 @@
 	return s;
     }
 
+    // call f(host_node, domain_node) for every hosts
     function foreach_host_node(f)
     {
 	for (var i = 0; i < domain_nodes.length; i++)
 	{
 	    var hosts = domain_nodes[i].hosts;
 	    for (var j = 0; j < hosts.length; j++)
-	    {
-		f(hosts[j], domain_nodes[i].name);
-	    }
+		f(hosts[j], domain_nodes[i]);
 	}
     }
 
     function sort_domains()
     {
+	// set domains' helper_host
+	foreach_host_node(function(hn, dn)
+	{
+	  var h = hn.name;
+	  if (helper_host(h))
+	      dn.helper_host = true;	      
+	});	
+	
 	domain_nodes.sort(function(d1,d2)
 	{
 	    // current domain goes first
@@ -894,6 +926,9 @@
 	    // then helper domains
 	    if (d1.helper ^ d2.helper)
 		return (d1.helper ? -1 : 1);
+	    // then domains with helper hosts
+	    if (d1.helper_host ^ d2.helper_host)
+		return (d1.helper_host ? -1 : 1);
 	    return (d1.name < d2.name ? -1 : 1);
 	});
     }
@@ -996,22 +1031,27 @@
     },
     false);
 
-    // FIXME: overkill. use a global function instead.
-    // Message interface for plugins to add UI items.
-    var plugin_items = [];
-    var event_alert = false;
-    window.addEventListener('message', function(e)
-    {
-	//console.log("noscript: got message: " + e.data);
-	plugin_items.push(e.data);
 
-	if (nsmenu && !event_alert)
+    if (window.noscript)
+	alert("window.noscript exists!!!");
+    // FIXME: when adding frame support, fix this.
+    window.noscript = new Object();    
+
+    var plugin_items = [];
+    var plugin_alert = false;
+    // API for plugins to add items to noscript's menu    
+    window.noscript.add_item = function(text)
+    {
+	//console.log("noscript: plugin added item: " + text);
+	plugin_items.push(text);
+
+	if (nsmenu && !plugin_alert)
 	{
-	    event_alert = true;
-	    alert("noscript.js: New event after DOM loaded.");
+	    plugin_alert = true;
+	    alert("noscript.js: New plugin item after DOM loaded.");
 	}
 	
-    }, false);
+    };
 
     function populate_iframe()
     {
@@ -1072,8 +1112,19 @@
 	r.onmouseover = function() { show_hide_menu(true); };
         r.onclick = function(event)
 	{
-	   // FIXME: do something useful!
-	}
+	  // cycle through the modes
+	  // FIXME: should wait until shift is released to reload page
+	  if (mode == 'block_all')      set_mode_no_update('filtered');
+	  else if (mode == 'filtered')  set_mode_no_update('relaxed');
+	  else if (mode == 'relaxed')  set_mode_no_update('allow_all');
+	  else if (mode == 'allow_all') set_mode_no_update('block_all');
+	  need_reload = true;
+	};
+	r.onmouseout = function(e)
+	{
+	  if (need_reload)
+	      reload_page();	      
+	};
 
 	var tr = idoc.createElement('tr');
 	var td = idoc.createElement('td');
