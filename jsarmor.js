@@ -1,5 +1,5 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.33';
+    var version = 'Noscript v1.34';
 
     /************************* Default Settings *******************************/
 
@@ -95,6 +95,8 @@
 	{
 	    scope = old_scope;
 	    var s = scoped_setting(scoped_settings[i]);
+	    // FIXME: should we remove them all ?
+	    //        for (; scope < new_scope; scope++) 
 	    if (new_scope > scope) // remove more specific setting
 		set_scoped_setting(scoped_settings[i], '');
 	    scope = new_scope;
@@ -537,22 +539,23 @@
 	return d.innerHTML;
     }
 
-    function add_table_item(table, col1, col2, col3, col4, col5, f, color)
+    function add_table_item(table, col1, col2, col3, col4, col5, col6, f, color)
     {
 	var tr = idoc.createElement('tr');
 	var s = "";
-	s += "<td width=1%>&nbsp;&nbsp;</td>";
+	s += "<td width=1%></td>";
 	s += "<td width=1%>" + to_html(col1) + "</td>";
 	s += "<td width=1%>" + to_html(col2) + "</td>";
 	s += "<td>" + to_html(col3) + "</td>";
 	s += "<td width=1%>" + to_html(col4) + "</td>";
 	s += "<td width=1%>" + to_html(col5) + "</td>";
+	s += "<td width=1%>" + to_html(col6) + "</td>";
 	tr.innerHTML = s;
 //	tr.childNodes[0].style = "padding-left:" + (indent * 10) + "px;";
-	tr.childNodes[2].style = "color: #888888; text-align:right;";
+	tr.childNodes[3].style = "color: #888888; text-align:right;";
 	if (color != '')
-	    tr.childNodes[3].style.color = color;
-	tr.childNodes[5].style = "text-align:right;";
+	    tr.childNodes[4].style.color = color;
+	tr.childNodes[6].style = "text-align:right;";
 	if (f)
 	{
 //	    tr.onmouseover = function(){ this.style.backgroundColor = '#dddddd'; };
@@ -575,26 +578,24 @@
 	return d;
     }
 
-    function add_right_aligned_button(parent, text, target_scope)
+    function add_radio_button(parent, text, target_scope)
     {
-	var d = idoc.createElement('input');
-	d.type = 'radio';
-	d.name = 'radio_group';
-	d.scope = target_scope;
-	d.checked = (scope == target_scope);
-	//d.style = "float:right;";
-	d.onclick = function()
-	{
-	   change_scope(this.scope);
-	};
+	var r = idoc.createElement('input');
+	r.type = 'radio';
+	r.name = 'radio_group';
+	r.scope = target_scope;
+	r.checked = (scope == target_scope);
+	r.onclick = function() { change_scope(this.scope); };
+	//r.style = "float:right;";
 
 	var t = idoc.createElement('label');
-	//t.style = "float:right;";	
+	t.radio = r;
 	t.innerText = text;
+	t.onclick = function() { this.radio.checked = true; this.radio.onclick(); }	
+	//t.style = "float:right;";	
 
-	parent.appendChild(d);	
+	parent.appendChild(r);	
 	parent.appendChild(t);	
-	return d;
     }
 
     function add_link_menu_item(menu, url, label, indent)
@@ -620,6 +621,30 @@
       c.type = 'checkbox';
       c.defaultChecked = checked;
       return c;
+    }
+
+    function icon_not_loaded(hn, allowed)
+    {
+	var s = hn.scripts;
+	var n = 0;
+	for (var i = 0; i < s.length; i++)
+	    if (!s[i].loaded)
+		n++;
+	if (!allowed || !n)
+	    return null;
+	
+	var icon = new_icon();
+	var image = 'Transfer Size Mismatch';
+	icon.title = n + " script" + (n>1 ? "s" : "") + " not loaded.";
+	if (n == s.length)
+	{
+	    // FIXME: find a smaller/less invasive icon
+	    // image = 'Transfer Stopped';	    
+	    icon.title = "None loaded.";
+	}
+	icon.title += " See details.";
+	set_icon_image(icon, image);
+	return icon;
     }
 
     function show_global_icon()
@@ -716,24 +741,33 @@
 
 	sort_domains();
 
+	var found_not_loaded = false;
+	var item = null;
 	foreach_host_node(function (hn, dn)
 	{
 	    var d = dn.name;
 	    var h = hn.name;
 	    var checkbox = make_checkbox(allowed_host(h));
 	    var host_part = h.slice(0, h.length - d.length);
+	    var not_loaded = icon_not_loaded(hn, checkbox.checked);
 	    var count = "[" + hn.scripts.length + "]";
 	    var color = (dn.related || dn.helper ? '#000' : '');
 	    var icon = idoc.createElement('img');	    
-	    var item = add_table_item(table, checkbox, host_part, d, icon, count, f, color);
+	    item = add_table_item(table, not_loaded, checkbox, host_part, d, icon, count, f, color);
 	    
-	    icon = item.childNodes[4].firstChild;
+	    icon = item.childNodes[5].firstChild;
 	    init_global_icon(icon, h);
 	    
-	    item.checkbox = item.childNodes[1].firstChild;
+	    item.checkbox = item.childNodes[2].firstChild;
 	    item.icon = icon;
 	    item.host = h;
+
+	    if (not_loaded)
+		found_not_loaded = true;
 	});
+
+	if (item && !found_not_loaded) // indent
+	    item.childNodes[0].innerHTML = "&nbsp;&nbsp;";
     }
     
     var nsmenu;
@@ -778,11 +812,11 @@
 	  alert("Noscript \nHosts allowed for this page: \n" + d);
 	};
 
-	item = add_menu_item(nsmenu, "Scope:", 0, null);
-	add_right_aligned_button(item, "Page", 0);
-	add_right_aligned_button(item, "Site", 1);
-	add_right_aligned_button(item, "Domain", 2);	
-	add_right_aligned_button(item, "Global", 3);
+	item = add_menu_item(nsmenu, "Set for", 0, null);
+	add_radio_button(item, "Page", 0);
+	add_radio_button(item, "Site", 1);
+	add_radio_button(item, "Domain", 2);	
+	add_radio_button(item, "Global", 3);
 
 	var checkbox = make_checkbox(block_inline_scripts);
 	var label = "Block Inline Scripts";
@@ -802,11 +836,11 @@
 	add_menu_item(nsmenu, "External Scripts:");	
 	add_menu_item(nsmenu, "Block All", 0, function(){ set_mode('block_all'); }, new_icon_mode('block_all'));
 	add_menu_item(nsmenu, "Filter By Host", 0, function(){ set_mode('filtered'); }, new_icon_mode('filtered'));
-	if (mode == 'filtered')
+	if (mode != 'relaxed')
 	    add_ftable(nsmenu);
 	
 	add_menu_item(nsmenu, "Relaxed", 0, function(){ set_mode('relaxed'); }, new_icon_mode('relaxed'));
-	if (mode != 'filtered')
+	if (mode == 'relaxed')
 	    add_ftable(nsmenu);
 	
 	add_menu_item(nsmenu, "Allow All", 0, function(){ set_mode('allow_all'); }, new_icon_mode('allow_all'));
@@ -1072,6 +1106,8 @@
 .noscript_title { background-color:#d80; color:#ffffff; font-weight:bold; } \n\
 #noscript_button { border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } \n\
 #noscript_table div { width: auto; } \n\
+input[type=radio]:checked { visibility:visible; } \n\
+input[type=radio]         { visibility:hidden; } \n\
 .noscript_global { padding: 0px 3px; width:14px; height:14px; vertical-align:middle; \
     background: -o-skin('RSS'); } \n\
 ";
