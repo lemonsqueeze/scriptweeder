@@ -1,5 +1,5 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.34';
+    var version = 'Noscript v1.35';
 
     /************************* Default Settings *******************************/
 
@@ -846,8 +846,9 @@
 	add_menu_item(nsmenu, "Allow All", 0, function(){ set_mode('allow_all'); }, new_icon_mode('allow_all'));
 	add_menu_item(nsmenu, "Details ...", 0, show_details);
 
-	for (var i = 0; i < plugin_items.length; i++)
-	    add_menu_item(nsmenu, plugin_items[i], 0, null);	
+	for (var prop in plugin_items)
+	    if (plugin_items.hasOwnProperty(prop))
+		add_menu_item(nsmenu, plugin_items[prop], 0, null);
 	
 	var td = idoc.getElementById('td_nsmenu');
 	td.appendChild(nsmenu);	
@@ -928,6 +929,21 @@
 	return s;
     }
 
+    function find_script(url, host)
+    {
+	var domain = get_domain(host);	
+	var domain_node = get_domain_node(domain, false);
+	var host_node = get_host_node(host, domain_node, false);
+	var scripts = host_node.scripts;
+	for (var i = scripts.length - 1; i >= 0; i--)
+	    if (scripts[i].url == url)
+		return scripts[i];
+	alert("noscript.js: find_script(): should not happen.");
+	return null;
+    }
+
+    
+
     // call f(host_node, domain_node) for every hosts
     function foreach_host_node(f)
     {
@@ -987,8 +1003,6 @@
 	return k;
     }
 
-    var beforescript_alert = false;
-    
     // Handler for both inline *and* external scripts
     opera.addEventListener('BeforeScript',
     function(e)
@@ -999,35 +1013,22 @@
       total_inline++;
       total_inline_size += e.element.text.length;
       
-      // FIXME: remove after we're done testing
-      if (nsmenu && !beforescript_alert)
-      {
-	  alert("noscript.js: BeforeScript after DOM loaded");
-	  beforescript_alert = true;
-      }
+      if (nsbutton)
+	  repaint_ui();
       
       if (block_inline_scripts)
 	e.preventDefault();
     }, false);
 
-    var beforeexternalscript_alert = false;
-    
     opera.addEventListener('BeforeExternalScript',
     function(e)
     {
-        if (e.element.tagName != 'SCRIPT' && e.element.tagName != 'script')
+        if (e.element.tagName.toLowerCase() != 'script')
 	{
-	  alert("noscript.js: BeforeExternalScript: non 'SCRIPT' tagname: " + e.element.tagName);
+	  alert("noscript.js: BeforeExternalScript: non <script>: " + e.element.tagName);
 	  return;
         }
-
-	// FIXME: remove after we're done testing
-	if (nsmenu && !beforeexternalscript_alert)
-	{
-	    alert("noscript.js: BeforeExternalScript after DOM loaded");
-	    beforeexternalscript_alert = true;
-	}
-
+	
 	var url = e.element.src;
 	var host = url_hostname(url);
 	var script = add_script(url, host);
@@ -1045,46 +1046,49 @@
 	  if (!allowed)
 	      blocked_external++;
 	}
-	
-	// find out which scripts are actually loaded,
-	// this way we can find out if *something else* is blocking (blocked content, hosts file ...)
-	// awesome!
-	e.element.onload = function(le)
-	{
-//	  alert("noscript.js: in load handler! script:" + le.target.src);
 
-	  if (host == current_host)
-	      loaded_current_host++; 
-	  else
-	      loaded_external++;
-	  script.loaded = 1; // what a hack, javascript rules!
-	}	
-	
         if (!allowed)
 	    e.preventDefault();
+	if (nsmenu)
+	    repaint_ui();	
     },
     false);
 
+    // Find out which scripts are actually loaded,
+    // this way we can find out if *something else* is blocking
+    // (blocked content, hosts file ...). Awesome!    
+    opera.addEventListener('BeforeEvent.load',
+    function(ev)
+    {
+	var e = ev.event.target;
+        if (!e || !e.tagName || e.tagName.toLowerCase() != 'script' || !e.src)
+	    return; // not an external script.	    
+	var host = url_hostname(e.src);
+	var script = find_script(e.src, host);
+
+	if (host == current_host)
+	    loaded_current_host++; 
+	else
+	    loaded_external++;
+	script.loaded = 1;
+
+	if (nsmenu)
+	    repaint_ui();
+    }, false);
 
     if (window.noscript)
-	alert("window.noscript exists!!!");
+	alert("noscript.js: window.noscript exists!!!");
     // FIXME: when adding frame support, fix this.
     window.noscript = new Object();    
 
-    var plugin_items = [];
-    var plugin_alert = false;
+    var plugin_items = new Object();
     // API for plugins to add items to noscript's menu    
-    window.noscript.add_item = function(text)
+    window.noscript.add_item = function(name, value)
     {
-	//console.log("noscript: plugin added item: " + text);
-	plugin_items.push(text);
-
-	if (nsmenu && !plugin_alert)
-	{
-	    plugin_alert = true;
-	    alert("noscript.js: New plugin item after DOM loaded.");
-	}
-	
+	//console.log("noscript: plugin added item: " + name + " : " + text);
+        plugin_items[name] = value;
+	if (nsmenu)
+	    repaint_ui();	
     };
 
     function populate_iframe()
@@ -1115,7 +1119,13 @@ input[type=radio]         { visibility:hidden; } \n\
 	// -o-linear-gradient(top, #FFFFFF 0px, #CCCCCC 100%) #E5E5E5;
 	
 	new_style(noscript_style);
-	
+
+	create_main_table();
+    }
+
+    var nsbutton = null;
+    function create_main_table()
+    {
 	var table = idoc.createElement('table');
 	table.id = 'noscript_table';
 	table.border = 0;
@@ -1141,6 +1151,7 @@ input[type=radio]         { visibility:hidden; } \n\
 	    tooltip += " (" + loaded_external + " loaded)";
 
         var r = idoc.createElement('button');
+	nsbutton = r;
 	r.id = 'noscript_button';
 	r.title = tooltip;
 	button_image = new_icon_mode(mode);
@@ -1175,9 +1186,8 @@ input[type=radio]         { visibility:hidden; } \n\
 	tr.appendChild(td);
         table.appendChild(tr);
 
-	ibody = idoc.getElementsByTagName('body')[0];
-	ibody.appendChild(table);
-	ibody.style.margin = '0px';
+	idoc.body.appendChild(table);
+	idoc.body.style.margin = '0px';
 
 //	iframe.style = "width:" + table.clientWidth +
 //	"px; height:" + table.clientHeight + "px;";
@@ -1185,9 +1195,33 @@ input[type=radio]         { visibility:hidden; } \n\
 	resize_iframe();
     }
 
+    var repaint_ui_count = 0;
+    var repaint_ui_timer = null;
+    function repaint_ui()
+    {
+	repaint_ui_count++;
+	if (repaint_ui_timer)
+	    return;
+	repaint_ui_timer = setTimeout(repaint_ui_now, 1000);
+    }
+
+    function repaint_ui_now()
+    {
+	repaint_ui_timer = null;	
+	var menu_shown = nsmenu && nsmenu.style.display != 'none';
+	// debug: (note: can't call plugins' add_item() here (recursion))
+	// plugin_items.repaint_ui = "late events:" + repaint_ui_count; 
+	// remove table
+	idoc.body.removeChild(idoc.body.firstChild);
+	nsmenu = null;
+	create_main_table();
+	if (menu_shown)
+	    show_hide_menu(true);
+    }
+    
     function resize_iframe()
     {
-	var content = ibody.firstChild;
+	var content = idoc.body.firstChild;
 	//iframe.style.width = content.clientWidth + 'px';
 	//iframe.style.height = content.clientHeight + 'px';
 	iframe.style.width = content.scrollWidth + 'px';
@@ -1196,7 +1230,6 @@ input[type=radio]         { visibility:hidden; } \n\
     
     var iframe = null;
     var idoc = null;
-    var ibody = null;
     document.addEventListener('DOMContentLoaded',
     function()
     {
@@ -1222,8 +1255,7 @@ input[type=radio]         { visibility:hidden; } \n\
 	//iframe.src=""; id="i0" title="about:blank
 
 	iframe.onload = populate_iframe;
-	var body = document.getElementsByTagName('body')[0];
-	body.appendChild(iframe);
+	document.body.appendChild(iframe);
     },
     false);
 })(opera, opera.scriptStorage);
