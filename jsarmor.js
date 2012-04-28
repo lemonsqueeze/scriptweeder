@@ -1,10 +1,10 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.36';
+    var version = 'Noscript v1.37';
 
     /************************* Default Settings *******************************/
 
     var default_globally_allowed_hosts =
-    ['ajax.googleapis.com', 's.ytimg.com', 'code.jquery.com', 'z-ecx.images-amazon.com', 'st.deviantart.net'];
+    ['ajax.googleapis.com', 's.ytimg.com', 'code.jquery.com', 'z-ecx.images-amazon.com', 'st.deviantart.net', 'static.tumblr.com', 'codysherman.com'];
     
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
@@ -14,8 +14,8 @@
     //   block_all, filtered, relaxed or allow_all    
     var default_mode = 'relaxed';
 
-    // block inline scripts by default ?
-    var default_block_inline_scripts = false;
+    // block inline scripts by default for block_all mode ?
+    var default_block_inline_scripts = true;
 
     // when inline scripts are blocked, handle <noscript> tags
     // as if javascript was disabled in opera
@@ -34,9 +34,10 @@
 
     if (global_setting('noscript') == '')
     {
-	alert("Noscript:\nNo prior settings found.\n" +
-	      "Setting global whitelist to:\n[" +
-	      default_globally_allowed_hosts + "]");
+	// FIXME: need a nice way to edit this.
+	alert("Welcome to Noscript!\n\n" +
+	      "The initial global whitelist is set to:\n\n[" +
+	      default_globally_allowed_hosts.join(', ') + "]");
 	set_global_setting('noscript', '. ' + default_globally_allowed_hosts.join(' '));
     }    
 
@@ -118,9 +119,24 @@
 	scriptStorage.setItem(name, value);
     }
 
+    function bool_setting(name, default_value)
+    {
+	var c = scoped_setting(name);
+	c = (c == '' ? default_value : c == 'y');
+	return c;
+    }
+
+    function set_bool_setting(name, val)
+    {
+	set_scoped_setting(name, (val ? 'y' : 'n'));	
+    }    
+
     var button_image = null;
 
     init_scope();
+
+    var block_inline_scripts = false;
+    var handle_noscript_tags = false;
     
     // block_all, filtered, relaxed, allow_all    
     var mode = scoped_setting('noscript_mode');
@@ -130,21 +146,12 @@
 	mode = default_mode; 
     set_mode_no_update(mode);
 
-    var block_inline_scripts;
-    var c = scoped_setting('noscript_inline');
-    if (c == '')
-      block_inline_scripts = default_block_inline_scripts;
-    else
-      block_inline_scripts = (c != 'y');
-
-    var handle_noscript_tags;
-
     function toggle_allow_inline(event)
     {
       block_inline_scripts = !block_inline_scripts;
       this.checkbox.checked = block_inline_scripts;
-      this.nextSibling.style = "display:" + (block_inline_scripts ? "block;" : "none;");
-      set_scoped_setting('noscript_inline', (block_inline_scripts ? 'n' : 'y'));
+      this.nextSibling.style.display = (block_inline_scripts ? 'block' : 'none');
+      set_bool_setting('noscript_inline', block_inline_scripts);
       need_reload = true;
     }
 
@@ -152,7 +159,7 @@
     {
       handle_noscript_tags = !handle_noscript_tags;
       this.checkbox.checked = handle_noscript_tags;
-      set_scoped_setting('noscript_nstags', (handle_noscript_tags ? 'y' : 'n'));
+      set_bool_setting('noscript_nstags', handle_noscript_tags);
       need_reload = true;
     }
 
@@ -256,17 +263,26 @@
       // filtered default settings: allow current host
       if (new_mode == 'filtered' && scoped_setting(setting_hosts) == '')
 	  allow_host(current_host);
+
+      if (new_mode == 'block_all')
+      {
+	  block_inline_scripts = bool_setting('noscript_inline',
+					      default_block_inline_scripts);
+	  handle_noscript_tags = bool_setting('noscript_nstags',
+					      default_handle_noscript_tags);	  
+      }
       
       set_scoped_setting('noscript_mode', mode);
       if (button_image)
 	  set_icon_mode(button_image, mode);
     }
-    
+
+    // Set mode, repaint ui, and flag for reload
     function set_mode(new_mode)
     {
-      set_mode_no_update(new_mode);
-      show_hide_menu(false);
-      reload_page();
+	set_mode_no_update(new_mode);
+	need_reload = true;
+	repaint_ui_now();
     }    
 
     function allow_host(host)
@@ -425,7 +441,7 @@
     {
 	if (scope == 3)  // FIXME: should we handle others ?
 	    change_scope(1);
-	set_mode_no_update('filtered');
+	set_mode('filtered');
 	
 	foreach_host_node(function(hn)
 	{
@@ -451,11 +467,6 @@
 
     function check_handle_noscript_tags()
     {
-	handle_noscript_tags = scoped_setting('noscript_nstags');
-	if (handle_noscript_tags == '')
-	    handle_noscript_tags = default_handle_noscript_tags;
-	else
-	    handle_noscript_tags = (handle_noscript_tags == 'y');
 	if (!handle_noscript_tags)
 	    return;
 	
@@ -512,12 +523,12 @@
       if (child)
 	  item.appendChild(child);
       if (indent)
-	  item.style = "padding-left:" + (indent * 10) + "px;";
+	  item.style = "padding-left:" + (indent * 10 + 2) + "px;";
       item.innerHTML += text;
       if (f)
       {
-//	item.onmouseover = function(){ this.style.backgroundColor = '#dddddd'; };
-	item.onmouseover = function(){ this.style.backgroundColor = '#fa4'; };
+	item.onmouseover = function(){ this.style.backgroundColor = '#ddd'; };
+//	item.onmouseover = function(){ this.style.backgroundColor = '#fa4'; };
 	item.onmouseout  = function(){ this.style.backgroundColor = 'transparent'; };
 	item.onclick = f;
       }
@@ -525,6 +536,20 @@
       item.onmousedown = function(){ return false; };
       nsmenu.appendChild(item);
       return item;
+    }
+
+    function add_mode_menu_item(nsmenu, title, tmode)
+    {
+	var handler = function() { set_mode(tmode); };
+	var item = add_menu_item(nsmenu, title, 0, handler, new_icon_mode(tmode));
+	if (mode == tmode)
+	{
+	    item.style = "background-color:#fa4;";
+	    //item.style = "background-color:#ddd;";
+	    item.onmouseover = null;
+	    item.onmouseout = null;
+	}
+	return item;
     }
 
     function to_html(e)
@@ -558,8 +583,8 @@
 	tr.childNodes[6].style = "text-align:right;";
 	if (f)
 	{
-//	    tr.onmouseover = function(){ this.style.backgroundColor = '#dddddd'; };
-	    tr.onmouseover = function(){ this.style.backgroundColor = '#fa4'; };
+	    tr.onmouseover = function(){ this.style.backgroundColor = '#ddd'; };
+//	    tr.onmouseover = function(){ this.style.backgroundColor = '#fa4'; };
 	    tr.onmouseout  = function(){ this.style.backgroundColor = 'transparent'; };
 	    tr.onclick = f;
 	}
@@ -723,7 +748,7 @@
 	  set_global_icon_ui(this.icon, host_allowed_globally(h))
 
 	  if (mode != 'filtered' && mode != 'relaxed')
-	      set_mode_no_update('filtered');
+	      set_mode('filtered');
 
 	  // blocking related/helper host in relaxed mode ? switch to filtered mode.
 	  // (related/helper hosts are always allowed in relaxed mode)
@@ -775,6 +800,7 @@
     function create_menu()
     {
 	nsmenu = idoc.createElement('div');
+	nsmenu.id = 'noscript_menu';
 	nsmenu.align = 'left';
 	nsmenu.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;" +
 	// "background:#abb9ca;" +
@@ -812,38 +838,49 @@
 	  alert("Noscript \nHosts allowed for this page: \n" + d);
 	};
 
-	item = add_menu_item(nsmenu, "Set for", 0, null);
-	add_radio_button(item, "Page", 0);
-	add_radio_button(item, "Site", 1);
-	add_radio_button(item, "Domain", 2);	
-	add_radio_button(item, "Global", 3);
+	item = add_menu_item(nsmenu, "Set for: ", 0, null);
+	add_radio_button(item, " Page ", 0);
+	add_radio_button(item, " Site ", 1);
+	add_radio_button(item, " Domain ", 2);	
+	add_radio_button(item, " Global ", 3);
 
-	var checkbox = make_checkbox(block_inline_scripts);
-	var label = "Block Inline Scripts";
-	item = add_menu_item(nsmenu, label, 0, toggle_allow_inline, checkbox);
-	item.checkbox = item.firstChild;
-	add_right_aligned_text(item, " [" + get_size_kb(total_inline_size) + "k]");
+//	add_menu_separator(nsmenu);
+//	add_menu_item(nsmenu, "External Scripts:");	
+	item = add_mode_menu_item(nsmenu, "Block All", 'block_all');
+	item.title = "Block all scripts.";
 
-	var checkbox = make_checkbox(handle_noscript_tags);
-	var label = "Pretend Javascript Disabled";
-	item = add_menu_item(nsmenu, label, 2, toggle_handle_noscript_tags, checkbox);
-	item.checkbox = item.firstChild;
-	item.title = "Interpret noscript tags as if javascript was disabled in opera."
-	if (!block_inline_scripts)
-	    item.style = "display:none;";	    
-
-	add_menu_separator(nsmenu);
-	add_menu_item(nsmenu, "External Scripts:");	
-	add_menu_item(nsmenu, "Block All", 0, function(){ set_mode('block_all'); }, new_icon_mode('block_all'));
-	add_menu_item(nsmenu, "Filter By Host", 0, function(){ set_mode('filtered'); }, new_icon_mode('filtered'));
-	if (mode != 'relaxed')
-	    add_ftable(nsmenu);
+	if (mode == 'block_all')
+	{
+	    var checkbox = make_checkbox(block_inline_scripts);
+	    var label = "Block Inline Scripts";
+	    item = add_menu_item(nsmenu, label, 1, toggle_allow_inline, checkbox);
+	    item.checkbox = item.firstChild;
+	    add_right_aligned_text(item, " [" + get_size_kb(total_inline_size) + "k]");
 	
-	add_menu_item(nsmenu, "Relaxed", 0, function(){ set_mode('relaxed'); }, new_icon_mode('relaxed'));
+	    var checkbox = make_checkbox(handle_noscript_tags);
+	    var label = "Pretend Javascript Disabled";
+	    item = add_menu_item(nsmenu, label, 1, toggle_handle_noscript_tags, checkbox);
+	    item.checkbox = item.firstChild;
+	    item.title = "Interpret noscript tags as if javascript was disabled in opera."
+	    if (!block_inline_scripts)
+		item.style += "display:none;";
+	}
+
+	item = add_mode_menu_item(nsmenu, 'Filtered', 'filtered');
+	item.title = "Select which scripts to run. (current site allowed by default, inline scripts always allowed.)"
+	if (mode == 'filtered')
+	    add_ftable(nsmenu);
+
+	item = add_mode_menu_item(nsmenu, 'Relaxed', 'relaxed');
+	item.title = "Allow related and helper domains.";
 	if (mode == 'relaxed')
 	    add_ftable(nsmenu);
+
+	item = add_mode_menu_item(nsmenu, 'Allow All', 'allow_all');
+	item.title = "Allow everything ..."
+	if (mode == 'allow_all')
+	    add_ftable(nsmenu);
 	
-	add_menu_item(nsmenu, "Allow All", 0, function(){ set_mode('allow_all'); }, new_icon_mode('allow_all'));
 	add_menu_item(nsmenu, "Details ...", 0, show_details);
 
 	for (var prop in plugin_items)
@@ -1116,8 +1153,17 @@
 .noscript_title { background-color:#d80; color:#ffffff; font-weight:bold; } \n\
 #noscript_button { border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } \n\
 #noscript_table div { width: auto; } \n\
-input[type=radio]:checked { visibility:visible; } \n\
-input[type=radio]         { visibility:hidden; } \n\
+input[type=radio]         { display:none; } \n\
+input[type=radio] + label:hover   { background-color: #ddd; } \n\
+input[type=radio] + label { \n\
+	box-shadow:inset 0px 1px 0px 0px #ffffff; \n\
+	border-radius:6px; \n\
+	border:1px solid #dcdcdc; \n\
+	background-color: #c7c7c7;  \n\
+	display:inline-block; \n\
+	padding:1px 5px; \n\
+	text-decoration:none; } \n\
+input[type=radio]:checked + label { background-color: #fa4; } \n\
 .noscript_global { padding: 0px 3px; width:14px; height:14px; vertical-align:middle; \
     background: -o-skin('RSS'); } \n\
 ";
@@ -1167,12 +1213,10 @@ input[type=radio]         { visibility:hidden; } \n\
         r.onclick = function(event)
 	{
 	  // cycle through the modes
-	  // FIXME: should wait until shift is released to reload page
-	  if (mode == 'block_all')      set_mode_no_update('filtered');
-	  else if (mode == 'filtered')  set_mode_no_update('relaxed');
-	  else if (mode == 'relaxed')  set_mode_no_update('allow_all');
-	  else if (mode == 'allow_all') set_mode_no_update('block_all');
-	  need_reload = true;
+	  if (mode == 'block_all')      set_mode('filtered');
+	  else if (mode == 'filtered')  set_mode('relaxed');
+	  else if (mode == 'relaxed')  set_mode('allow_all');
+	  else if (mode == 'allow_all') set_mode('block_all');
 	};
 	r.onmouseout = function(e)
 	{
