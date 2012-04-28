@@ -1,5 +1,5 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.35';
+    var version = 'Noscript v1.36';
 
     /************************* Default Settings *******************************/
 
@@ -546,8 +546,8 @@
 	s += "<td width=1%></td>";
 	s += "<td width=1%>" + to_html(col1) + "</td>";
 	s += "<td width=1%>" + to_html(col2) + "</td>";
-	s += "<td>" + to_html(col3) + "</td>";
-	s += "<td width=1%>" + to_html(col4) + "</td>";
+	s += "<td width=1%>" + to_html(col3) + "</td>";
+	s += "<td>" + to_html(col4) + "</td>";
 	s += "<td width=1%>" + to_html(col5) + "</td>";
 	s += "<td width=1%>" + to_html(col6) + "</td>";
 	tr.innerHTML = s;
@@ -770,7 +770,7 @@
 	    item.childNodes[0].innerHTML = "&nbsp;&nbsp;";
     }
     
-    var nsmenu;
+    var nsmenu = null;
     var need_reload = false;
     function create_menu()
     {
@@ -849,15 +849,21 @@
 	for (var prop in plugin_items)
 	    if (plugin_items.hasOwnProperty(prop))
 		add_menu_item(nsmenu, plugin_items[prop], 0, null);
-	
+    }
+
+    function parent_menu()
+    {
 	var td = idoc.getElementById('td_nsmenu');
-	td.appendChild(nsmenu);	
+	td.appendChild(nsmenu);		
     }
 
     function show_hide_menu(show, toggle)
     {
       if (!nsmenu)
+      {
 	  create_menu();
+	  parent_menu();
+      }
       var d = (show ? 'inline-block' : 'none');
       if (toggle) 
 	  d = (nsmenu.style.display == 'none' ? 'inline-block' : 'none');
@@ -1013,7 +1019,7 @@
       total_inline++;
       total_inline_size += e.element.text.length;
       
-      if (nsbutton)
+      if (main_table)
 	  repaint_ui();
       
       if (block_inline_scripts)
@@ -1049,14 +1055,14 @@
 
         if (!allowed)
 	    e.preventDefault();
-	if (nsmenu)
-	    repaint_ui();	
+	if (main_table)
+	    repaint_ui();
     },
     false);
 
     // Find out which scripts are actually loaded,
     // this way we can find out if *something else* is blocking
-    // (blocked content, hosts file ...). Awesome!    
+    // (blocked content, bad url, syntax error...). Awesome!    
     opera.addEventListener('BeforeEvent.load',
     function(ev)
     {
@@ -1119,11 +1125,13 @@ input[type=radio]         { visibility:hidden; } \n\
 	// -o-linear-gradient(top, #FFFFFF 0px, #CCCCCC 100%) #E5E5E5;
 	
 	new_style(noscript_style);
-
+	idoc.body.style.margin = '0px';
 	create_main_table();
+	parent_main_table();
+	resize_iframe();
     }
 
-    var nsbutton = null;
+    var main_table = null;
     function create_main_table()
     {
 	var table = idoc.createElement('table');
@@ -1151,7 +1159,6 @@ input[type=radio]         { visibility:hidden; } \n\
 	    tooltip += " (" + loaded_external + " loaded)";
 
         var r = idoc.createElement('button');
-	nsbutton = r;
 	r.id = 'noscript_button';
 	r.title = tooltip;
 	button_image = new_icon_mode(mode);
@@ -1186,14 +1193,14 @@ input[type=radio]         { visibility:hidden; } \n\
 	tr.appendChild(td);
         table.appendChild(tr);
 
-	idoc.body.appendChild(table);
-	idoc.body.style.margin = '0px';
-
-//	iframe.style = "width:" + table.clientWidth +
-//	"px; height:" + table.clientHeight + "px;";
-
-	resize_iframe();
+	main_table = table;
     }
+
+    function parent_main_table()
+    {
+	idoc.body.appendChild(main_table);
+    }
+	
 
     var repaint_ui_count = 0;
     var repaint_ui_timer = null;
@@ -1202,21 +1209,28 @@ input[type=radio]         { visibility:hidden; } \n\
 	repaint_ui_count++;
 	if (repaint_ui_timer)
 	    return;
-	repaint_ui_timer = setTimeout(repaint_ui_now, 1000);
+	repaint_ui_timer = setTimeout(repaint_ui_now, 500);
     }
 
     function repaint_ui_now()
-    {
+    {	
 	repaint_ui_timer = null;	
-	var menu_shown = nsmenu && nsmenu.style.display != 'none';
-	// debug: (note: can't call plugins' add_item() here (recursion))
-	// plugin_items.repaint_ui = "late events:" + repaint_ui_count; 
-	// remove table
-	idoc.body.removeChild(idoc.body.firstChild);
-	nsmenu = null;
+	//   debug: (note: can't call plugins' add_item() here (recursion))
+	//   plugin_items.repaint_ui = "late events:" + repaint_ui_count;	
+
+	// menu logic slightly more complicated than just calling
+	// show_hide_menu() at the end -> no flickering at all this way!!
+	var menu_shown = nsmenu && nsmenu.style.display != 'none';	
 	create_main_table();
 	if (menu_shown)
+	    create_menu();	
+	idoc.body.removeChild(idoc.body.firstChild); // remove main_table
+	parent_main_table();
+	if (menu_shown)
+	{
+	    parent_menu();	
 	    show_hide_menu(true);
+	}
     }
     
     function resize_iframe()
