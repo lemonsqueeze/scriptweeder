@@ -1,8 +1,8 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.37';
+    var version = 'Noscript v1.38';
 
     /************************* Default Settings *******************************/
-
+    
     var default_globally_allowed_hosts =
     ['ajax.googleapis.com', 's.ytimg.com', 'code.jquery.com', 'z-ecx.images-amazon.com', 'st.deviantart.net', 'static.tumblr.com', 'codysherman.com'];
     
@@ -21,8 +21,9 @@
     // as if javascript was disabled in opera
     var default_handle_noscript_tags = true;
     
-    /**************************************************************************/        
-
+    /**************************************************************************/
+    // init
+    
     // FIXME handle frames
     // if (window != window.top)
     //   running in frame
@@ -32,56 +33,60 @@
 	window.name == 'noscript_iframe')
 	return; 
 
-    if (global_setting('noscript') == '')
+    var current_host = location.hostname;
+    var current_domain = get_domain(location.hostname);
+    var button_image = null;
+    var block_inline_scripts = false;
+    var handle_noscript_tags = false;    
+    // FIXME: setting_hosts is constant now. replace it.
+    var setting_hosts = 'noscript_hosts';
+
+    init_scope();    
+    init_mode();
+
+    if (global_setting('noscript_whitelist') == '')
     {
 	// FIXME: need a nice way to edit this.
 	alert("Welcome to Noscript!\n\n" +
 	      "The initial global whitelist is set to:\n\n[" +
 	      default_globally_allowed_hosts.join(', ') + "]");
-	set_global_setting('noscript', '. ' + default_globally_allowed_hosts.join(' '));
+	set_global_setting('noscript_whitelist',
+			   '. ' + default_globally_allowed_hosts.join(' '));
     }    
 
-    var current_host = location.hostname;
-    var current_domain = get_domain(location.hostname);
-
-    // FIXME: not used anymore. remove/rename.
-    // local settings are per host
-    function local_setting(name)
+    /************************* Loading/Saving Settings ************************/
+        
+    function scoped_setting(scope, name)
     {
-	return global_setting(location.hostname + ':' + name);
+	// to view content -> opera:webstorage  
+	var o=scriptStorage.getItem(scoped_prefixes[scope] + name);
+	if (o == null)
+	    return '';
+	return o;
     }
 
-    function set_local_setting(name, value)
+    var timestamp; // timestamp for current settings
+    function set_scoped_setting(scope, name, value)
     {
-	set_global_setting(location.hostname + ':' + name, value);
+	scriptStorage.setItem(scoped_prefixes[scope] + name, value);
+	// update timestamp, so other instances can detect changes
+	timestamp = 0 + Date.now();
+	//alert("timestamp: " + timestamp);
+	scriptStorage.setItem(scoped_prefixes[scope] + 'timestamp', timestamp);
     }
 
     // scoped settings are either per page, site, domain, or global.
     var scope;                     // (0,     1,     2,      3)
-    var scoped_prefixes =
-      [strip_url_tail(location.href) + ':', location.hostname + ':', current_domain + ':', ''];
+    var scoped_prefixes;    
     function init_scope()
     {
+	scoped_prefixes =
+	[strip_url_tail(location.href) + ':', current_host + ':', current_domain + ':', ''];
+	
 	for (scope = 0; scope < 3; scope++)
-	    if (scoped_setting('noscript_mode') != '')
+	    if (setting('noscript_mode') != '')
 		break;
-    }
-
-    function scoped_setting(name)
-    {
-	if (name == setting_hosts && scope == 3)
-	    return global_setting(scoped_prefixes[1] + name);
-	return global_setting(scoped_prefixes[scope] + name);
-    }
-
-    function set_scoped_setting(name, value)
-    {	
-	if (name == setting_hosts && scope == 3)
-	{
-	    set_global_setting(scoped_prefixes[1] + name, value);
-	    return;
-	}
-	set_global_setting(scoped_prefixes[scope] + name, value);
+	timestamp = setting('timestamp');
     }
 
     // copy settings over and change scope.
@@ -95,77 +100,73 @@
 	for (var i = 0; i < scoped_settings.length; i++)
 	{
 	    scope = old_scope;
-	    var s = scoped_setting(scoped_settings[i]);
+	    var s = setting(scoped_settings[i]);
 	    // FIXME: should we remove them all ?
 	    //        for (; scope < new_scope; scope++) 
 	    if (new_scope > scope) // remove more specific setting
-		set_scoped_setting(scoped_settings[i], '');
+		set_setting(scoped_settings[i], '');
 	    scope = new_scope;
-	    set_scoped_setting(scoped_settings[i], s);
+	    set_setting(scoped_settings[i], s);
 	}
     }
-    
+
+    function check_changed_settings()
+    {
+	var t = setting('timestamp');
+	if (t == timestamp)
+	    return; // nothing changed
+	timestamp = t;
+	// alert(">>>>> settings changed!");
+	init_mode();  // reload settings
+	if (main_table)
+	    repaint_ui_now();
+	// FIXME: could reload page to use new settings if user wants to.
+    }
+
+    // Settings api
+    function setting(name)
+    {
+	if (name == setting_hosts && scope == 3)
+	    return scoped_setting(1, name);
+	return scoped_setting(scope, name);
+    }
+
+    function set_setting(name, value)
+    {	
+	if (name == setting_hosts && scope == 3)
+	    set_scoped_setting(1, name, value);
+	else
+	    set_scoped_setting(scope, name, value);
+    }
+
     function global_setting(name)
     {
-	// to view content -> opera:webstorage  
-	var o=scriptStorage.getItem(name);
-	if (o == null)
-	    return '';
-	return o;
+	return scoped_setting(3, name);
     }
 
     function set_global_setting(name, value)
     {
-	scriptStorage.setItem(name, value);
+	set_scoped_setting(3, name, value);
     }
-
+    
     function bool_setting(name, default_value)
     {
-	var c = scoped_setting(name);
+	var c = setting(name);
 	c = (c == '' ? default_value : c == 'y');
 	return c;
     }
 
     function set_bool_setting(name, val)
     {
-	set_scoped_setting(name, (val ? 'y' : 'n'));	
+	set_setting(name, (val ? 'y' : 'n'));	
     }    
-
-    var button_image = null;
-
-    init_scope();
-
-    var block_inline_scripts = false;
-    var handle_noscript_tags = false;
     
-    // block_all, filtered, relaxed, allow_all    
-    var mode = scoped_setting('noscript_mode');
-    // FIXME: setting_hosts is constant now. replace it.
-    var setting_hosts = 'noscript_hosts';
-    if (mode == '')
-	mode = default_mode; 
-    set_mode_no_update(mode);
-
-    function toggle_allow_inline(event)
-    {
-      block_inline_scripts = !block_inline_scripts;
-      this.checkbox.checked = block_inline_scripts;
-      this.nextSibling.style.display = (block_inline_scripts ? 'block' : 'none');
-      set_bool_setting('noscript_inline', block_inline_scripts);
-      need_reload = true;
-    }
-
-    function toggle_handle_noscript_tags()
-    {
-      handle_noscript_tags = !handle_noscript_tags;
-      this.checkbox.checked = handle_noscript_tags;
-      set_bool_setting('noscript_nstags', handle_noscript_tags);
-      need_reload = true;
-    }
-
+    /**************************************************************************/
+    // mode and page stuff
+    
     function reload_page()
     {
-	location.reload();
+	location.reload(false);
     }
     
     function new_style(str)
@@ -178,90 +179,35 @@
 	pa.appendChild(el);
 	return el;
     }
-    
-    function show_details()
-    {	
-	var nsdetails = idoc.createElement('div');
-	nsdetails.align = 'left';
-	nsdetails.style="border-width: 2px; border-style: outset; border-color: gray; background:#abb9ca;";
-//        nsdetails.style.display = 'inline-block';
 
-	nsdetails.onmouseout = function(e)
-	{
-	   if (!mouseout_leaving_menu(e, nsdetails))
-	       return;	   
-	   td.removeChild(nsdetails);
-	   resize_iframe();	   
-	};
-	
-	var item = add_menu_item(nsdetails, "Scripts:");
-	item.align = 'center';
-	item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
-	add_menu_separator(nsdetails);	
-
-	foreach_host_node(function(host_node)
-	{
-	  var h = host_node.name;
-	  var s = host_node.scripts;
-	  // var item = add_menu_item(nsdetails, h + ":");	  
-
-	  sort_scripts(s);
-	  for (var j = 0; j < s.length; j++)
-	  {
-	      var item = add_link_menu_item(nsdetails, s[j].url, strip_http(s[j].url), 2);
-	      // script status
-	      var icon = new_icon();
-	      var image = 'Transfer Stopped';
-	      if (allowed_host(h))
-	      {
-		  image = 'Transfer Success';
-		  if (!s[j].loaded)
-		  {
-		      image = 'Transfer Size Mismatch';
-		      icon.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
-		  }
-	      }
-	      set_icon_image(icon, image);
-
-	      item.insertBefore(icon, item.childNodes[0]);
-	  }	  
-	});
-	
-	var td = idoc.getElementById('td_nsmenu');
-	td.appendChild(nsdetails);
-
-	show_hide_menu(false);
-        nsdetails.style.display = 'inline-block';
-    }
-
-    function mouseout_leaving_menu(e, menu)
+    function check_handle_noscript_tags()
     {
-	// if (!e)
-	//    var e = window.event;
+	if (!handle_noscript_tags)
+	    return;
 	
-	// object we're moving out of
-	// var tg = (window.event) ? e.srcElement : e.target;
-	// if (tg != nsdetails) // moving out of one its children.
-	//  return; we actually need that case!
+	// javascript is blocked on this page, 
+	// interpret <noscript> tags as if javascript was disabled in opera	    
 	
-	// e.relatedTarget: object we're moving to.
-	var reltg = e.relatedTarget;
-	if (reltg)
+	for (var j = document.getElementsByTagName('noscript'); j[0];
+	     j = document.getElementsByTagName('noscript')) 
 	{
-	    while (reltg != menu && reltg.nodeName != 'HTML')
-		reltg = reltg.parentNode;
-	    if (reltg == menu)
-		return false; // moving out of the div into a child layer
+	    var nstag = document.createElement('wasnoscript');
+	    nstag.innerHTML = j[0].innerText;
+	    
+	    j[0].parentNode.replaceChild(nstag, j[0]);
+	    // once reparenting is done, we have to get tags again
+	    // otherwise it misses some. weird ...		
 	}
-	return true;
-    }
+    }    
     
     function set_mode_no_update(new_mode)
     {
+      if (mode != new_mode)
+	  set_setting('noscript_mode', new_mode);
       mode = new_mode;
-
+      
       // filtered default settings: allow current host
-      if (new_mode == 'filtered' && scoped_setting(setting_hosts) == '')
+      if (new_mode == 'filtered' && setting(setting_hosts) == '')
 	  allow_host(current_host);
 
       if (new_mode == 'block_all')
@@ -270,9 +216,8 @@
 					      default_block_inline_scripts);
 	  handle_noscript_tags = bool_setting('noscript_nstags',
 					      default_handle_noscript_tags);	  
-      }
-      
-      set_scoped_setting('noscript_mode', mode);
+      }      
+
       if (button_image)
 	  set_icon_mode(button_image, mode);
     }
@@ -285,38 +230,19 @@
 	repaint_ui_now();
     }    
 
-    function allow_host(host)
+    // block_all, filtered, relaxed, allow_all    
+    var mode;    
+    function init_mode()
     {
-	var l = scoped_setting(setting_hosts);
-	l = (l == '' ? '.' : l);
-	if (list_contains(l, host))
-	    return;
-	set_scoped_setting(setting_hosts, l + ' ' + host);
-    }
-
-    function global_allow_host(host)
-    {
-	var l = global_setting('noscript');
-	l = (l == '' ? '.' : l);	
-	if (list_contains(l, host))
-	    return;
-	set_global_setting('noscript', l + ' ' + host);
+	mode = setting('noscript_mode');
+	if (mode == '')
+	    mode = default_mode; 
+	set_mode_no_update(mode);
     }
     
-    function remove_host(host)
-    {
-	var l = scoped_setting(setting_hosts);
-	l = l.replace(' ' + host, '');
-	set_scoped_setting(setting_hosts, l);
-    }
-
-    function global_remove_host(host)
-    {
-      var l = global_setting('noscript');
-      l = l.replace(' ' + host, '');
-      set_global_setting('noscript', l);
-    }
-
+    /**************************************************************************/    
+    // domain, url utils
+    
     function url_hostname(url)
     {
         var t = document.createElement('a');
@@ -399,21 +325,51 @@
 		is_prefix("apis.", h) ||
 		is_prefix("code.", h));
     }
-
-    function list_contains(list, str)
+    
+    /**************************************************************************/    
+    // host filtering
+    
+    function allow_host(host)
     {
-      return (list && list.indexOf(' ' + str) != -1);
+	var l = setting(setting_hosts);
+	l = (l == '' ? '.' : l);
+	if (list_contains(l, host))
+	    return;
+	set_setting(setting_hosts, l + ' ' + host);
     }
 
+    function global_allow_host(host)
+    {
+	var l = global_setting('noscript_whitelist');
+	l = (l == '' ? '.' : l);	
+	if (list_contains(l, host))
+	    return;
+	set_global_setting('noscript_whitelist', l + ' ' + host);
+    }
+    
+    function remove_host(host)
+    {
+	var l = setting(setting_hosts);
+	l = l.replace(' ' + host, '');
+	set_setting(setting_hosts, l);
+    }
+
+    function global_remove_host(host)
+    {
+      var l = global_setting('noscript_whitelist');
+      l = l.replace(' ' + host, '');
+      set_global_setting('noscript_whitelist', l);
+    }
+    
     function host_allowed_globally(host)
     {
-	var l = global_setting('noscript');
+	var l = global_setting('noscript_whitelist');
 	return list_contains(l, host);
     }
     
     function host_allowed_locally(host)
     {
-	var l = scoped_setting(setting_hosts);
+	var l = setting(setting_hosts);
 	return list_contains(l, host);
     }
     
@@ -465,25 +421,41 @@
       alert('noscript.js: mode="' + mode + '", this should not happen!');
     }
 
-    function check_handle_noscript_tags()
+    /**************************************************************************/
+    // misc utils
+
+    function list_contains(list, str)
     {
-	if (!handle_noscript_tags)
-	    return;
-	
-	// javascript is blocked on this page, 
-	// interpret <noscript> tags as if javascript was disabled in opera	    
-	
-	for (var j = document.getElementsByTagName('noscript'); j[0];
-	     j = document.getElementsByTagName('noscript')) 
-	{
-	    var nstag = document.createElement('wasnoscript');
-	    nstag.innerHTML = j[0].innerText;
-	    
-	    j[0].parentNode.replaceChild(nstag, j[0]);
-	    // once reparenting is done, we have to get tags again
-	    // otherwise it misses some. weird ...		
-	}
+      return (list && list.indexOf(' ' + str) != -1);
     }
+
+    function list_to_string(list)
+    {
+	var d = '';
+	var comma = '';
+	var a=list.split(' ');
+	for (var i = 0; i < a.length; i++)
+	{ 
+	    if (a[i] != '.')
+	    {
+		d = d + comma + "'" + a[i] + "'";
+		comma = ', ';
+	    }
+	}
+	return '[' + d + ']';
+    }    
+
+    function get_size_kb(x)
+    {
+	var k = new String(x / 1000);
+	var d = k.indexOf('.');
+	if (d)
+	    return k.slice(0, d + 2);
+	return k;
+    }
+    
+    /**************************************************************************/
+    // ui primitives
     
     function new_icon(image)
     {
@@ -703,20 +675,218 @@
 	}
     }
 
-    function list_to_string(list)
+    function toggle_allow_inline(event)
     {
-	var d = '';
-	var comma = '';
-	var a=list.split(' ');
-	for (var i = 0; i < a.length; i++)
-	{ 
-	    if (a[i] != '.')
-	    {
-		d = d + comma + "'" + a[i] + "'";
-		comma = ', ';
-	    }
+      block_inline_scripts = !block_inline_scripts;
+      this.checkbox.checked = block_inline_scripts;
+      this.nextSibling.style.display = (block_inline_scripts ? 'block' : 'none');
+      set_bool_setting('noscript_inline', block_inline_scripts);
+      need_reload = true;
+    }
+
+    function toggle_handle_noscript_tags()
+    {
+      handle_noscript_tags = !handle_noscript_tags;
+      this.checkbox.checked = handle_noscript_tags;
+      set_bool_setting('noscript_nstags', handle_noscript_tags);
+      need_reload = true;
+    }
+    
+    /**************************************************************************/
+    // details menu
+    
+    function show_details()
+    {	
+	var nsdetails = idoc.createElement('div');
+	nsdetails.align = 'left';
+	nsdetails.style="border-width: 2px; border-style: outset; border-color: gray; background:#abb9ca;";
+//        nsdetails.style.display = 'inline-block';
+
+	nsdetails.onmouseout = function(e)
+	{
+	   if (!mouseout_leaving_menu(e, nsdetails))
+	       return;	   
+	   td.removeChild(nsdetails);
+	   resize_iframe();	   
+	};
+	
+	var item = add_menu_item(nsdetails, "Scripts:");
+	item.align = 'center';
+	item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
+	add_menu_separator(nsdetails);	
+
+	foreach_host_node(function(host_node)
+	{
+	  var h = host_node.name;
+	  var s = host_node.scripts;
+	  // var item = add_menu_item(nsdetails, h + ":");	  
+
+	  sort_scripts(s);
+	  for (var j = 0; j < s.length; j++)
+	  {
+	      var item = add_link_menu_item(nsdetails, s[j].url, strip_http(s[j].url), 2);
+	      // script status
+	      var icon = new_icon();
+	      var image = 'Transfer Stopped';
+	      if (allowed_host(h))
+	      {
+		  image = 'Transfer Success';
+		  if (!s[j].loaded)
+		  {
+		      image = 'Transfer Size Mismatch';
+		      icon.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
+		  }
+	      }
+	      set_icon_image(icon, image);
+
+	      item.insertBefore(icon, item.childNodes[0]);
+	  }	  
+	});
+	
+	var td = idoc.getElementById('td_nsmenu');
+	td.appendChild(nsdetails);
+
+	show_hide_menu(false);
+        nsdetails.style.display = 'inline-block';
+    }
+   
+    /**************************************************************************/
+    // main menu
+        
+    var nsmenu = null;
+    var need_reload = false;
+    function create_menu()
+    {
+	nsmenu = idoc.createElement('div');
+	nsmenu.id = 'noscript_menu';
+	nsmenu.align = 'left';
+	nsmenu.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;" +
+	// "background:#abb9ca;" +
+        "background: #ccc;" +
+	// "background: #efebe7;" +
+	"box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);";
+	
+        nsmenu.style.display = 'none';
+
+	nsmenu.onmouseout = function(e)
+	{
+	  if (!mouseout_leaving_menu(e, nsmenu))
+	      return;
+	  show_hide_menu(false);
+	  if (need_reload)
+	      reload_page();
+	};
+	
+	var item = add_menu_item(nsmenu, "Noscript Settings ...");
+	item.title = version + ". Click to view global settings.";
+	item.align = 'center';
+	item.className = 'noscript_title'
+        // item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
+	item.onclick = function(event)
+	{       
+  	  if (!event.ctrlKey)
+	  {
+	    var d = list_to_string(global_setting('noscript_whitelist'));
+	    alert("Noscript \nGlobal whitelist: \n" + d);
+	  
+	    return;
+	  }
+	  var d = list_to_string(setting(setting_hosts));
+	  alert("Noscript \nHosts allowed for this page: \n" + d);
+	};
+
+	item = add_menu_item(nsmenu, "Set for: ", 0, null);
+	add_radio_button(item, " Page ", 0);
+	add_radio_button(item, " Site ", 1);
+	add_radio_button(item, " Domain ", 2);	
+	add_radio_button(item, " Global ", 3);
+
+//	add_menu_separator(nsmenu);
+//	add_menu_item(nsmenu, "External Scripts:");	
+	item = add_mode_menu_item(nsmenu, "Block All", 'block_all');
+	item.title = "Block all scripts.";
+
+	if (mode == 'block_all')
+	{
+	    var checkbox = make_checkbox(block_inline_scripts);
+	    var label = "Block Inline Scripts";
+	    item = add_menu_item(nsmenu, label, 1, toggle_allow_inline, checkbox);
+	    item.checkbox = item.firstChild;
+	    add_right_aligned_text(item, " [" + get_size_kb(total_inline_size) + "k]");
+	
+	    var checkbox = make_checkbox(handle_noscript_tags);
+	    var label = "Pretend Javascript Disabled";
+	    item = add_menu_item(nsmenu, label, 1, toggle_handle_noscript_tags, checkbox);
+	    item.checkbox = item.firstChild;
+	    item.title = "Interpret noscript tags as if javascript was disabled in opera."
+	    if (!block_inline_scripts)
+		item.style += "display:none;";
 	}
-	return '[' + d + ']';
+
+	item = add_mode_menu_item(nsmenu, 'Filtered', 'filtered');
+	item.title = "Select which scripts to run. (current site allowed by default, inline scripts always allowed.)"
+	if (mode == 'filtered')
+	    add_ftable(nsmenu);
+
+	item = add_mode_menu_item(nsmenu, 'Relaxed', 'relaxed');
+	item.title = "Allow related and helper domains.";
+	if (mode == 'relaxed')
+	    add_ftable(nsmenu);
+
+	item = add_mode_menu_item(nsmenu, 'Allow All', 'allow_all');
+	item.title = "Allow everything ..."
+	if (mode == 'allow_all')
+	    add_ftable(nsmenu);
+	
+	add_menu_item(nsmenu, "Details ...", 0, show_details);
+
+	for (var prop in plugin_items)
+	    if (plugin_items.hasOwnProperty(prop))
+		add_menu_item(nsmenu, plugin_items[prop], 0, null);
+    }
+
+    function parent_menu()
+    {
+	var td = idoc.getElementById('td_nsmenu');
+	td.appendChild(nsmenu);		
+    }
+
+    function show_hide_menu(show, toggle)
+    {
+      if (!nsmenu)
+      {
+	  create_menu();
+	  parent_menu();
+      }
+      var d = (show ? 'inline-block' : 'none');
+      if (toggle)
+	  d = (nsmenu.style.display == 'none' ? 'inline-block' : 'none');
+      nsmenu.style.display = d;
+      resize_iframe();
+    }
+
+    function mouseout_leaving_menu(e, menu)
+    {
+	// if (!e)
+	//    var e = window.event;
+	
+	// object we're moving out of
+	// var tg = (window.event) ? e.srcElement : e.target;
+	// if (tg != nsdetails) // moving out of one its children.
+	//  return; we actually need that case!
+	
+	// e.relatedTarget: object we're moving to.
+	var reltg = e.relatedTarget;
+	if (reltg)
+	{
+  	    if (reltg.id == 'noscript_button')
+		return false; // moving back to button, doesn't count
+	    while (reltg != menu && reltg.nodeName != 'HTML')
+		reltg = reltg.parentNode;
+	    if (reltg == menu)
+		return false; // moving out of the div into a child layer
+	}
+	return true;
     }
 
     function add_ftable(nsmenu)
@@ -795,118 +965,197 @@
 	    item.childNodes[0].innerHTML = "&nbsp;&nbsp;";
     }
     
-    var nsmenu = null;
-    var need_reload = false;
-    function create_menu()
+    /**************************************************************************/
+    // main table
+    
+    var main_table = null;
+    function create_main_table()
     {
-	nsmenu = idoc.createElement('div');
-	nsmenu.id = 'noscript_menu';
-	nsmenu.align = 'left';
-	nsmenu.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;" +
-	// "background:#abb9ca;" +
-        "background: #ccc;" +
-	// "background: #efebe7;" +
-	"box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);";
-	
-        nsmenu.style.display = 'none';
+	var table = idoc.createElement('table');
+	table.id = 'noscript_table';
+	table.border = 0;
+	table.cellSpacing = 0;
+	table.cellPadding = 0;	
+	// background:-o-skin("Browser Window Skin")        
 
-	nsmenu.onmouseout = function(e)
+        var tooltip = "[Inline scripts] " + total_inline +
+	  (block_inline_scripts ? " blocked": "") +
+	  " (" + get_size_kb(total_inline_size) + "k), " +
+	  "[" + current_host + "] " + blocked_current_host;
+	if (blocked_current_host != total_current_host)
+	    tooltip += "/" + total_current_host;
+	tooltip += " blocked";
+	if (loaded_current_host)
+	    tooltip += " (" + loaded_current_host + " loaded)";
+
+        tooltip += ", [Other hosts] " + blocked_external;
+	if (blocked_external != total_external)
+	    tooltip += "/" + total_external; 
+	tooltip += " blocked";
+	if (loaded_external)
+	    tooltip += " (" + loaded_external + " loaded)";
+
+        var r = idoc.createElement('button');
+	r.id = 'noscript_button';
+	r.title = tooltip;
+	button_image = new_icon_mode(mode);
+	r.appendChild(button_image);
+	r.onmouseover = function()
 	{
-	  if (!mouseout_leaving_menu(e, nsmenu))
-	      return;
-
-	  show_hide_menu(false);
+	  // console.log("button mouseover");
+	  show_hide_menu(true);    // menu can disappear if we switch these two, strange
+	  check_changed_settings();
+	};
+        r.onclick = function(event)
+	{
+	  // cycle through the modes
+	  if (mode == 'block_all')      set_mode('filtered');
+	  else if (mode == 'filtered')  set_mode('relaxed');
+	  else if (mode == 'relaxed')  set_mode('allow_all');
+	  else if (mode == 'allow_all') set_mode('block_all');
+	};
+	r.onmouseout = function(e)
+	{
 	  if (need_reload)
-	      reload_page();
+	      reload_page();	      
 	};
+
+	var tr = idoc.createElement('tr');
+	var td = idoc.createElement('td');
+	td.id = 'td_nsmenu';
 	
-	var item = add_menu_item(nsmenu, "Noscript Settings ...");
-	item.title = version + ". Click to view global settings.";
-	item.align = 'center';
-	item.className = 'noscript_title'
-        // item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
-	item.onclick = function(event)
-	{       
-  	  if (!event.ctrlKey)
-	  {
-	    var d = list_to_string(global_setting('noscript'));
-	    alert("Noscript \nGlobal whitelist: \n" + d);
-	  
+	tr.appendChild(td);
+        table.appendChild(tr);
+
+	var tr = idoc.createElement('tr');
+	var td = idoc.createElement('td');
+	td.appendChild(r);
+	tr.appendChild(td);
+        table.appendChild(tr);
+
+	main_table = table;
+    }
+
+    function parent_main_table()
+    {
+	idoc.body.appendChild(main_table);
+    }
+
+    /**************************************************************************/
+    // repaint logic
+
+    var repaint_ui_count = 0;
+    var repaint_ui_timer = null;
+    function repaint_ui()
+    {
+	repaint_ui_count++;
+	if (repaint_ui_timer)
 	    return;
-	  }
-	  var d = list_to_string(scoped_setting(setting_hosts));
-	  alert("Noscript \nHosts allowed for this page: \n" + d);
-	};
+	repaint_ui_timer = setTimeout(repaint_ui_now, 500);
+    }
 
-	item = add_menu_item(nsmenu, "Set for: ", 0, null);
-	add_radio_button(item, " Page ", 0);
-	add_radio_button(item, " Site ", 1);
-	add_radio_button(item, " Domain ", 2);	
-	add_radio_button(item, " Global ", 3);
+    function repaint_ui_now()
+    {
+	repaint_ui_timer = null;	
+	//   debug: (note: can't call plugins' add_item() here (recursion))
+	//   plugin_items.repaint_ui = "late events:" + repaint_ui_count;	
 
-//	add_menu_separator(nsmenu);
-//	add_menu_item(nsmenu, "External Scripts:");	
-	item = add_mode_menu_item(nsmenu, "Block All", 'block_all');
-	item.title = "Block all scripts.";
-
-	if (mode == 'block_all')
+	// menu logic slightly more complicated than just calling
+	// show_hide_menu() at the end -> no flickering at all this way!!
+	var menu_shown = nsmenu && nsmenu.style.display != 'none';	
+	create_main_table();
+	if (menu_shown)
+	    create_menu();	
+	idoc.body.removeChild(idoc.body.firstChild); // remove main_table
+	parent_main_table();
+	if (menu_shown)
 	{
-	    var checkbox = make_checkbox(block_inline_scripts);
-	    var label = "Block Inline Scripts";
-	    item = add_menu_item(nsmenu, label, 1, toggle_allow_inline, checkbox);
-	    item.checkbox = item.firstChild;
-	    add_right_aligned_text(item, " [" + get_size_kb(total_inline_size) + "k]");
-	
-	    var checkbox = make_checkbox(handle_noscript_tags);
-	    var label = "Pretend Javascript Disabled";
-	    item = add_menu_item(nsmenu, label, 1, toggle_handle_noscript_tags, checkbox);
-	    item.checkbox = item.firstChild;
-	    item.title = "Interpret noscript tags as if javascript was disabled in opera."
-	    if (!block_inline_scripts)
-		item.style += "display:none;";
+	    parent_menu();	
+	    show_hide_menu(true);
 	}
+    }
+    
+    /**************************************************************************/
+    // injected iframe logic
+    
+    function populate_iframe()
+    {
+	iframe.contentWindow.name = 'noscript_iframe';
+	idoc = iframe.contentWindow.document;
 
-	item = add_mode_menu_item(nsmenu, 'Filtered', 'filtered');
-	item.title = "Select which scripts to run. (current site allowed by default, inline scripts always allowed.)"
-	if (mode == 'filtered')
-	    add_ftable(nsmenu);
-
-	item = add_mode_menu_item(nsmenu, 'Relaxed', 'relaxed');
-	item.title = "Allow related and helper domains.";
-	if (mode == 'relaxed')
-	    add_ftable(nsmenu);
-
-	item = add_mode_menu_item(nsmenu, 'Allow All', 'allow_all');
-	item.title = "Allow everything ..."
-	if (mode == 'allow_all')
-	    add_ftable(nsmenu);
+	// set doctype, we want strict mode, not quirks mode!
+	idoc.open();
+	idoc.write("<!DOCTYPE HTML>\n<html><head></head><body></body></html>");
+	idoc.close();
 	
-	add_menu_item(nsmenu, "Details ...", 0, show_details);
+	var noscript_style =
+"\n\
+#noscript_table { position:fixed;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:99999999;direction:ltr;font-family:sans-serif; font-size:small; margin-bottom:0px; }  \n\
+#noscript_table > tr > td { text-align: right; padding: 0px 0px 0px 0px;} \n\
+#noscript_ftable { width:100%; } \n\
+#noscript_ftable > tr > td { padding: 0px 0px 1px 0px;} \n\
+.noscript_title { background-color:#d80; color:#ffffff; font-weight:bold; } \n\
+#noscript_button { border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } \n\
+#noscript_table div { width: auto; } \n\
+input[type=radio]         { display:none; } \n\
+input[type=radio] + label:hover   { background-color: #ddd; } \n\
+input[type=radio] + label { \n\
+	box-shadow:inset 0px 1px 0px 0px #ffffff; \n\
+	border-radius:6px; \n\
+	border:1px solid #dcdcdc; \n\
+	background-color: #c7c7c7;  \n\
+	display:inline-block; \n\
+	padding:1px 5px; \n\
+	text-decoration:none; } \n\
+input[type=radio]:checked + label { background-color: #fa4; } \n\
+.noscript_global { padding: 0px 3px; width:14px; height:14px; vertical-align:middle; \
+    background: -o-skin('RSS'); } \n\
+";
 
-	for (var prop in plugin_items)
-	    if (plugin_items.hasOwnProperty(prop))
-		add_menu_item(nsmenu, plugin_items[prop], 0, null);
+	// -o-linear-gradient(top, #FFFFFF 0px, #CCCCCC 100%) #E5E5E5;
+	
+	new_style(noscript_style);
+	idoc.body.style.margin = '0px';
+	create_main_table();
+	parent_main_table();
+	resize_iframe();
     }
 
-    function parent_menu()
+    function resize_iframe()
     {
-	var td = idoc.getElementById('td_nsmenu');
-	td.appendChild(nsmenu);		
+	var content = idoc.body.firstChild;
+	//iframe.style.width = content.clientWidth + 'px';
+	//iframe.style.height = content.clientHeight + 'px';
+	iframe.style.width = content.scrollWidth + 'px';
+	iframe.style.height = content.scrollHeight + 'px';
+    }    	    
+    
+    var iframe = null;
+    var idoc = null;
+    function create_iframe()
+    {
+	iframe = document.createElement('iframe');
+	iframe.id = 'noscript_iframe';
+	iframe.style = "position:fixed !important;width:auto !important;height:auto !important;background:transparent !important;white-space:nowrap !important;z-index:99999999 !important;direction:ltr !important;font-family:sans-serif !important; font-size:small !important; margin-bottom:0px !important;" +
+	
+// "width: 300px !important; height: 100px !important;"
+	"margin-top: 0px !important; margin-right: 0px !important; margin-bottom: 0px !important; margin-left: 0px !important; padding-top: 0px !important; padding-right: 0px !important; padding-bottom: 0px !important; padding-left: 0px !important; border-top-width: 0px !important; border-right-width: 0px !important; border-bottom-width: 0px !important; border-left-width: 0px !important; border-top-style: none !important; border-right-style: none !important; border-bottom-style: none !important; border-left-style: none !important; background-color: transparent !important; visibility: visible !important; content: normal !important; outline-width: medium !important; outline-style: none !important; background-image: none !important; min-width: 0px !important; min-height: 0px !important; " +
+	
+//	"border: 1px solid #CCC !important; " +	
+	(cornerposition < 3 ? 'top': 'bottom') + ':1px !important;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px !important;';
+	iframe.scrolling="no";
+//	iframe.frameborder="0";
+	iframe.allowtransparency="true";
+	//iframe.class="aomi"
+	//iframe.src=""; id="i0" title="about:blank
+
+	iframe.onload = populate_iframe;
+	document.body.appendChild(iframe);
     }
 
-    function show_hide_menu(show, toggle)
-    {
-      if (!nsmenu)
-      {
-	  create_menu();
-	  parent_menu();
-      }
-      var d = (show ? 'inline-block' : 'none');
-      if (toggle) 
-	  d = (nsmenu.style.display == 'none' ? 'inline-block' : 'none');
-      nsmenu.style.display = d;
-      resize_iframe();
-    }
+    
+    /**************************************************************************/
+    // scripts store
     
     function new_script(url)
     {
@@ -985,8 +1234,6 @@
 	return null;
     }
 
-    
-
     // call f(host_node, domain_node) for every hosts
     function foreach_host_node(f)
     {
@@ -1026,6 +1273,27 @@
 	});
     }
 
+    /**************************************************************************/
+    // plugin api
+    
+    if (window.noscript)
+	alert("noscript.js: window.noscript exists!!!");
+    // FIXME: when adding frame support, fix this.
+    window.noscript = new Object();    
+
+    var plugin_items = new Object();
+    // API for plugins to add items to noscript's menu    
+    window.noscript.add_item = function(name, value)
+    {
+	//console.log("noscript: plugin added item: " + name + " : " + text);
+        plugin_items[name] = value;
+	if (nsmenu)
+	    repaint_ui();	
+    };
+    
+    /**************************************************************************/
+    // Events
+    
     var blocked_current_host = 0;
     var loaded_current_host = 0;
     var total_current_host = 0;
@@ -1036,15 +1304,6 @@
 
     var total_inline = 0;
     var total_inline_size = 0;
-
-    function get_size_kb(x)
-    {
-	var k = new String(x / 1000);
-	var d = k.indexOf('.');
-	if (d)
-	    return k.slice(0, d + 2);
-	return k;
-    }
 
     // Handler for both inline *and* external scripts
     opera.addEventListener('BeforeScript',
@@ -1118,202 +1377,18 @@
 	if (nsmenu)
 	    repaint_ui();
     }, false);
-
-    if (window.noscript)
-	alert("noscript.js: window.noscript exists!!!");
-    // FIXME: when adding frame support, fix this.
-    window.noscript = new Object();    
-
-    var plugin_items = new Object();
-    // API for plugins to add items to noscript's menu    
-    window.noscript.add_item = function(name, value)
-    {
-	//console.log("noscript: plugin added item: " + name + " : " + text);
-        plugin_items[name] = value;
-	if (nsmenu)
-	    repaint_ui();	
-    };
-
-    function populate_iframe()
-    {
-	iframe.contentWindow.name = 'noscript_iframe';
-	idoc = iframe.contentWindow.document;
-
-	// set doctype, we want strict mode, not quirks mode!
-	idoc.open();
-	idoc.write("<!DOCTYPE HTML>\n<html><head></head><body></body></html>");
-	idoc.close();
-	
-	var noscript_style =
-"\n\
-#noscript_table { position:fixed;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:99999999;direction:ltr;font-family:sans-serif; font-size:small; margin-bottom:0px; }  \n\
-#noscript_table > tr > td { text-align: right; padding: 0px 0px 0px 0px;} \n\
-#noscript_ftable { width:100%; } \n\
-#noscript_ftable > tr > td { padding: 0px 0px 1px 0px;} \n\
-.noscript_title { background-color:#d80; color:#ffffff; font-weight:bold; } \n\
-#noscript_button { border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } \n\
-#noscript_table div { width: auto; } \n\
-input[type=radio]         { display:none; } \n\
-input[type=radio] + label:hover   { background-color: #ddd; } \n\
-input[type=radio] + label { \n\
-	box-shadow:inset 0px 1px 0px 0px #ffffff; \n\
-	border-radius:6px; \n\
-	border:1px solid #dcdcdc; \n\
-	background-color: #c7c7c7;  \n\
-	display:inline-block; \n\
-	padding:1px 5px; \n\
-	text-decoration:none; } \n\
-input[type=radio]:checked + label { background-color: #fa4; } \n\
-.noscript_global { padding: 0px 3px; width:14px; height:14px; vertical-align:middle; \
-    background: -o-skin('RSS'); } \n\
-";
-
-	// -o-linear-gradient(top, #FFFFFF 0px, #CCCCCC 100%) #E5E5E5;
-	
-	new_style(noscript_style);
-	idoc.body.style.margin = '0px';
-	create_main_table();
-	parent_main_table();
-	resize_iframe();
-    }
-
-    var main_table = null;
-    function create_main_table()
-    {
-	var table = idoc.createElement('table');
-	table.id = 'noscript_table';
-	table.border = 0;
-	table.cellSpacing = 0;
-	table.cellPadding = 0;	
-	// background:-o-skin("Browser Window Skin")        
-
-        var tooltip = "[Inline scripts] " + total_inline +
-	  (block_inline_scripts ? " blocked": "") +
-	  " (" + get_size_kb(total_inline_size) + "k), " +
-	  "[" + current_host + "] " + blocked_current_host;
-	if (blocked_current_host != total_current_host)
-	    tooltip += "/" + total_current_host;
-	tooltip += " blocked";
-	if (loaded_current_host)
-	    tooltip += " (" + loaded_current_host + " loaded)";
-
-        tooltip += ", [Other hosts] " + blocked_external;
-	if (blocked_external != total_external)
-	    tooltip += "/" + total_external; 
-	tooltip += " blocked";
-	if (loaded_external)
-	    tooltip += " (" + loaded_external + " loaded)";
-
-        var r = idoc.createElement('button');
-	r.id = 'noscript_button';
-	r.title = tooltip;
-	button_image = new_icon_mode(mode);
-	r.appendChild(button_image);
-	r.onmouseover = function() { show_hide_menu(true); };
-        r.onclick = function(event)
-	{
-	  // cycle through the modes
-	  if (mode == 'block_all')      set_mode('filtered');
-	  else if (mode == 'filtered')  set_mode('relaxed');
-	  else if (mode == 'relaxed')  set_mode('allow_all');
-	  else if (mode == 'allow_all') set_mode('block_all');
-	};
-	r.onmouseout = function(e)
-	{
-	  if (need_reload)
-	      reload_page();	      
-	};
-
-	var tr = idoc.createElement('tr');
-	var td = idoc.createElement('td');
-	td.id = 'td_nsmenu';
-	
-	tr.appendChild(td);
-        table.appendChild(tr);
-
-	var tr = idoc.createElement('tr');
-	var td = idoc.createElement('td');
-	td.appendChild(r);
-	tr.appendChild(td);
-        table.appendChild(tr);
-
-	main_table = table;
-    }
-
-    function parent_main_table()
-    {
-	idoc.body.appendChild(main_table);
-    }
-	
-
-    var repaint_ui_count = 0;
-    var repaint_ui_timer = null;
-    function repaint_ui()
-    {
-	repaint_ui_count++;
-	if (repaint_ui_timer)
-	    return;
-	repaint_ui_timer = setTimeout(repaint_ui_now, 500);
-    }
-
-    function repaint_ui_now()
-    {	
-	repaint_ui_timer = null;	
-	//   debug: (note: can't call plugins' add_item() here (recursion))
-	//   plugin_items.repaint_ui = "late events:" + repaint_ui_count;	
-
-	// menu logic slightly more complicated than just calling
-	// show_hide_menu() at the end -> no flickering at all this way!!
-	var menu_shown = nsmenu && nsmenu.style.display != 'none';	
-	create_main_table();
-	if (menu_shown)
-	    create_menu();	
-	idoc.body.removeChild(idoc.body.firstChild); // remove main_table
-	parent_main_table();
-	if (menu_shown)
-	{
-	    parent_menu();	
-	    show_hide_menu(true);
-	}
-    }
     
-    function resize_iframe()
-    {
-	var content = idoc.body.firstChild;
-	//iframe.style.width = content.clientWidth + 'px';
-	//iframe.style.height = content.clientHeight + 'px';
-	iframe.style.width = content.scrollWidth + 'px';
-	iframe.style.height = content.scrollHeight + 'px';
-    }
-    
-    var iframe = null;
-    var idoc = null;
     document.addEventListener('DOMContentLoaded',
     function()
     {
         if (!domain_nodes.length && !total_inline) 
-            return;
+            return;  // no scripts ? exit.
 
 	if (block_inline_scripts)
 	    check_handle_noscript_tags();
 	
-	iframe = document.createElement('iframe');
-	iframe.id = 'noscript_iframe';
-	iframe.style = "position:fixed !important;width:auto !important;height:auto !important;background:transparent !important;white-space:nowrap !important;z-index:99999999 !important;direction:ltr !important;font-family:sans-serif !important; font-size:small !important; margin-bottom:0px !important;" +
-	
-// "width: 300px !important; height: 100px !important;"
-	"margin-top: 0px !important; margin-right: 0px !important; margin-bottom: 0px !important; margin-left: 0px !important; padding-top: 0px !important; padding-right: 0px !important; padding-bottom: 0px !important; padding-left: 0px !important; border-top-width: 0px !important; border-right-width: 0px !important; border-bottom-width: 0px !important; border-left-width: 0px !important; border-top-style: none !important; border-right-style: none !important; border-bottom-style: none !important; border-left-style: none !important; background-color: transparent !important; visibility: visible !important; content: normal !important; outline-width: medium !important; outline-style: none !important; background-image: none !important; min-width: 0px !important; min-height: 0px !important; " +
-	
-//	"border: 1px solid #CCC !important; " +	
-	(cornerposition < 3 ? 'top': 'bottom') + ':1px !important;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px !important;';
-	iframe.scrolling="no";
-//	iframe.frameborder="0";
-	iframe.allowtransparency="true";
-	//iframe.class="aomi"
-	//iframe.src=""; id="i0" title="about:blank
-
-	iframe.onload = populate_iframe;
-	document.body.appendChild(iframe);
+	create_iframe();
     },
     false);
+    
 })(opera, opera.scriptStorage);
