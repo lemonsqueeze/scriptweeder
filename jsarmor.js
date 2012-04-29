@@ -166,7 +166,23 @@
     
     function reload_page()
     {
-	location.reload(false);
+	// All of these reload from server ...
+	//   location.reload(false);
+	//   history.go(0);
+	//   location.href = location.href;
+
+	// Hack: simulate click on a link to reload from cache !
+	var a = document.createElement('a');
+	a.href = location.href;
+	// a.innerText = 'this page';
+	document.body.appendChild(a);
+	
+	// simulateClick() from
+	// https://developer.mozilla.org/samples/domref/dispatchEvent.html
+	var evt = document.createEvent("MouseEvents");
+	evt.initMouseEvent("click", true, true, window,
+			   0, 0, 0, 0, 0, false, false, false, false, 0, null);
+	a.dispatchEvent(evt);	
     }
     
     function new_style(str)
