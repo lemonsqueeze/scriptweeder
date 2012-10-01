@@ -1,5 +1,5 @@
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.38';
+    var version = 'Noscript v1.39';
 
     /************************* Default Settings *******************************/
     
@@ -279,7 +279,7 @@
     function split_url(u)
     {
 	u = strip_http(u);
-	var a = u.match(/^([^?&:]*)\/([^/?&:]*)(.*)$/);
+	var a = u.match(/^([^/]*)\/([^/?&:]*)(.*)$/);
 	if (!a)
 	    alert("noscript.js: shouldn't happen");
 	return a.slice(1);
