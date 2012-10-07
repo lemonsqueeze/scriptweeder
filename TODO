@@ -1,0 +1,373 @@
+
+[ IDEAS ]
+
+General:
+
+- visualize 
+    js cost
+    site's abuse of trust
+
+- awfully cool ui: 
+  ship shield display a la tie-fighter
+  front/sides/rear shields -> current/related/other(+iframes) domains
+  bigger scripts -> more damage!
+    (way to animate ? display as page is loading)
+  grey transparent ui
+  zoom in on mouseover
+  tooltips for details
+  ship/shield flashing on new event (new script, blocked request ...)
+
+  other ideas/metaphors ?
+  armor
+  star wars destroyer shield
+  gate
+  watch dog  
+  box (pandora)
+  car
+  
+Features:
+- show script sizes in kb for external scripts loaded
+- way to find out about dns aliases in JS ?
+- shut the door! block outgoing requests once DOM loaded !!
+- show big inline scripts, allow to block them!
+
+- noscript console with messages, events ...
+
+- use JSON instead of de/serializing arrays by hand ?
+- XSS ??
+- Detect / block ajax ?
+  NB: seems slate.com uses ajax
+- display info on startup ? in bottom bar a la noscript or with timer ?
+- "turn noscript off" for current url or tab (#nsoff ...)
+- "show whitelist" button
+- selection color -> orange !
+
+---------------------------------------------------------------------------
+
+[ TODO ]
+
+Urgent:
+  - Move styles into CSS
+
+  - Check what happens for http redirect on script url
+    Which url shows up ??
+
+  - IFrames handling !
+    Scripts from iframe's domain will be run by default
+      -> potentially any external script can be run !!
+    Also UI showing up: ugly and not useable.
+    
+    - Idea:
+      1) Find a way to communicate iframe's scripts to parent
+        -> Parent displays them in menu
+           (icon to indicate it comes from an iframe ?)
+      2) Iframe has no UI and uses parent's settings
+  
+    - ideal (?): block loading + placeholder
+    - less ideal but should work:
+      don't show UI and block everything for external iframes
+      iframes from the same domain will use the settings from the main window
+      (can be scripts in them we don't know anything about but ...)
+
+Features:
+  - Settings window
+    way to set defaults
+    edit whitelist,
+    change font, skin
+    export settings ...
+
+  - Decent way to export/import settings.
+    edit whitelist etc ...
+  - Make it an opera extension
+    - ui ??
+    - prevent style problems
+    - save settings through widget.preferences    
+
+UI Enhancements:
+  - Fix details menu style
+  - noscript title clobbers beautiful shaded effect
+      increase top padding/margin ?
+  - Scrolling problems: can we put scrollbars in DIV ?
+    otherwise use popup window ?
+  - transparent button ?
+    dev.opera.com/articles/view/beautiful-ui-styling-with-css3-text-shadow-box-shadow-and-border-radius/
+
+Before Release:
+  - documentation
+  - update global whitelist:
+    use current settings to compile whitelist.
+    make sure mainstream stuff works out of the box
+    (youtube, google maps, flickr ...)
+  - nice welcome message
+  - needs scriptstorage quota
+  - needs setting to run on https sites
+    -> can use opera.setPreference() to set it !!!
+  - decent iframe behaviour
+  - Check UI with normal fonts
+  - credits
+  - clear ui, tooltips, doc ...
+  - config window, default settings etc
+
+Optimization/Cleanup:
+  - cache script storage settings instead of accessing every time ?
+  - move CSS out of javascript (prob. more efficient for browser)
+
+--------------------------------------------------------------------------
+
+[ FIXME! ]
+
+  - google maps in iframe:
+    http://www.fermedescharrieres.fr/contact.html
+    can't load ...
+
+  - http://www.instructables.com/id/Very-simple-PWM-with-555Modulate-every-thing/
+    what is this data:javascript ... stuff ??
+
+  - Menu stops showing up (scroll down a little)
+    v1.38
+    http://www.imdb.com/title/tt0374546/
+    
+  - http://www.openwifispots.com/city_free_wifi_wireless_hotspot-Albertville_MN.aspx#45.233368,-93.663168,14
+    cached reload hack doesn't reload anything!
+  - http://www.costaroche.fr.st/
+    changing settings reloads current frame, but not others
+    -> how do we reload the whole page ??
+    top.location.reload() doesn't work either
+  - domain helpers: look at hostname also
+    Ex: api.recaptcha.net   (http://www.rlslog.net/)
+        cdn.adk2.com
+  - When moving mouse from menu to window scrollbar:
+    Error: cannot convert reltg to object
+    in nsmenu.onmouseout
+  - FIXME comments in the code
+  - "Details" menu displays old style  
+  - blocking inline scripts doesn't completely block javascript:
+    page can still execute js through:
+      - event handlers 
+      - javascript url
+  
+    cf http://www.howtocreate.co.uk/operaStuff/userjs/disablescript.js    
+  - wn.com gets handled as a .co.uk style domain
+
+  - (web dev) issues with local html+js files 
+    domain is empty
+    file:// url gets rewritten as http:// in script details
+  
+Style Issues:
+Iframe version
+  - youtube still breaks ui style !!!
+  - http://precarioussecurity.blogspot.fr/2012/03/simulated-man-in-middle-with-privoxy.html
+    noscript ui not showing up!
+
+Embedded version:
+  - http://www.petitfute.com/adresse/annuaire/z-35-123/restaurant-restaurant-vegetarien-vercors
+    word wrapping on google-analytics.com
+  - slashdot
+    font and spacing a little weird
+  - dev.opera.com/articles/view/beautiful-ui-styling-with-css3-text-shadow-box-shadow-and-border-radius/
+    div left of button when menu is shown is not transparent anymore
+  - vi.sualize.us/
+    completely breaks menu styles
+  - http://www.echoecho.com/cssselectors05.htm
+    gets the number of scripts wrong
+    (google.com: 5 <-> googlesyndication.com: 1)
+  - lemonde.fr
+    almost hides button
+  - deviantart.com: warning, can't convert window.name to object (???)
+  - youtube makes button transparent (background:transparent)
+    and there doesn't seem to be a way to revert that to default ...
+    -> probaly have to switch from button to div and use
+       border-radius and -o-linear-gradient
+  - menu not showing up in ajaxian.com/archives/tooltips 
+    (also this one uses facebook iframe which has inline scripts)
+  - moving mouse out of main button doesn't hide menu (maybe that's ok)
+  
+----------------------------------------------------------------------------  
+  
+DONE:
+
+- "relaxed mode"
+  accept current domain + related and helper domains 
+- highlight current mode in menu
+- Decent radio button styling
+- reload from cache !
+- move inline script blocking inside "Block All" mode
+  doesn't make much sense to block inline and allow external ...
+- If domain allowed, but some scripts are blocked by smth else, 
+  indicate it with "!" in main menu
+- scoped settings
+- Filter by host instead of by domain
+- use injected iframe -> no interferences with page's css!
+- reload when leaving menu, this way we can make several settings at once
+- sorting: show current and related domains first
+- handle noscript tags as if javascript was disabled when inline scripts are blocked!
+- nice shaded gray menu using
+  http://dev.opera.com/articles/view/beautiful-ui-styling-with-css3-text-shadow-box-shadow-and-border-radius/
+- global whitelist of domains,
+  using scriptStorage (opera > 10.50))
+  don't want to depend on cookies only for saving stuff:
+    - they only work for current domain
+    - want to keep them only for the current session
+    - difficult to see/export etc
+- code cleanup!
+- script details: show url with link
+- display version somewhere
+- display number of scripts for each domain in main menu
+- handle .co.uk style domains
+- display scripts details:
+  blocked/allowed, whitelisted, not loaded (to find if smth else is blocking)
+
+-------------------------------------------------------------------------------
+
+FIXED:
+
+  - Scripts can get loaded after menu has been populated
+    Ex for external scripts:
+        www.google.com -> [www.google.com, ssl.gstatic.com] scripts     
+        hovering over site preview loads
+           [clients.google.com] which doesn't show up in menu ...
+        (also works with main google web page, when suggests kicks in)
+  
+    -> Rebuild menu, Update tooltip
+       Inform user somehow (make button flash, show tooltip ...)
+  
+    Same problem with inline scripts...
+
+
+Style:
+    - maps.gmail.com: when gstatic.com is allowed, 
+      scripts stats in tooltip are incorrect (because script is loading other scripts,
+      maybe happens after DOM loaded ??)
+
+  - google search with inline js turned off:
+      table doesn't expand to 100% width, so looks weird
+
+- bug when switching to scriptstorage:
+  local settings should be per site, not per domain:
+    www.google.com and images.google.com are using the same settings
+- imp.free.fr, zdnet: main icon moves left with menu
+- http://www.w3schools.com/jsref/default.asp
+  was jumping lines in menu (menuitems with children)
+  -> reset width to auto
+- http://www.extremecarving.com/forum/viewtopic.php?f=13&t=9810
+  gray menuitems
+- style problems (site's css takes over) on
+  shoutcast.com, dev.opera.com
+- makeuseof(.com?) zooms icons
+
+Strange:
+- No events firing after external script errors (or so it seems):
+  with http://forum.skins.be/
+       when allowing forum.skins.be scripts only.
+  -> Triggers a few errors,
+     if using event logger userjs, we get no more events!
+  NB: when blocking forum.skins.be scripts, it works
+
+----------------------------------------------------------------------------
+
+
+TESTING:
+
+- simple page with one external script:
+  http://sandbox.leigeber.com/dropdown-menu/index.html
+- simple page with 2 external scripts (1 in domain, 1 outside)
+  http://www.quirksmode.org/js/cookies.html
+- trademe.co.nz
+  in and out of domain ext scripts, some of which are blocked
+  by content blocker (ads)
+- ubuntu.com
+  domain sorting doesn't work (... !)
+- deviantart.com
+- no javascript in the page:
+  http://www.scroogle.org/cgi-bin/nbbw.cgi
+- mappy.com
+  needs fr.mappy.com axe.mappy.com 
+- shoutcast
+  needs aol stuff 
+- maps.google.com (needs gstatic)
+- sprice.fr flickr voyages-sncf.fr 
+- testing frames:
+  yellow.co.nz (uses loads of them for ads)
+  http://www.w3schools.com/js/tryit.asp?filename=try_dom_style_backgroundcolor
+  facebook iframe: ajaxian.com/archives/tooltips  
+- ajax: seems slate.com uses ajax
+- html5 messages:
+    http://www.joyofbaking.com/Butter.html
+    http://www.tripadvisor.com/Hotel_Review-g1158656-d1160820-Reviews-Etap_Hotel_Albertville-Gilly_sur_Isere_Savoie_Rhone_Alpes.html
+- after DOM loaded stuff
+  google maps
+  (ip locator sites)
+  imdb (typing in search bar)
+
+Toxic sites:
+- sneaky builtin trackers:
+   wired.com slate.com tomshardware.com arstechnica.com
+   newyorktimes.com imdb.com break.com
+   inline (!):
+      pagesjaunes.fr
+      priceminister (apicit.net webbug)
+- http://www.ybw.com/forums
+  document.write('<scr'+'ipt language="javascript1.1" src="http://adserver.adtech.de/...
+- http://www.satoriz.fr/content.php?page=magasins&mgxml=CAN
+    trafiz.js  (obfuscated)
+      sends referrer when coming from outside
+  (-> google la cantine bio, sato link ...)
+- http://pro.01net.com
+  -> securite.01net.com : dns alias for smartadserver.com !!
+- imdb.com
+  suspicious web bug with loooong url
+    (imdb.com/rd/?q=...)
+  investigate what is sent back
+- http://oakland.athletics.mlb.com/index.jsp?c_id=oak&sv=1
+  62 scripts, sloooooow !!!!
+  an.mlb.com dns alias for 2o7.net
+- tripadvisor
+  pm.dp.yieldmanager.net
+    /PixelMonkey?adId=tripadvisor&format=image&useReferrer=1&SIG=10v25tiht;x-cookie=6632xo57b
+- http://www.visiteonline.fr/immobilier/albertville-residence-etudiante-location-vacance,4,15,0,0,v_73011.htm
+  local copies of google adsense scripts
+  redirects links through xiti !!
+- devx.com linuxforums.org  makeuseof.com
+  ajaxian.com/archives/tooltips   (iframe land)
+  www.webmonkey.com/tag/javascript/
+- http://www.joyofbaking.com/Butter.html
+- click tracking on wordpress blogs:
+  http://cuisinierenomade.com/blog/?tag=traiteur-vegetarien
+- laposte.fr
+  evil in your face swf ad
+- And, last but not least, among the most toxic sites of all we have:
+  - techcrunch.com
+    http://techcrunch.com/2012/01/12/more-more-more/
+  - thetechjournal.com
+    http://thetechjournal.com/electronics/computer/security-computer-electronics/ten-effective-privacy-tricks-to-secure-your-web-browsing.xhtml
+  - lifehacker.com: 137k of inline javascript !! 
+    http://lifehacker.com/5470671/top-10-google-settings-you-should-know-about
+
+
+------------------------------------
+Debugging cache issues
+
+- stack overflow uses Cache-control: public, max-age=14
+  -> reloads after 14s ...
+
+- http://www.java2s.com/Tutorial/JavaScript/0320__Location/Locationreloadfalsetoreloadfromthecache.htm
+  ETag + Last-Modified
+  -> no reload
+
+- http://www.w3schools.com/jsref/met_loc_replace.asp
+  pragma: no-cache and Cache-control: no-cache (and Expires)
+  -> reloads every time
+
+- http://my.opera.com/community/forums/topic.dml?id=351931
+  '?' in url so opera always reloads it if 
+  'always check never expiring get queries' is set
+
+- http://www.opera.com/support/kb/view/827/
+  ETag + Cache-control: max-age=1200
+    -> server request to check for updates ...
+
+- http://www.howtocreate.co.uk/operaStuff/operaObject.html
+  nothing -> gets reloaded =(
+
+- http://en.wikipedia.org/wiki/Meta_refresh
+  Last-Modified -> server request to check for updates ...

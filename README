@@ -1,0 +1,25 @@
+                                  jsarmor
+                                  =======
+
+                     [ noscript on steroids for opera ]
+------------------------------------------------------------------------------
+
+jsarmor, like noscript, gives the user control over what scripts get run in
+a page. The interface aims at being cute, functional and easy to use, but
+not by hiding everything away from the user. So if you occasionally like to
+find out what's going on in a page, you'll find jsarmor fun to use =)
+
+
+Installation:
+  - copy to opera userjs directory
+
+Make sure:
+  - opera supports localstorage (11.50 and later should be fine)
+  - userjs storage quota is not set 0
+    (set opera:config#PersistentStorage|UserJSStorageQuota to 1000)
+  - userjs is enabled (opera:config#UserPrefs|UserJavaScript)
+  - userjs is enabled for https (opera:config#UserPrefs|UserJavaScriptonHTTPS)
+    otherwise no filtering on encrypted pages
+
+
+
