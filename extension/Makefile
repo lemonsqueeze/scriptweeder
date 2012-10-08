@@ -4,7 +4,7 @@ VERS_MIN=1
 VERSION=$(VERS_MAG)-$(VERS_MIN)
 
 
-all: jsarmor-$(VERSION).oex
+all: jsarmor-$(VERSION).oex link
 
 jsarmor-$(VERSION).oex: JSArmor/config.xml JSArmor/includes/jsarmor.js
 	-cd JSArmor && rm *~ */*~
@@ -12,6 +12,10 @@ jsarmor-$(VERSION).oex: JSArmor/config.xml JSArmor/includes/jsarmor.js
 
 JSArmor/includes/jsarmor.js: ../jsarmor.js
 	cp -p ../jsarmor.js JSArmor/includes/jsarmor.js
+
+link:
+	-rm jsarmor.oex
+	ln -s jsarmor-$(VERSION).oex jsarmor.oex
 
 clean:
 	-rm *.oex *~ JSArmor/includes/jsarmor.js
