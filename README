@@ -11,9 +11,11 @@ find out what's going on in a page, you'll find jsarmor fun to use =)
 
 
 Installation:
-  - copy to opera userjs directory
+  - as an extension: Install extension, in the popup under 'privacy',
+                     enable interaction with secure pages and private tabs 		     
+  - as userjs: Copy jsarmor.js to opera userjs directory
 
-Make sure:
+For now make sure:
   - opera supports localstorage (11.50 and later should be fine)
   - userjs storage quota is not set 0
     (set opera:config#PersistentStorage|UserJSStorageQuota to 1000)
@@ -21,5 +23,45 @@ Make sure:
   - userjs is enabled for https (opera:config#UserPrefs|UserJavaScriptonHTTPS)
     otherwise no filtering on encrypted pages
 
+
+Features:
+  - Zero click UI, just mouse over!
+
+  - 4 modes of filtering:
+    * block all: block all external scripts.
+                 can block inline scripts as well.
+    * filtered:  only current site allowed by default  (same origin policy)
+    	         select other sites to allow.
+    * relaxed:   related and helper domains allowed as well.
+    * allow all: load everything.
+
+  - Per page/site/domain/global settings for flexibility.
+    Want to disable js just on foo.com ?
+    Switch to site settings, choose 'block all' mode.
+    Other sites won't be affected.
+
+    Note: For 'filtered' mode when scope is global,
+          allowed sites only apply to current site.
+	  To allow a domain globally, see below.
+
+  - Global whitelist of domains.
+    (So you don't have to enable gstatic.com everywhere google maps are used)
+    Mouse over the right part of the items in the menu, each site has a
+    correponding icon to enable it globally.
+
+  - Show if some scripts failed to load.
+
+  - Disable javascript while still allowing userjs to run:
+    choose 'block all' mode, block inline scripts, and select 
+    'pretend js disabled'.
+
+  - Host based filtering to counter DNS alias tricks.
+    For example on wired.com, stats.wired.com actually points to an
+    external tracker (condenast.112.2o7.net).
+    With domain based filtering you're screwed !
+
+  - Detailed info on page scripts.
+    see 'Details' tab for full scripts' urls,
+    and blocked/allowed/loaded status.
 
 
