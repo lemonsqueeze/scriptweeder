@@ -6,7 +6,13 @@
 // ==/UserScript==
 
 
+// watch out inside an extension,
+// opera and window.opera seem to be 2 different objects ...
 (function(opera, scriptStorage) {
+
+    var document = window.document;
+    var location = window.location;
+    
     var version = 'JSArmor v1.39';
 
     /************************* Default Settings *******************************/
@@ -39,7 +45,7 @@
     // noscript ui's iframe, don't run in there
     if (window != window.top &&
 	window.name == 'noscript_iframe')
-	return; 
+	return;
 
     var current_host = location.hostname;
     var current_domain = get_domain(location.hostname);
@@ -1248,6 +1254,11 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
     {
 	var domain = get_domain(host);	
 	var domain_node = get_domain_node(domain, false);
+	if (!domain_node)
+	{
+	    alert("jsarmor.js: get_domain_node() failed! should not happen.");
+	    return null;
+	}
 	var host_node = get_host_node(host, domain_node, false);
 	var scripts = host_node.scripts;
 	for (var i = scripts.length - 1; i >= 0; i--)
@@ -1329,11 +1340,11 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
     var total_inline_size = 0;
 
     // Handler for both inline *and* external scripts
-    opera.addEventListener('BeforeScript',
+    window.opera.addEventListener('BeforeScript',
     function(e)
     {
       if (e.element.src) // external script
-	  return;
+	  return external_script_handler(e);
       
       total_inline++;
       total_inline_size += e.element.text.length;
@@ -1345,8 +1356,10 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	e.preventDefault();
     }, false);
 
-    opera.addEventListener('BeforeExternalScript',
-    function(e)
+// this works in userjs, but not inside an extension ...
+//    window.opera.addEventListener('BeforeExternalScript', ...
+    
+    function external_script_handler(e)
     {
         if (e.element.tagName.toLowerCase() != 'script')
 	{
@@ -1376,13 +1389,12 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	    e.preventDefault();
 	if (main_table)
 	    repaint_ui();
-    },
-    false);
+    }
 
     // Find out which scripts are actually loaded,
     // this way we can find out if *something else* is blocking
     // (blocked content, bad url, syntax error...). Awesome!    
-    opera.addEventListener('BeforeEvent.load',
+    window.opera.addEventListener('BeforeEvent.load',
     function(ev)
     {
 	var e = ev.event.target;
@@ -1414,4 +1426,5 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
     },
     false);
     
-})(opera, opera.scriptStorage);
+})(window.opera, window.opera.scriptStorage);
+
