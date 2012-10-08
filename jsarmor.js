@@ -1,5 +1,13 @@
+// ==UserScript==
+// @name JSArmor
+// @author lemonsqueeze https://github.com/lemonsqueeze/jsarmor
+// @description Block unwanted javascript. NoScript on steroids for opera !
+// @published 2012-10-08 11:00
+// ==/UserScript==
+
+
 (function(opera, scriptStorage) {
-    var version = 'Noscript v1.39';
+    var version = 'JSArmor v1.39';
 
     /************************* Default Settings *******************************/
     
@@ -47,7 +55,7 @@
     if (global_setting('noscript_whitelist') == '')
     {
 	// FIXME: need a nice way to edit this.
-	alert("Welcome to Noscript!\n\n" +
+	alert("Welcome to JSArmor!\n\n" +
 	      "The initial global whitelist is set to:\n\n[" +
 	      default_globally_allowed_hosts.join(', ') + "]");
 	set_global_setting('noscript_whitelist',
@@ -187,12 +195,11 @@
     
     function new_style(str)
     {
-	var pa= idoc.getElementsByTagName('head')[0] ;
 	var el= idoc.createElement('style');
 	el.type= 'text/css';
 	el.media= 'screen';
 	el.appendChild(idoc.createTextNode(str));
-	pa.appendChild(el);
+	idoc.head.appendChild(el);
 	return el;
     }
 
@@ -281,7 +288,7 @@
 	u = strip_http(u);
 	var a = u.match(/^([^/]*)\/([^/?&:]*)(.*)$/);
 	if (!a)
-	    alert("noscript.js: shouldn't happen");
+	    alert("jsarmor.js: shouldn't happen");
 	return a.slice(1);
     }
     
@@ -434,7 +441,7 @@
       if (mode == 'filtered')  return filtered_mode_allowed_host(host);
       if (mode == 'relaxed')   return relaxed_mode_allowed_host(host); 
       if (mode == 'allow_all') return true;
-      alert('noscript.js: mode="' + mode + '", this should not happen!');
+      alert('jsarmor.js: mode="' + mode + '", this should not happen!');
     }
 
     /**************************************************************************/
@@ -793,7 +800,7 @@
 	      reload_page();
 	};
 	
-	var item = add_menu_item(nsmenu, "Noscript Settings ...");
+	var item = add_menu_item(nsmenu, "JSArmor Settings ...");
 	item.title = version + ". Click to view global settings.";
 	item.align = 'center';
 	item.className = 'noscript_title'
@@ -803,12 +810,12 @@
   	  if (!event.ctrlKey)
 	  {
 	    var d = list_to_string(global_setting('noscript_whitelist'));
-	    alert("Noscript \nGlobal whitelist: \n" + d);
+	    alert("JSArmor \nGlobal whitelist: \n" + d);
 	  
 	    return;
 	  }
 	  var d = list_to_string(setting(setting_hosts));
-	  alert("Noscript \nHosts allowed for this page: \n" + d);
+	  alert("JSArmor \nHosts allowed for this page: \n" + d);
 	};
 
 	item = add_menu_item(nsmenu, "Set for: ", 0, null);
@@ -1067,7 +1074,7 @@
 	repaint_ui_count++;
 	if (repaint_ui_timer)
 	    return;
-	repaint_ui_timer = setTimeout(repaint_ui_now, 500);
+	repaint_ui_timer = window.setTimeout(repaint_ui_now, 500);
     }
 
     function repaint_ui_now()
@@ -1246,7 +1253,7 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	for (var i = scripts.length - 1; i >= 0; i--)
 	    if (scripts[i].url == url)
 		return scripts[i];
-	alert("noscript.js: find_script(): should not happen.");
+	alert("jsarmor.js: find_script(): should not happen.");
 	return null;
     }
 
@@ -1293,7 +1300,7 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
     // plugin api
     
     if (window.noscript)
-	alert("noscript.js: window.noscript exists!!!");
+	alert("jsarmor.js: window.noscript exists!!!");
     // FIXME: when adding frame support, fix this.
     window.noscript = new Object();    
 
@@ -1343,7 +1350,7 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
     {
         if (e.element.tagName.toLowerCase() != 'script')
 	{
-	  alert("noscript.js: BeforeExternalScript: non <script>: " + e.element.tagName);
+	  alert("jsarmor.js: BeforeExternalScript: non <script>: " + e.element.tagName);
 	  return;
         }
 	

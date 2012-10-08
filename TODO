@@ -186,6 +186,7 @@ Embedded version:
   
 DONE:
 
+- noscript -> jsarmor renaming (popups etc!)
 - "relaxed mode"
   accept current domain + related and helper domains 
 - highlight current mode in menu
