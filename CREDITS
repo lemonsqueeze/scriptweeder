@@ -1,0 +1,39 @@
+			CREDITS
+			=======
+
+- Simon "shoust" Houston's BlockIt.js,
+    http://my.opera.com/community/forums/topic.dml?id=241208
+  as well as noscript, notscripts and external_scripts projects,
+  for the initial inspiration.
+
+- Opera Dragonfly to make debugging this thing possible.
+
+- Mark "Tarquin" Wilton-Jones' disablescript.js
+    http://www.howtocreate.co.uk/operaStuff/userJavaScript.html
+  and the so very mischievous "pretend javascript is disabled by tweaking
+  <noscript> tags" idea.
+
+- Heaps of documentation:
+  - w3schools.com's javascript and DOM tutorials
+  - The documentation and community forums at opera.com.
+  - Various gems revealing the deep mysteries of CSS to the uninitiated,
+      http://www.quirksmode.org/css/quirksmode.html
+      http://css-css.com/css-attribute-selectors/
+      http://reference.sitepoint.com/css/cascade
+    and showing strong CSS magic at work
+      http://dev.opera.com/articles/view/beautiful-ui-styling-with-css3-text-shadow-box-shadow-and-border-radius/
+      http://valuedstandards.com/static/test/buttons/
+
+- Icon courtesy of Aha Soft (http://www.aha-soft.com)
+
+- The so very unholy "reload from cache by simulating click on an injected link"
+  js trick using mozilla's simulateClick() method,
+  whose author shall remain anonymous for now as i lost the link
+    https://developer.mozilla.org/samples/domref/dispatchEvent.html
+
+- And last but not least,
+  Premasagar Rose's utterly outrageous injected iframe tricks,
+    https://github.com/premasagar/appleofmyiframe
+  which finally put an end to endless fighting with the pages's css
+  (jsarmor often losing).
+

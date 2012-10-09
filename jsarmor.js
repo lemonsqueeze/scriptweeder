@@ -5,6 +5,12 @@
 // @published 2012-10-08 11:00
 // ==/UserScript==
 
+/* This script is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ */
+
 
 // Watch out, when running as userjs, document and window.document are the same,
 // but when running as an extension they're 2 different things!
@@ -58,7 +64,8 @@
     if (global_setting('noscript_whitelist') == '')
     {
 	// FIXME: need a nice way to edit this.
-	alert("Welcome to JSArmor!\n\n" +
+	alert("Welcome to JSArmor !\n\n" +
+	      "JSArmor's button will show up at the bottom right of pages using javascript.\n\n" +
 	      "The initial global whitelist is set to:\n\n[" +
 	      default_globally_allowed_hosts.join(', ') + "]");
 	set_global_setting('noscript_whitelist',
@@ -72,7 +79,7 @@
 	if (!scriptStorage)
 	{
 	    location.href = "opera:config#PersistentStorage|UserJSStorageQuota";
-	    alert("Welcome to JSArmor!\n\n" +
+	    alert("Welcome to JSArmor !\n\n" +
 		  "Script storage is currently disabled.\n" +
 		  "For JSArmor to work, set quota to\n" +
 		  "                 1000\n" +

@@ -1,7 +1,7 @@
                                   jsarmor
                                   =======
 
-                     [ noscript on steroids for opera ]
+                     [ noscript on steroids for opera ! ]
 ------------------------------------------------------------------------------
 
 jsarmor, like noscript, gives the user control over what scripts get run in
@@ -42,9 +42,9 @@ Features:
 
     Note: For 'filtered' mode when scope is global,
           allowed sites only apply to current site.
-	  To allow a domain globally, see below.
+	  To allow a site globally, see below.
 
-  - Global whitelist of domains.
+  - Global whitelist.
     (So you don't have to enable gstatic.com everywhere google maps are used)
     Mouse over the right part of the items in the menu, each site has a
     correponding icon to enable it globally.
