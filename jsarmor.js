@@ -1361,7 +1361,8 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
     function(e)
     {
       if (e.element.src) // external script
-	  return external_script_handler(e);
+	  return;
+	  //return external_script_handler(e);
       
       total_inline++;
       total_inline_size += e.element.text.length;
@@ -1373,11 +1374,12 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	e.preventDefault();
     }, false);
 
-// this works in userjs, but not inside an extension ...
-//    window.opera.addEventListener('BeforeExternalScript', ...
-    
-    function external_script_handler(e)
-    {
+// This works in userjs, but not inside extension ...
+// Unfortunate because if we use only BeforeScript, the script gets fetched even if we block it ...
+   window.opera.addEventListener('BeforeExternalScript',
+   function(e)				 
+// function external_script_handler(e)    
+   {
         if (e.element.tagName.toLowerCase() != 'script')
 	{
 	  alert("jsarmor.js: BeforeExternalScript: non <script>: " + e.element.tagName);
@@ -1406,7 +1408,7 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	    e.preventDefault();
 	if (main_table)
 	    repaint_ui();
-    }
+   }, false);
 
     // Find out which scripts are actually loaded,
     // this way we can find out if *something else* is blocking
