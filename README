@@ -11,14 +11,14 @@ find out what's going on in a page, you'll find jsarmor fun to use =)
 
 
 Installation:
-  - as an extension: Install extension, in the popup under 'privacy',
-                     enable interaction with secure pages and private tabs 		     
   - as userjs: Copy jsarmor.js to opera userjs directory
+  - as an extension: 
+       [ NOT WORKING YET, OUTSTANDING ISSUES REMAINING !! ]
+       [  Do not use unless you feel like debugging it.   ]
 
-For now make sure:
-  - opera supports localstorage (11.50 and later should be fine)
-  - userjs storage quota is not set 0
-    (set opera:config#PersistentStorage|UserJSStorageQuota to 1000)
+
+Also make sure:
+  - you're using opera 11.00 or later (needs scriptstorage support)
   - userjs is enabled (opera:config#UserPrefs|UserJavaScript)
   - userjs is enabled for https (opera:config#UserPrefs|UserJavaScriptonHTTPS)
     otherwise no filtering on encrypted pages

@@ -46,13 +46,21 @@ Features:
 
 [ TODO ]
 
+Problems when running as extension (not userjs):
+  - get_domain_node() failed
+    when opening page as a new tab (reload is fine)
+      http://dev.opera.com/articles/view/converting-userjs-to-extensions/
+      (opened from google search)
+  - reload from cache not working, button goes away (wikipedia)
+    but full reload -> ok
+
 Urgent:
   - Move styles into CSS
 
   - Check what happens for http redirect on script url
     Which url shows up ??
 
-  - IFrames handling !
+  - IFrame handling !
     Scripts from iframe's domain will be run by default
       -> potentially any external script can be run !!
     Also UI showing up: ugly and not useable.
@@ -70,18 +78,15 @@ Urgent:
       (can be scripts in them we don't know anything about but ...)
 
 Features:
-  - Settings window
+  - Settings window,
+    About
     way to set defaults
-    edit whitelist,
+    view/edit whitelist,
     change font, skin
-    export settings ...
+    import/export settings ...
 
-  - Decent way to export/import settings.
-    edit whitelist etc ...
   - Make it an opera extension
-    - ui ??
-    - prevent style problems
-    - save settings through widget.preferences    
+    (can save settings through widget.preferences)
 
 UI Enhancements:
   - Fix details menu style
@@ -93,13 +98,14 @@ UI Enhancements:
     dev.opera.com/articles/view/beautiful-ui-styling-with-css3-text-shadow-box-shadow-and-border-radius/
 
 Before Release:
+  - test: - different versions of opera
+          - windows.
   - documentation
   - update global whitelist:
     use current settings to compile whitelist.
     make sure mainstream stuff works out of the box
     (youtube, google maps, flickr ...)
   - nice welcome message
-  - needs scriptstorage quota
   - needs setting to run on https sites
     -> can use opera.setPreference() to set it !!!
   - decent iframe behaviour
@@ -186,6 +192,7 @@ Embedded version:
   
 DONE:
 
+- check script storage availability on startup.
 - noscript -> jsarmor renaming (popups etc!)
 - "relaxed mode"
   accept current domain + related and helper domains 

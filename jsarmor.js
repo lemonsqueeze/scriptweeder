@@ -6,13 +6,9 @@
 // ==/UserScript==
 
 
-// watch out inside an extension,
-// opera and window.opera seem to be 2 different objects ...
-(function(opera, scriptStorage) {
-
-    var document = window.document;
-    var location = window.location;
-    
+// Watch out, when running as userjs, document and window.document are the same,
+// but when running as an extension they're 2 different things!
+(function(document, location, opera, scriptStorage) {
     var version = 'JSArmor v1.39';
 
     /************************* Default Settings *******************************/
@@ -55,9 +51,10 @@
     // FIXME: setting_hosts is constant now. replace it.
     var setting_hosts = 'noscript_hosts';
 
+    check_script_storage();
     init_scope();    
     init_mode();
-
+    
     if (global_setting('noscript_whitelist') == '')
     {
 	// FIXME: need a nice way to edit this.
@@ -69,7 +66,20 @@
     }    
 
     /************************* Loading/Saving Settings ************************/
-        
+
+    function check_script_storage()
+    {
+	if (!scriptStorage)
+	{
+	    location.href = "opera:config#PersistentStorage|UserJSStorageQuota";
+	    alert("Welcome to JSArmor!\n\n" +
+		  "Script storage is currently disabled.\n" +
+		  "For JSArmor to work, set quota to\n" +
+		  "                 1000\n" +
+		  "on the following page.");
+	}
+    }
+    
     function scoped_setting(scope, name)
     {
 	// to view content -> opera:webstorage  
@@ -1426,5 +1436,5 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
     },
     false);
     
-})(window.opera, window.opera.scriptStorage);
+})(window.document, window.location, window.opera, window.opera.scriptStorage);
 
