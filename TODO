@@ -1,46 +1,4 @@
 
-[ IDEAS ]
-
-General:
-
-- visualize 
-    js cost
-    site's abuse of trust
-
-- awfully cool ui: 
-  ship shield display a la tie-fighter
-  front/sides/rear shields -> current/related/other(+iframes) domains
-  bigger scripts -> more damage!
-    (way to animate ? display as page is loading)
-  grey transparent ui
-  zoom in on mouseover
-  tooltips for details
-  ship/shield flashing on new event (new script, blocked request ...)
-
-  other ideas/metaphors ?
-  armor
-  star wars destroyer shield
-  gate
-  watch dog  
-  box (pandora)
-  car
-  
-Features:
-- show script sizes in kb for external scripts loaded
-- way to find out about dns aliases in JS ?
-- shut the door! block outgoing requests once DOM loaded !!
-- show big inline scripts, allow to block them!
-
-- noscript console with messages, events ...
-
-- use JSON instead of de/serializing arrays by hand ?
-- XSS ??
-- Detect / block ajax ?
-  NB: seems slate.com uses ajax
-- display info on startup ? in bottom bar a la noscript or with timer ?
-- "turn noscript off" for current url or tab (#nsoff ...)
-- "show whitelist" button
-- selection color -> orange !
 
 ---------------------------------------------------------------------------
 
@@ -65,11 +23,18 @@ Urgent:
       -> potentially any external script can be run !!
     Also UI showing up: ugly and not useable.
     
-    - Idea:
-      1) Find a way to communicate iframe's scripts to parent
+    - Ideas:
+      1) integrate with external iframe blocking ?
+         - UI: setting to block/allow per page/site/...
+         - jsarmor now knows what to do with js in iframes (when blocked at least)
+	   -> needs to be notified about click on placeholder.
+         - could make it a plugin since we still need privoxy anyway ...  
+	   (but ugly code ?)
+
+      2) and/or find a way to communicate iframe's scripts to parent
         -> Parent displays them in menu
-           (icon to indicate it comes from an iframe ?)
-      2) Iframe has no UI and uses parent's settings
+           (with something to indicate it comes from an iframe ??)
+        -> Iframe needs no jsarmor UI and gets its settings from parent.
   
     - ideal (?): block loading + placeholder
     - less ideal but should work:
@@ -189,6 +154,46 @@ Embedded version:
   - moving mouse out of main button doesn't hide menu (maybe that's ok)
   
 ----------------------------------------------------------------------------  
+
+[ IDEAS ]
+
+Features:
+
+- show script sizes in kb for external scripts loaded
+- way to find out about dns aliases in JS ?
+- shut the door! block outgoing requests once DOM loaded !!
+- show big inline scripts, allow to block them!
+
+- jsarmor console with messages, events ...
+
+- use JSON instead of de/serializing arrays by hand ?
+- XSS ??
+- Detect / block ajax ?
+  NB: seems slate.com uses ajax
+- display info on startup ? in bottom bar a la noscript or with timer ?
+- "turn noscript off" for current url or tab (#nsoff ...)
+- "show whitelist" button
+- selection color -> orange !
+
+
+Wild stuff:
+
+- visualize 
+    js cost
+    site's abuse of trust
+
+- awfully cool ui: 
+  ship shield display a la tie-fighter
+  front/sides/rear shields -> current/related/other(+iframes) domains
+  bigger scripts -> more damage!
+    (way to animate ? display as page is loading)
+  grey transparent ui
+  zoom in on mouseover
+  tooltips for details
+  ship/shield flashing on new event (new script, blocked request ...)
+
+
+----------------------------------------------------------------------------    
   
 DONE:
 

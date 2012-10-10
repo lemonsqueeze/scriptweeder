@@ -6,8 +6,8 @@
 
 jsarmor, like noscript, gives the user control over what scripts get run in
 a page. The interface aims at being cute, functional and easy to use, but
-not by hiding everything away from the user. So if you occasionally like to
-find out what's going on in a page, you'll find jsarmor fun to use =)
+not by hiding everything away. If you occasionally like to find out what's
+going on in a page, you'll find jsarmor fun to use =)
 
 
 Installation:
@@ -28,12 +28,16 @@ Features:
   - Zero click UI, just mouse over!
 
   - 4 modes of filtering:
-    * block all: block all external scripts.
-                 can block inline scripts as well.
+    * block all: block everything (inline and external scripts)
+       	         handle <noscript> tags as if javascript was disabled in opera.
     * filtered:  only current site allowed by default  (same origin policy)
     	         select other sites to allow.
     * relaxed:   related and helper domains allowed as well.
+      		 (current domain, cdns, apis ...)
     * allow all: load everything.
+
+  - Disable javascript while still allowing userjs and extensions to run:
+    just switch to 'block all' !
 
   - Per page/site/domain/global settings for flexibility.
     Want to disable js just on foo.com ?
@@ -50,10 +54,6 @@ Features:
     correponding icon to enable it globally.
 
   - Show if some scripts failed to load.
-
-  - Disable javascript while still allowing userjs to run:
-    choose 'block all' mode, block inline scripts, and select 
-    'pretend js disabled'.
 
   - Host based filtering to counter DNS alias tricks.
     For example on wired.com, stats.wired.com actually points to an

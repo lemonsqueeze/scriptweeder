@@ -1,5 +1,6 @@
 
-VERS_MAG=$(shell cat ../jsarmor.js | grep 'var version' | sed -e "s|.*v\([0-9.]\+\)'.*|\1|")
+#VERS_MAG=$(shell cat ../jsarmor.js | grep 'var version' | sed -e "s|.*v\([0-9.]\+\)'.*|\1|")
+VERS_MAG=0.1
 VERS_MIN=1
 VERSION=$(VERS_MAG)-$(VERS_MIN)
 

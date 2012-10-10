@@ -14,8 +14,8 @@
 
 // Watch out, when running as userjs, document and window.document are the same,
 // but when running as an extension they're 2 different things!
-(function(document, location, opera, scriptStorage) {
-    var version = 'JSArmor v1.39';
+(function(document, location, opera, scriptStorage) {    
+    var version = 'JSArmor v1.40';
 
     /************************* Default Settings *******************************/
     
@@ -37,8 +37,9 @@
     // as if javascript was disabled in opera
     var default_handle_noscript_tags = true;
     
-    /**************************************************************************/
-    // init
+    /********************************* Init *********************************/
+
+    var init = false;
     
     // FIXME handle frames
     // if (window != window.top)
@@ -48,6 +49,9 @@
     if (window != window.top &&
 	window.name == 'noscript_iframe')
 	return;
+
+    // Do this first to avoid race conditions when running as extension.
+    init_handlers();   
 
     var current_host = location.hostname;
     var current_domain = get_domain(location.hostname);
@@ -60,6 +64,7 @@
     check_script_storage();
     init_scope();    
     init_mode();
+    init = true;
     
     if (global_setting('noscript_whitelist') == '')
     {
@@ -70,7 +75,7 @@
 	      default_globally_allowed_hosts.join(', ') + "]");
 	set_global_setting('noscript_whitelist',
 			   '. ' + default_globally_allowed_hosts.join(' '));
-    }    
+    }
 
     /************************* Loading/Saving Settings ************************/
 
@@ -192,8 +197,7 @@
 	set_setting(name, (val ? 'y' : 'n'));	
     }    
     
-    /**************************************************************************/
-    // mode and page stuff
+    /**************************** Mode and page stuff *************************/
     
     function reload_page()
     {
@@ -286,8 +290,7 @@
 	set_mode_no_update(mode);
     }
     
-    /**************************************************************************/    
-    // domain, url utils
+    /***************************** Domain, url utils **************************/    
     
     function url_hostname(url)
     {
@@ -372,8 +375,7 @@
 		is_prefix("code.", h));
     }
     
-    /**************************************************************************/    
-    // host filtering
+    /***************************** Host filtering *****************************/    
     
     function allow_host(host)
     {
@@ -467,8 +469,7 @@
       alert('jsarmor.js: mode="' + mode + '", this should not happen!');
     }
 
-    /**************************************************************************/
-    // misc utils
+    /****************************** Misc utils ********************************/
 
     function list_contains(list, str)
     {
@@ -500,8 +501,7 @@
 	return k;
     }
     
-    /**************************************************************************/
-    // ui primitives
+    /****************************** UI primitives *****************************/
     
     function new_icon(image)
     {
@@ -738,8 +738,7 @@
       need_reload = true;
     }
     
-    /**************************************************************************/
-    // details menu
+    /***************************** Details menu *******************************/
     
     function show_details()
     {	
@@ -796,8 +795,7 @@
         nsdetails.style.display = 'inline-block';
     }
    
-    /**************************************************************************/
-    // main menu
+    /****************************** Main menu *********************************/
         
     var nsmenu = null;
     var need_reload = false;
@@ -1011,8 +1009,7 @@
 	    item.childNodes[0].innerHTML = "&nbsp;&nbsp;";
     }
     
-    /**************************************************************************/
-    // main table
+    /***************************** Main table *********************************/
     
     var main_table = null;
     function create_main_table()
@@ -1087,8 +1084,7 @@
 	idoc.body.appendChild(main_table);
     }
 
-    /**************************************************************************/
-    // repaint logic
+    /***************************** Repaint logic ******************************/
 
     var repaint_ui_count = 0;
     var repaint_ui_timer = null;
@@ -1121,8 +1117,7 @@
 	}
     }
     
-    /**************************************************************************/
-    // injected iframe logic
+    /**************************** Injected iframe logic ***********************/
     
     function populate_iframe()
     {
@@ -1200,8 +1195,7 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
     }
 
     
-    /**************************************************************************/
-    // scripts store
+    /**************************** Scripts store *******************************/
     
     function new_script(url)
     {
@@ -1324,8 +1318,7 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	});
     }
 
-    /**************************************************************************/
-    // plugin api
+    /**************************** Plugin API **********************************/
     
     if (window.noscript)
 	alert("jsarmor.js: window.noscript exists!!!");
@@ -1342,8 +1335,7 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	    repaint_ui();	
     };
     
-    /**************************************************************************/
-    // Events
+    /****************************** Handlers **********************************/
     
     var blocked_current_host = 0;
     var loaded_current_host = 0;
@@ -1357,12 +1349,10 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
     var total_inline_size = 0;
 
     // Handler for both inline *and* external scripts
-    window.opera.addEventListener('BeforeScript',
-    function(e)
+    function beforescript_handler(e)
     {
       if (e.element.src) // external script
 	  return;
-	  //return external_script_handler(e);
       
       total_inline++;
       total_inline_size += e.element.text.length;
@@ -1372,14 +1362,10 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
       
       if (block_inline_scripts)
 	e.preventDefault();
-    }, false);
+    }
 
-// This works in userjs, but not inside extension ...
-// Unfortunate because if we use only BeforeScript, the script gets fetched even if we block it ...
-   window.opera.addEventListener('BeforeExternalScript',
-   function(e)				 
-// function external_script_handler(e)    
-   {
+    function beforeextscript_handler(e)				 
+    {
         if (e.element.tagName.toLowerCase() != 'script')
 	{
 	  alert("jsarmor.js: BeforeExternalScript: non <script>: " + e.element.tagName);
@@ -1408,13 +1394,12 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	    e.preventDefault();
 	if (main_table)
 	    repaint_ui();
-   }, false);
+    }
 
     // Find out which scripts are actually loaded,
     // this way we can find out if *something else* is blocking
     // (blocked content, bad url, syntax error...). Awesome!    
-    window.opera.addEventListener('BeforeEvent.load',
-    function(ev)
+    function beforeload_handler(ev)
     {
 	var e = ev.event.target;
         if (!e || !e.tagName || e.tagName.toLowerCase() != 'script' || !e.src)
@@ -1430,10 +1415,9 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 
 	if (nsmenu)
 	    repaint_ui();
-    }, false);
+    }
     
-    document.addEventListener('DOMContentLoaded',
-    function()
+    function domcontentloaded_handler()
     {
         if (!domain_nodes.length && !total_inline) 
             return;  // no scripts ? exit.
@@ -1442,8 +1426,30 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	    check_handle_noscript_tags();
 	
 	create_iframe();
-    },
-    false);
+    }
+
+    /**************************** Handlers setup ***************************/
+    
+    function init_handlers()
+    {
+    	opera.addEventListener('BeforeScript',	       wrap_handler(beforescript_handler), false);
+	opera.addEventListener('BeforeExternalScript', wrap_handler(beforeextscript_handler), false);
+	opera.addEventListener('BeforeEvent.load',     wrap_handler(beforeload_handler), false);
+	document.addEventListener('DOMContentLoaded',  wrap_handler(domcontentloaded_handler), false);
+    }
+
+    function wrap_handler(h)
+    {
+	return function(e){ call_handler(h, e); };
+    }
+    
+    function call_handler(h, e)
+    {
+	if (!init)
+	    alert("jsarmor\n\nevent received before init finished !!!\nIgnoring.");
+	else
+	    h(e);
+    }
     
 })(window.document, window.location, window.opera, window.opera.scriptStorage);
 
