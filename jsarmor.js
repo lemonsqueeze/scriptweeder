@@ -74,22 +74,20 @@
     var button_image = null;
     var block_inline_scripts = false;
     var handle_noscript_tags = false;    
-    // FIXME: setting_hosts is constant now. replace it.
-    var setting_hosts = 'noscript_hosts';
 
     check_script_storage();
     init_scope();    
     init_mode();
     init = true;
     
-    if (global_setting('noscript_whitelist') == '')
+    if (global_setting('whitelist') == '')
     {
 	// FIXME: need a nice way to edit this.
 	alert("Welcome to JSArmor !\n\n" +
 	      "JSArmor's button will show up at the bottom right of pages using javascript.\n\n" +
 	      "The initial global whitelist is set to:\n\n[" +
 	      default_globally_allowed_hosts.join(', ') + "]");
-	set_global_setting('noscript_whitelist',
+	set_global_setting('whitelist',
 			   '. ' + default_globally_allowed_hosts.join(' '));
     }
 
@@ -120,14 +118,14 @@
     var timestamp; // timestamp for current settings
     function set_scoped_setting(scope, name, value)
     {
-	if (name == setting_hosts && value == '. ' + current_host)
+	if (name == 'hosts' && value == '. ' + current_host)
 	    value = '';  // no need storing default setting.
 	
 	scriptStorage.setItem(scoped_prefixes[scope] + name, value);
 	// update timestamp, so other instances can detect changes
 	timestamp = 0 + Date.now();
 	//alert("timestamp: " + timestamp);
-	scriptStorage.setItem(scoped_prefixes[scope] + 'timestamp', timestamp);
+	scriptStorage.setItem(scoped_prefixes[scope] + 'time', timestamp);
     }
 
     // scoped settings are either per page, site, domain, or global.
@@ -139,14 +137,13 @@
 	[strip_url_tail(location.href) + ':', current_host + ':', current_domain + ':', ''];
 	
 	for (scope = 0; scope < 3; scope++)
-	    if (setting('noscript_mode') != '')
+	    if (setting('mode') != '')
 		break;
-	timestamp = setting('timestamp');
+	timestamp = setting('time');
     }
 
     // copy settings over and change scope.
-    var scoped_settings =
-      ['noscript_mode', 'noscript_inline', 'noscript_nstags', 'noscript_hosts'];
+    var scoped_settings = ['mode', 'inline', 'nstags', 'hosts'];
     function change_scope(new_scope)
     {
 	if (scope == new_scope)
@@ -167,7 +164,7 @@
 
     function check_changed_settings()
     {
-	var t = setting('timestamp');
+	var t = setting('time');
 	if (t == timestamp)
 	    return; // nothing changed
 	timestamp = t;
@@ -181,14 +178,14 @@
     // Settings api
     function setting(name)
     {
-	if (name == setting_hosts && scope == 3)
+	if (name == 'hosts' && scope == 3)
 	    return scoped_setting(1, name);
 	return scoped_setting(scope, name);
     }
 
     function set_setting(name, value)
     {	
-	if (name == setting_hosts && scope == 3)
+	if (name == 'hosts' && scope == 3)
 	    set_scoped_setting(1, name, value);
 	else
 	    set_scoped_setting(scope, name, value);
@@ -272,14 +269,14 @@
     function set_mode_no_update(new_mode)
     {
       if (mode != new_mode)
-	  set_setting('noscript_mode', new_mode);
+	  set_setting('mode', new_mode);
       mode = new_mode;
       
       if (new_mode == 'block_all')
       {
-	  block_inline_scripts = bool_setting('noscript_inline',
+	  block_inline_scripts = bool_setting('inline',
 					      default_block_inline_scripts);
-	  handle_noscript_tags = bool_setting('noscript_nstags',
+	  handle_noscript_tags = bool_setting('nstags',
 					      default_handle_noscript_tags);	  
       }      
 
@@ -299,7 +296,7 @@
     var mode;    
     function init_mode()
     {
-	mode = setting('noscript_mode');
+	mode = setting('mode');
 	if (mode == '')
 	    mode = default_mode; 
 	set_mode_no_update(mode);
@@ -394,46 +391,46 @@
     
     function allow_host(host)
     {
-	var l = setting(setting_hosts);
+	var l = setting('hosts');
 	l = (l == '' ? '.' : l);
 	if (list_contains(l, host))
 	    return;
-	set_setting(setting_hosts, l + ' ' + host);
+	set_setting('hosts', l + ' ' + host);
     }
 
     function global_allow_host(host)
     {
-	var l = global_setting('noscript_whitelist');
+	var l = global_setting('whitelist');
 	l = (l == '' ? '.' : l);	
 	if (list_contains(l, host))
 	    return;
-	set_global_setting('noscript_whitelist', l + ' ' + host);
+	set_global_setting('whitelist', l + ' ' + host);
     }
     
     function remove_host(host)
     {
-	var l = setting(setting_hosts);
+	var l = setting('hosts');
 	l = (l == '' ? '.' : l);
 	l = l.replace(' ' + host, '');
-	set_setting(setting_hosts, l);
+	set_setting('hosts', l);
     }
 
     function global_remove_host(host)
     {
-      var l = global_setting('noscript_whitelist');
+      var l = global_setting('whitelist');
       l = l.replace(' ' + host, '');
-      set_global_setting('noscript_whitelist', l);
+      set_global_setting('whitelist', l);
     }
     
     function host_allowed_globally(host)
     {
-	var l = global_setting('noscript_whitelist');
+	var l = global_setting('whitelist');
 	return list_contains(l, host);
     }
     
     function host_allowed_locally(host)
     {
-	var l = setting(setting_hosts);
+	var l = setting('hosts');
 	if (l == '' && host == current_host)
 	    return true;                      // current host allowed by default in filtered mode
 	return list_contains(l, host);
@@ -745,7 +742,7 @@
       block_inline_scripts = !block_inline_scripts;
       this.checkbox.checked = block_inline_scripts;
       this.nextSibling.style.display = (block_inline_scripts ? 'block' : 'none');
-      set_bool_setting('noscript_inline', block_inline_scripts);
+      set_bool_setting('inline', block_inline_scripts);
       need_reload = true;
     }
 
@@ -753,7 +750,7 @@
     {
       handle_noscript_tags = !handle_noscript_tags;
       this.checkbox.checked = handle_noscript_tags;
-      set_bool_setting('noscript_nstags', handle_noscript_tags);
+      set_bool_setting('nstags', handle_noscript_tags);
       need_reload = true;
     }
     
@@ -849,12 +846,12 @@
 	{       
   	  if (!event.ctrlKey)
 	  {
-	    var d = list_to_string(global_setting('noscript_whitelist'));
+	    var d = list_to_string(global_setting('whitelist'));
 	    alert("JSArmor \nGlobal whitelist: \n" + d);
 	  
 	    return;
 	  }
-	  var d = list_to_string(setting(setting_hosts));
+	  var d = list_to_string(setting('hosts'));
 	  alert("JSArmor \nHosts allowed for this page: \n" + d);
 	};
 	
