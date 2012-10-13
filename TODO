@@ -4,6 +4,9 @@
 
 [ TODO ]
 
+  - rename setting keys
+  - way not to store default setting for each site
+
 Problems when running as extension (not userjs):
   - get_domain_node() failed
     when opening page as a new tab (reload is fine)
@@ -18,6 +21,10 @@ Urgent:
   - Check what happens for http redirect on script url
     Which url shows up ??
 
+  - display something on main button to notify about important changes: 
+    like flash, or blink, small popup, tooltip ...
+    (especially important when new script is added after DOM loaded)
+
   - IFrame handling !
     Scripts from iframe's domain will be run by default
       -> potentially any external script can be run !!
@@ -25,6 +32,7 @@ Urgent:
     
     - Ideas:
       1) integrate with external iframe blocking ?
+         (so we don't have to click on them on allowed sites)
          - UI: setting to block/allow per page/site/...
          - jsarmor now knows what to do with js in iframes (when blocked at least)
 	   -> needs to be notified about click on placeholder.
@@ -49,6 +57,7 @@ Features:
     view/edit whitelist,
     change font, skin
     import/export settings ...
+  - edit helper blacklist
 
   - Make it an opera extension
     (can save settings through widget.preferences)
@@ -86,6 +95,9 @@ Optimization/Cleanup:
 --------------------------------------------------------------------------
 
 [ FIXME! ]
+
+  - slate.com:
+    play with menu, after a while jsarmor ui disappears !
 
   - google maps in iframe:
     http://www.fermedescharrieres.fr/contact.html
@@ -348,6 +360,7 @@ Toxic sites:
   http://cuisinierenomade.com/blog/?tag=traiteur-vegetarien
 - laposte.fr
   evil in your face swf ad
+- http://eugene.kaspersky.com/2012/07/25/what-wired-is-not-telling-you-a-response-to-noah-shachtmans-article-in-wired-magazine/
 - And, last but not least, among the most toxic sites of all we have:
   - techcrunch.com
     http://techcrunch.com/2012/01/12/more-more-more/

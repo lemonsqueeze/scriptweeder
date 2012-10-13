@@ -15,12 +15,28 @@
 // Watch out, when running as userjs, document and window.document are the same,
 // but when running as an extension they're 2 different things!
 (function(document, location, opera, scriptStorage) {    
-    var version = 'JSArmor v1.40';
+    var version = 'JSArmor v1.41';
 
     /************************* Default Settings *******************************/
     
     var default_globally_allowed_hosts =
-    ['ajax.googleapis.com', 's.ytimg.com', 'code.jquery.com', 'z-ecx.images-amazon.com', 'st.deviantart.net', 'static.tumblr.com', 'codysherman.com'];
+    ['maps.google.com',
+     'maps.gstatic.com',
+//     'ajax.googleapis.com',   // no need, relaxed mode will enable it
+     's.ytimg.com',
+     'code.jquery.com',
+     'z-ecx.images-amazon.com',
+     'st.deviantart.net',
+     'static.tumblr.com',
+     'codysherman.com'
+    ];
+
+    // Stuff we don't want to allow in relaxed mode which would otherwise be.
+    var helper_blacklist =   // XXX add ui to edit
+    { "apis.google.com": 1,  // only used for google plus one
+      "widgets.twimg.com": 1 // twitter
+			     // XXX what was fbcdn.com host ?
+    };
     
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
@@ -354,7 +370,7 @@
 	    return true;
 	return false;
     }
-
+    
     // googleapis
     function helper_domain(d)
     {
@@ -371,7 +387,7 @@
     function helper_host(h)
     {
 	return (is_prefix("api.", h) ||
-		is_prefix("apis.", h) ||
+		 is_prefix("apis.", h) ||
 		is_prefix("code.", h));
     }
     
@@ -432,8 +448,9 @@
     function relaxed_mode_allowed_host(host)
     {
 	var dn = get_domain_node(get_domain(host));
-	if (dn.related || dn.helper ||
-	    helper_host(host))
+	if ((dn.related || dn.helper ||
+	     helper_host(host)) &&
+	    !helper_blacklist[host])
 	    return true;
 	
 	return filtered_mode_allowed_host(host);
@@ -838,7 +855,7 @@
 	  var d = list_to_string(setting(setting_hosts));
 	  alert("JSArmor \nHosts allowed for this page: \n" + d);
 	};
-
+	
 	item = add_menu_item(nsmenu, "Set for: ", 0, null);
 	add_radio_button(item, " Page ", 0);
 	add_radio_button(item, " Site ", 1);
@@ -881,7 +898,7 @@
 	item.title = "Allow everything ..."
 	if (mode == 'allow_all')
 	    add_ftable(nsmenu);
-	
+
 	add_menu_item(nsmenu, "Details ...", 0, show_details);
 
 	for (var prop in plugin_items)
@@ -990,7 +1007,7 @@
 	    var host_part = h.slice(0, h.length - d.length);
 	    var not_loaded = icon_not_loaded(hn, checkbox.checked);
 	    var count = "[" + hn.scripts.length + "]";
-	    var color = (dn.related || dn.helper ? '#000' : '');
+	    var color = (relaxed_mode_allowed_host(h) ? '#000' : '');
 	    var icon = idoc.createElement('img');	    
 	    item = add_table_item(table, not_loaded, checkbox, host_part, d, icon, count, f, color);
 	    
