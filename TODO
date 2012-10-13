@@ -5,7 +5,10 @@
 [ TODO ]
 
   - rename setting keys
-  - way not to store default setting for each site
+  - way to not store timestamp for each site
+  - doc or startup: warn about 
+        - Speculative parser
+        - userjs on https
 
 Problems when running as extension (not userjs):
   - get_domain_node() failed
@@ -95,6 +98,9 @@ Optimization/Cleanup:
 --------------------------------------------------------------------------
 
 [ FIXME! ]
+
+  - http://biggeekdad.com/2011/01/wingsuit-basejumping/
+    why jsarmor doesn't show up inside iframe ?
 
   - slate.com:
     play with menu, after a while jsarmor ui disappears !
@@ -209,6 +215,7 @@ Wild stuff:
   
 DONE:
 
+- don't store default hosts setting for every site
 - check script storage availability on startup.
 - noscript -> jsarmor renaming (popups etc!)
 - "relaxed mode"

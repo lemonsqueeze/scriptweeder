@@ -120,6 +120,9 @@
     var timestamp; // timestamp for current settings
     function set_scoped_setting(scope, name, value)
     {
+	if (name == setting_hosts && value == '. ' + current_host)
+	    value = '';  // no need storing default setting.
+	
 	scriptStorage.setItem(scoped_prefixes[scope] + name, value);
 	// update timestamp, so other instances can detect changes
 	timestamp = 0 + Date.now();
@@ -272,10 +275,6 @@
 	  set_setting('noscript_mode', new_mode);
       mode = new_mode;
       
-      // filtered default settings: allow current host
-      if (new_mode == 'filtered' && setting(setting_hosts) == '')
-	  allow_host(current_host);
-
       if (new_mode == 'block_all')
       {
 	  block_inline_scripts = bool_setting('noscript_inline',
@@ -414,6 +413,7 @@
     function remove_host(host)
     {
 	var l = setting(setting_hosts);
+	l = (l == '' ? '.' : l);
 	l = l.replace(' ' + host, '');
 	set_setting(setting_hosts, l);
     }
@@ -434,6 +434,8 @@
     function host_allowed_locally(host)
     {
 	var l = setting(setting_hosts);
+	if (l == '' && host == current_host)
+	    return true;                      // current host allowed by default in filtered mode
 	return list_contains(l, host);
     }
     
