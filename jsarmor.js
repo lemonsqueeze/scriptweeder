@@ -118,9 +118,6 @@
     var timestamp; // timestamp for current settings
     function set_scoped_setting(scope, name, value)
     {
-	if (name == 'hosts' && value == '. ' + current_host)
-	    value = '';  // no need storing default setting.
-	
 	scriptStorage.setItem(scoped_prefixes[scope] + name, value);
 	// update timestamp, so other instances can detect changes
 	timestamp = 0 + Date.now();
@@ -211,8 +208,25 @@
     function set_bool_setting(name, val)
     {
 	set_setting(name, (val ? 'y' : 'n'));	
-    }    
+    }
+
+    // all hosts settings should be accessed through these so default val get translated
+    function hosts_setting()
+    {
+       var hosts = setting('hosts');
+       if (hosts == '') // current host allowed by default in filtered mode
+           hosts = '. ' + current_host;
+       return hosts;
+    }
     
+    function set_hosts_setting(hosts)
+    {
+       if (hosts == '. ' + current_host)
+           hosts = '';
+       set_setting('hosts', hosts);
+    }
+
+
     /**************************** Mode and page stuff *************************/
     
     function reload_page()
@@ -391,11 +405,10 @@
     
     function allow_host(host)
     {
-	var l = setting('hosts');
-	l = (l == '' ? '.' : l);
+	var l = hosts_setting();
 	if (list_contains(l, host))
 	    return;
-	set_setting('hosts', l + ' ' + host);
+	set_hosts_setting(l + ' ' + host);
     }
 
     function global_allow_host(host)
@@ -409,10 +422,9 @@
     
     function remove_host(host)
     {
-	var l = setting('hosts');
-	l = (l == '' ? '.' : l);
+	var l = hosts_setting();
 	l = l.replace(' ' + host, '');
-	set_setting('hosts', l);
+	set_hosts_setting(l);
     }
 
     function global_remove_host(host)
@@ -430,9 +442,7 @@
     
     function host_allowed_locally(host)
     {
-	var l = setting('hosts');
-	if (l == '' && host == current_host)
-	    return true;                      // current host allowed by default in filtered mode
+	var l = hosts_setting();
 	return list_contains(l, host);
     }
     
@@ -851,7 +861,7 @@
 	  
 	    return;
 	  }
-	  var d = list_to_string(setting('hosts'));
+	  var d = list_to_string(hosts_setting());
 	  alert("JSArmor \nHosts allowed for this page: \n" + d);
 	};
 	

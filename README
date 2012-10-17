@@ -22,6 +22,8 @@ Also make sure:
   - userjs is enabled (opera:config#UserPrefs|UserJavaScript)
   - userjs is enabled for https (opera:config#UserPrefs|UserJavaScriptonHTTPS)
     otherwise no filtering on encrypted pages
+  - You may want to disable the speculative parser (opera:config#Speculative)
+    otherwise blocked scripts still get downloaded (opera 11.60 and above)
 
 
 Features:

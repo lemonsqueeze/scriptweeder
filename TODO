@@ -181,7 +181,8 @@ Features:
 - way to find out about dns aliases in JS ?
 - shut the door! block outgoing requests once DOM loaded !!
 - show big inline scripts, allow to block them!
-
+- way to make it work when using offline with mht files ?
+  (permission problem creating iframe ui...)
 - jsarmor console with messages, events ...
 
 - use JSON instead of de/serializing arrays by hand ?
