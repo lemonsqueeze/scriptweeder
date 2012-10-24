@@ -99,6 +99,9 @@ Optimization/Cleanup:
 
 [ FIXME! ]
 
+  - relaxed mode: clicking on site to block it switches to filtered 
+    with wrong display (every site blocked)
+
   - http://biggeekdad.com/2011/01/wingsuit-basejumping/
     why jsarmor doesn't show up inside iframe ?
 
@@ -301,6 +304,8 @@ Strange:
 
 TESTING:
 
+- http://www.sticker-autocollant.com/stickers-pc-portable/608-stickers-autocollants-pc-portable.html
+  uses facebook script (static.ak.fbcdn.net)
 - simple page with one external script:
   http://sandbox.leigeber.com/dropdown-menu/index.html
 - simple page with 2 external scripts (1 in domain, 1 outside)

@@ -15,7 +15,7 @@
 // Watch out, when running as userjs, document and window.document are the same,
 // but when running as an extension they're 2 different things!
 (function(document, location, opera, scriptStorage) {    
-    var version = 'JSArmor v1.41';
+    var version = 'JSArmor v1.42';
 
     /************************* Default Settings *******************************/
     
@@ -32,10 +32,10 @@
     ];
 
     // Stuff we don't want to allow in relaxed mode which would otherwise be.
-    var helper_blacklist =   // XXX add ui to edit
-    { "apis.google.com": 1,  // only used for google plus one
-      "widgets.twimg.com": 1 // twitter
-			     // XXX what was fbcdn.com host ?
+    var helper_blacklist =     // XXX add ui to edit
+    { "apis.google.com": 1,    // only used for google plus one
+      "widgets.twimg.com": 1,  // twitter
+      "static.ak.fbcdn.net": 1 // facebook
     };
     
     var cornerposition = 4;
@@ -453,16 +453,19 @@
 	    host_allowed_locally(host));
     }
 
-    // allow related and helper domains
-    function relaxed_mode_allowed_host(host)
+    function relaxed_mode_helper_host(host)
     {
 	var dn = get_domain_node(get_domain(host));
-	if ((dn.related || dn.helper ||
-	     helper_host(host)) &&
-	    !helper_blacklist[host])
-	    return true;
-	
-	return filtered_mode_allowed_host(host);
+	return (dn.related ||
+		((dn.helper || helper_host(host)) &&
+		 !helper_blacklist[host]));
+    }
+    
+    // allow related and helper domains
+    function relaxed_mode_allowed_host(host)
+    {	
+	return (relaxed_mode_helper_host(host) ||
+		filtered_mode_allowed_host(host));
     }
 
     // switch to filtered mode for this site,
@@ -992,8 +995,7 @@
 
 	  // blocking related/helper host in relaxed mode ? switch to filtered mode.
 	  // (related/helper hosts are always allowed in relaxed mode)
-	  if (mode == 'relaxed' &&
-	      (relaxed_mode_allowed_host(h) && !filtered_mode_allowed_host(h)))
+	  if (mode == 'relaxed' && relaxed_mode_helper_host(h))
 	      relaxed_mode_to_filtered_mode(h);
 	  
 	  need_reload = true;
@@ -1016,7 +1018,7 @@
 	    var host_part = h.slice(0, h.length - d.length);
 	    var not_loaded = icon_not_loaded(hn, checkbox.checked);
 	    var count = "[" + hn.scripts.length + "]";
-	    var color = (relaxed_mode_allowed_host(h) ? '#000' : '');
+	    var color = (relaxed_mode_helper_host(h) ? '#000' : '');
 	    var icon = idoc.createElement('img');	    
 	    item = add_table_item(table, not_loaded, checkbox, host_part, d, icon, count, f, color);
 	    
@@ -1318,11 +1320,11 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 
     function sort_domains()
     {
-	// set domains' helper_host
+	// set domains' .helper_host. (only used for sorting)
 	foreach_host_node(function(hn, dn)
 	{
 	  var h = hn.name;
-	  if (helper_host(h))
+	  if (relaxed_mode_helper_host(h))
 	      dn.helper_host = true;	      
 	});	
 	
@@ -1334,9 +1336,6 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	    // then related domains 
 	    if (d1.related ^ d2.related)
 		return (d1.related ? -1 : 1);
-	    // then helper domains
-	    if (d1.helper ^ d2.helper)
-		return (d1.helper ? -1 : 1);
 	    // then domains with helper hosts
 	    if (d1.helper_host ^ d2.helper_host)
 		return (d1.helper_host ? -1 : 1);
