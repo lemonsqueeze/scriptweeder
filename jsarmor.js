@@ -397,7 +397,8 @@
     function helper_host(h)
     {
 	return (is_prefix("api.", h) ||
-		 is_prefix("apis.", h) ||
+		is_prefix("apis.", h) ||
+		is_prefix("cdn.", h) ||		
 		is_prefix("code.", h));
     }
     
@@ -453,9 +454,10 @@
 	    host_allowed_locally(host));
     }
 
-    function relaxed_mode_helper_host(host)
+    // dn arg optional
+    function relaxed_mode_helper_host(host, dn)
     {
-	var dn = get_domain_node(get_domain(host));
+	dn = (dn ? dn : get_domain_node(get_domain(host)));
 	return (dn.related ||
 		((dn.helper || helper_host(host)) &&
 		 !helper_blacklist[host]));
@@ -1018,7 +1020,7 @@
 	    var host_part = h.slice(0, h.length - d.length);
 	    var not_loaded = icon_not_loaded(hn, checkbox.checked);
 	    var count = "[" + hn.scripts.length + "]";
-	    var color = (relaxed_mode_helper_host(h) ? '#000' : '');
+	    var color = (relaxed_mode_helper_host(h, dn) ? '#000' : '');
 	    var icon = idoc.createElement('img');	    
 	    item = add_table_item(table, not_loaded, checkbox, host_part, d, icon, count, f, color);
 	    
@@ -1324,7 +1326,7 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	foreach_host_node(function(hn, dn)
 	{
 	  var h = hn.name;
-	  if (relaxed_mode_helper_host(h))
+	  if (relaxed_mode_helper_host(h, dn))
 	      dn.helper_host = true;	      
 	});	
 	
@@ -1339,6 +1341,9 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	    // then domains with helper hosts
 	    if (d1.helper_host ^ d2.helper_host)
 		return (d1.helper_host ? -1 : 1);
+	    // then blacklisted helper domains
+	    if (d1.helper ^ d2.helper)
+		return (d1.helper ? -1 : 1);	    
 	    return (d1.name < d2.name ? -1 : 1);
 	});
     }

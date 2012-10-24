@@ -180,6 +180,8 @@ Embedded version:
 
 Features:
 
+- option to build database of scripts used by websites ?
+  would be useful for testing
 - show script sizes in kb for external scripts loaded
 - way to find out about dns aliases in JS ?
 - shut the door! block outgoing requests once DOM loaded !!
