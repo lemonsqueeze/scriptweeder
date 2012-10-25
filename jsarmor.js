@@ -398,7 +398,8 @@
     {
 	return (is_prefix("api.", h) ||
 		is_prefix("apis.", h) ||
-		is_prefix("cdn.", h) ||		
+// too much crap gets in with this one (cdn.optimizely.com, cdn.demdex.com ...)
+//		is_prefix("cdn.", h) ||
 		is_prefix("code.", h));
     }
     
