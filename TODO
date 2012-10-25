@@ -298,6 +298,7 @@ TESTING:
 
 - http://www.sticker-autocollant.com/stickers-pc-portable/608-stickers-autocollants-pc-portable.html
   uses facebook script (static.ak.fbcdn.net)
+  good test case for sorting (uses both apis.google.com and www.google.com)
 - simple page with one external script:
   http://sandbox.leigeber.com/dropdown-menu/index.html
 - simple page with 2 external scripts (1 in domain, 1 outside)
@@ -367,6 +368,8 @@ Toxic sites:
   evil in your face swf ad
 - http://eugene.kaspersky.com/2012/07/25/what-wired-is-not-telling-you-a-response-to-noah-shachtmans-article-in-wired-magazine/
 - And, last but not least, among the most toxic sites of all we have:
+  - ehow.com
+    http://www.ehow.com/how_7412870_improve-3g-speed.html
   - techcrunch.com
     http://techcrunch.com/2012/01/12/more-more-more/
   - thetechjournal.com

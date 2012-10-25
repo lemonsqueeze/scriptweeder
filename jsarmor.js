@@ -454,6 +454,7 @@
 	    host_allowed_locally(host));
     }
 
+    // cached in host_node.helper_host
     // dn arg optional
     function relaxed_mode_helper_host(host, dn)
     {
@@ -1016,7 +1017,7 @@
 
 	var found_not_loaded = false;
 	var item = null;
-	foreach_host_node(function (hn, dn)
+	foreach_host_node(function(hn, dn)
 	{
 	    var d = dn.name;
 	    var h = hn.name;
@@ -1024,7 +1025,7 @@
 	    var host_part = h.slice(0, h.length - d.length);
 	    var not_loaded = icon_not_loaded(hn, checkbox.checked);
 	    var count = "[" + hn.scripts.length + "]";
-	    var color = (relaxed_mode_helper_host(h, dn) ? '#000' : '');
+	    var color = (hn.helper_host ? '#000' : '');
 	    var icon = idoc.createElement('img');	    
 	    item = add_table_item(table, not_loaded, checkbox, host_part, d, icon, count, f, color);
 	    
@@ -1038,7 +1039,7 @@
 	    if (not_loaded)
 		found_not_loaded = true;
 	});
-
+	
 	if (item && !found_not_loaded) // indent
 	    item.childNodes[0].innerHTML = "&nbsp;&nbsp;";
     }
@@ -1280,6 +1281,7 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	var n = new Object();
 	n.name = host;
 	n.scripts = [];
+	n.helper_host = relaxed_mode_helper_host(host, domain_node); // caching
 	hosts.push(n);
 	return n;
     }
@@ -1314,7 +1316,7 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
     }
 
     // call f(host_node, domain_node) for every hosts
-    function foreach_host_node(f)
+    function _foreach_host_node(f)
     {
 	for (var i = 0; i < domain_nodes.length; i++)
 	{
@@ -1324,16 +1326,25 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	}
     }
 
+    // same but in relaxed mode order:
+    // helper hosts first, then the rest
+    function foreach_host_node(f)
+    {
+	_foreach_host_node(function (hn, dn)
+	{
+	    if (hn.helper_host)
+		f(hn, dn);
+	});
+
+	_foreach_host_node(function (hn, dn)
+	{
+	    if (!hn.helper_host)
+		f(hn, dn);
+	});
+    }
+
     function sort_domains()
     {
-	// set domains' .helper_host. (only used for sorting)
-	foreach_host_node(function(hn, dn)
-	{
-	  var h = hn.name;
-	  if (relaxed_mode_helper_host(h, dn))
-	      dn.helper_host = true;	      
-	});	
-	
 	domain_nodes.sort(function(d1,d2)
 	{
 	    // current domain goes first
@@ -1342,9 +1353,7 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	    // then related domains 
 	    if (d1.related ^ d2.related)
 		return (d1.related ? -1 : 1);
-	    // then domains with helper hosts
-	    if (d1.helper_host ^ d2.helper_host)
-		return (d1.helper_host ? -1 : 1);
+	    // Note: sorting between helper/non helper host done in foreach_host_node()
 	    // then blacklisted helper domains
 	    if (d1.helper ^ d2.helper)
 		return (d1.helper ? -1 : 1);	    
