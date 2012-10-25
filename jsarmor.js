@@ -15,7 +15,7 @@
 // Watch out, when running as userjs, document and window.document are the same,
 // but when running as an extension they're 2 different things!
 (function(document, location, opera, scriptStorage) {    
-    var version = 'JSArmor v1.42';
+    var version = 'JSArmor v1.43';
 
     /************************* Default Settings *******************************/
     
@@ -775,7 +775,12 @@
     {	
 	var nsdetails = idoc.createElement('div');
 	nsdetails.align = 'left';
-	nsdetails.style="border-width: 2px; border-style: outset; border-color: gray; background:#abb9ca;";
+	nsdetails.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;" +
+	// "background:#abb9ca;" +
+        "background: #ccc;" +
+	// "background: #efebe7;" +
+	"box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);";
+	
 //        nsdetails.style.display = 'inline-block';
 
 	nsdetails.onmouseout = function(e)
@@ -788,8 +793,7 @@
 	
 	var item = add_menu_item(nsdetails, "Scripts:");
 	item.align = 'center';
-	item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
-	add_menu_separator(nsdetails);	
+	item.className = 'noscript_title'
 
 	foreach_host_node(function(host_node)
 	{

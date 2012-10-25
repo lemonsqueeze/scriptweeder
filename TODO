@@ -4,22 +4,14 @@
 
 [ TODO ]
 
-  - rename setting keys
-  - way to not store timestamp for each site
   - doc or startup: warn about 
         - Speculative parser
         - userjs on https
 
-Problems when running as extension (not userjs):
-  - get_domain_node() failed
-    when opening page as a new tab (reload is fine)
-      http://dev.opera.com/articles/view/converting-userjs-to-extensions/
-      (opened from google search)
-  - reload from cache not working, button goes away (wikipedia)
-    but full reload -> ok
+  - find way to make it work as extension
+
 
 Urgent:
-  - Move styles into CSS
 
   - Check what happens for http redirect on script url
     Which url shows up ??
@@ -56,17 +48,14 @@ Urgent:
 Features:
   - Settings window,
     About
-    way to set defaults
+    way to set defaults    
     view/edit whitelist,
+    view/edit blacklist
+    reload method
     change font, skin
     import/export settings ...
-  - edit helper blacklist
-
-  - Make it an opera extension
-    (can save settings through widget.preferences)
 
 UI Enhancements:
-  - Fix details menu style
   - noscript title clobbers beautiful shaded effect
       increase top padding/margin ?
   - Scrolling problems: can we put scrollbars in DIV ?
@@ -93,15 +82,42 @@ Before Release:
 
 Optimization/Cleanup:
   - cache script storage settings instead of accessing every time ?
-  - move CSS out of javascript (prob. more efficient for browser)
+  - move CSS out of javascript (prob. more efficient for browser?)
 
 --------------------------------------------------------------------------
 
 [ FIXME! ]
 
-  - relaxed mode: clicking on site to block it switches to filtered 
-    with wrong display (every site blocked)
+  - Move styles into CSS
+  - FIXME comments in the code
 
+Extension problems (not userjs):
+  Really strange stuff going on right now like:
+  
+   * BeforeExternalScript not firing
+   and BeforeScript as well for some pages, but only when opened as a new tabs (how weird!!)
+   * reload logic not working (probably deserved, it's quite a hack =)
+   maybe createEvent / dispatchEvent can't be used inside extensions.
+   at any rate it seems i have to fall back to location.reload(true), which works but what a waste...
+  
+  I guess userjs and extension contexts are actually quite different.
+  
+  I put some debugging code in, turns out:
+   Part of the problem is a race condition which is sometimes lost between handler setup
+   and the first events firing, that i can deal with.
+   But there are also cases where the race is not lost and we still miss events.
+   As if events fired even before the extension started. (i have a bad feeling about this)
+  
+  Reproduce:
+    - get_domain_node() failed
+      when opening page as a new tab (reload is fine)
+        http://dev.opera.com/articles/view/converting-userjs-to-extensions/
+        (opened from google search)
+    - reload from cache not working, button goes away (wikipedia)
+      but full reload -> ok
+
+
+Sites:
   - http://biggeekdad.com/2011/01/wingsuit-basejumping/
     why jsarmor doesn't show up inside iframe ?
 
@@ -125,55 +141,19 @@ Optimization/Cleanup:
     changing settings reloads current frame, but not others
     -> how do we reload the whole page ??
     top.location.reload() doesn't work either
-  - domain helpers: look at hostname also
-    Ex: api.recaptcha.net   (http://www.rlslog.net/)
-        cdn.adk2.com
-  - When moving mouse from menu to window scrollbar:
-    Error: cannot convert reltg to object
-    in nsmenu.onmouseout
-  - FIXME comments in the code
-  - "Details" menu displays old style  
+
   - blocking inline scripts doesn't completely block javascript:
     page can still execute js through:
       - event handlers 
       - javascript url
   
     cf http://www.howtocreate.co.uk/operaStuff/userjs/disablescript.js    
-  - wn.com gets handled as a .co.uk style domain
 
-  - (web dev) issues with local html+js files 
-    domain is empty
-    file:// url gets rewritten as http:// in script details
-  
-Style Issues:
-Iframe version
-  - youtube still breaks ui style !!!
   - http://precarioussecurity.blogspot.fr/2012/03/simulated-man-in-middle-with-privoxy.html
     noscript ui not showing up!
-
-Embedded version:
-  - http://www.petitfute.com/adresse/annuaire/z-35-123/restaurant-restaurant-vegetarien-vercors
-    word wrapping on google-analytics.com
-  - slashdot
-    font and spacing a little weird
-  - dev.opera.com/articles/view/beautiful-ui-styling-with-css3-text-shadow-box-shadow-and-border-radius/
-    div left of button when menu is shown is not transparent anymore
-  - vi.sualize.us/
-    completely breaks menu styles
-  - http://www.echoecho.com/cssselectors05.htm
-    gets the number of scripts wrong
-    (google.com: 5 <-> googlesyndication.com: 1)
   - lemonde.fr
     almost hides button
-  - deviantart.com: warning, can't convert window.name to object (???)
-  - youtube makes button transparent (background:transparent)
-    and there doesn't seem to be a way to revert that to default ...
-    -> probaly have to switch from button to div and use
-       border-radius and -o-linear-gradient
-  - menu not showing up in ajaxian.com/archives/tooltips 
-    (also this one uses facebook iframe which has inline scripts)
-  - moving mouse out of main button doesn't hide menu (maybe that's ok)
-  
+
 ----------------------------------------------------------------------------  
 
 [ IDEAS ]
@@ -259,6 +239,16 @@ DONE:
 
 FIXED:
 
+  - (web dev) issues with local html+js files 
+    domain is empty
+    file:// url gets rewritten as http:// in script details
+  - wn.com gets handled as a .co.uk style domain
+  - When moving mouse from menu to window scrollbar:
+    Error: cannot convert reltg to object
+    in nsmenu.onmouseout
+  - domain helpers: look at hostname also
+    Ex: api.recaptcha.net   (http://www.rlslog.net/)
+        cdn.adk2.com
   - Scripts can get loaded after menu has been populated
     Ex for external scripts:
         www.google.com -> [www.google.com, ssl.gstatic.com] scripts     
