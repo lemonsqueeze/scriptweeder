@@ -15,7 +15,7 @@
 // Watch out, when running as userjs, document and window.document are the same,
 // but when running as an extension they're 2 different things!
 (function(document, location, opera, scriptStorage) {    
-    var version = 'JSArmor v1.43';
+    var version = 'JSArmor v1.44';
 
     /************************* Default Settings *******************************/
     
@@ -37,6 +37,9 @@
       "widgets.twimg.com": 1,  // twitter
       "static.ak.fbcdn.net": 1 // facebook
     };
+    
+    // icon set to use: 'native' or 'opera_11'
+    var icon_set = 'opera_11';
     
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
@@ -73,9 +76,11 @@
     var current_domain = get_domain(location.hostname);
     var button_image = null;
     var block_inline_scripts = false;
-    var handle_noscript_tags = false;    
+    var handle_noscript_tags = false;
 
     check_script_storage();
+    var icons;    
+    init_icons();
     init_scope();    
     init_mode();
     init = true;
@@ -535,6 +540,39 @@
     }
     
     /****************************** UI primitives *****************************/
+
+    function init_icons()
+    {
+    
+      var native_icons = {
+        "allowed":		"-o-skin('Transfer Success')",
+	"blocked":		"-o-skin('Transfer Stopped')",
+	"not_loaded":		"-o-skin('Transfer Size Mismatch')",            
+	"allowed_globally":	"-o-skin('RSS')",      
+	"block_all":		"-o-skin('Smiley Pacman')",
+	"filtered":		"-o-skin('Smiley Cool')",
+	"relaxed":		"-o-skin('Smiley Tongue')",
+	"allow_all":		"-o-skin('Smiley Cry')"
+      };
+
+      var opera_11_icons = {
+        "allowed":		'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNAay06AAAAAVdEVYdENyZWF0aW9uIFRpbWUAMTkvNS8wOcYlgL0AAAGASURBVDiNpZPLK0RRHMc/xz3FxmNBSEosBkVXSpQyFqRYTB4Lq2ujbCby/AuUZDESCyuWUwwp2ciwF3cjbMjWCoW45xoLznXnwcL86tSv7+/7e/+OSCQSZCM5WXkDUitCCA+c3c0dAcYB8xuygeXF0NuG5ujKhacIwexubhEQ9zmmig10LobeHrSf9FuVMv5y5tsWB5o04M0gHC2wHFeajivJ9KzWKHVlIRxXmuFogZU2A6WMid/SdgbGaKzoI08WcXZ3ADABbCZVoFxpKleiXElNcQdaLy806W2Y4+X9kdX4iMa9Nr0AjjJwlEFL1TBT3TsMNc/jKAOrbQUQLBwM8PT67PEytCBtwDy5ihEobaerfhSzsoeS/ErWTya5vb/20+30AK4RATYA1o5m+EgIOgKDbJ1GiF/GgJ+sQEQrSXcwsFJ9jm+Nwdp+jq9iqTO1t8M3TZnvwJVB4FgHObzYS6XYQNAPJFWgpXepzuJrVf5TjuxPX25qTtop/1ey/o2ftG6clPyKKlYAAAAASUVORK5CYII=")',
+	"blocked":		'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNAay06AAAAAVdEVYdENyZWF0aW9uIFRpbWUAMTkvNS8wOcYlgL0AAAEHSURBVDiNpZNBagIxFIa/iAfoIRSKLXRc1YUL3XXRCwjCFC9QjzK9gOiqV+huNm66Mou2COMhPIB56aImTTIwgvND4OUlf/K/lz/KWksbdFqxga4LlFI+eViMX4BXIDunNPDWW23Xbo9TrnygFIfF+AYoA2IKDUx7q+3R8brhqjXSROa8VgJDl/A9qOajHCMZRrgwsmo+yms9sCdZhlf13z+jq6vZYzhdApv4ACNN0rFG0lISBfGGSwd4/PvAiI5qTRH3QdcVnKQA1m6+f35oElS4IPLBz9P9juZnBNCDj6+h48VWNjKplZJKNzIJKZECh+/pbc7fU4VWLu7K/caXnFr5WrT+jb97bZAgYc+wFgAAAABJRU5ErkJggg==")',
+	"not_loaded":		'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAADBQTFRFAAAA////AAAAAAAAAAAAAAAAAAAAAAAAkAAAlwAAtAAAvgAAyAAA0QAA2AAA3QAA7lpb0AAAAAh0Uk5TAAAMEx4wP0EqzeGOAAAAQElEQVQIW2MShAImBigAMT7JQxk2Rz5AGP8/KUAZH6FS/z/gZJzaBxO5+wDCMAtiQDPnzH2oCM9eqBrG9wIMDABr1Bip1wrS4AAAAABJRU5ErkJggg==")',
+	"allowed_globally":	'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABV0RVh0Q3JlYXRpb24gVGltZQAxOS81LzA5xiWAvQAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNAay06AAAAI4SURBVDiNlZNNSFRRGIafe+feuToqDWL5U4wmM+Mm0magsM20qEXSImgRhgTR376gTYtoWbQuMpcpuW0RrUIIwdCEMQO1CY0w/6AmlTv3zpyfFre8CVp44CzO4bzP974f5zNWHnUnXNfI+z5x9rAch2Ispjst1zXyhh2LJ44ksasd0Pq/4rJXZnWmEHddN2/5PoHY8NArcyA8YBeIYYLlEN3XyoGOJF8np+IWgF0VRS9PY195C4D+XkAvTaKmh9GbSyFAK6iU0D/miTYeBcD6c6/KIixUn8SoT2KmepAfhhETA9udCA9T6hCgpEYJjTdwBqMhReRwjkh7DqOuiUj2KkZzhvKrO2h/I4SoAGAC6N8A++wDzLYcojBCabCPyrugstlyjOj5xyiht7aWhAAlNVIoIgcz2F0XqbrwBOfcQ/ypl5Re3w8eNqSwjl9DCoUUCiXVdoASGm+0H7k6B0DkUIaay0NUFt7jjfYD4HRfh5rmwIXcIYI78pSfz3rZeH4D7W9iOLXEeu5RGhtC+5sARDO9O0UAJTTVp29T19ePkrD+4lbQ5UQWsyFNaWwwOLdmd3dQfeISdmuWWO4mfmEcsRzEsdOnKH+eCACNaZQMNKEDpVE6glgKBJXFmaAnH98EoqYOvE/j4X8yqrYcGDN3T+r6ljRUPMTaPLpc+uc8GE4NdmM70nIoLs5imUoW19e+xGv3t2EnOncV/oVAygobqwuYShYtS4lO4bv54rfZPY2zqWTRUrLrF4hoKuU62VtvAAAAAElFTkSuQmCC")',
+	"block_all":		"-o-skin('Smiley Pacman')",
+	"filtered":		"-o-skin('Smiley Cool')",
+	"relaxed":		"-o-skin('Smiley Tongue')",
+	"allow_all":		"-o-skin('Smiley Cry')"
+      };
+
+      icons = native_icons;
+      var tmp = eval(icon_set + '_icons');
+      if (typeof(tmp) != "object")
+	  alert("jsarmor:\n\nerror initializing icons !");
+      else
+	  icons = tmp;
+    }
     
     function new_icon(image)
     {
@@ -545,9 +583,15 @@
       return icon;	
     }
 
+    function icon_background_prop(image_name)
+    {
+	return icons[image_name] + " no-repeat center";
+    }
+    
     function set_icon_image(icon, image_name)
     {
-	icon.style.background = "-o-skin('" + image_name + "')";
+	icon.style.background = icon_background_prop(image_name);
+	icon.style.backgroundSize = "contain";
     }
     
     function new_icon_mode(mode)
@@ -559,12 +603,7 @@
 
     function set_icon_mode(icon, mode)
     {
-      var image;
-      if (mode == 'block_all') 	image = "Smiley Pacman";
-      if (mode == 'filtered') 	image = "Smiley Cool";
-      if (mode == 'relaxed') 	image = "Smiley Tongue";
-      if (mode == 'allow_all') 	image = "Smiley Cry";
-      set_icon_image(icon, image);
+      set_icon_image(icon, mode);
     }
     
     function add_menu_item(nsmenu, text, indent, f, child)
@@ -710,12 +749,12 @@
 	    return null;
 	
 	var icon = new_icon();
-	var image = 'Transfer Size Mismatch';
+	var image = "not_loaded";
 	icon.title = n + " script" + (n>1 ? "s" : "") + " not loaded.";
 	if (n == s.length)
 	{
 	    // FIXME: find a smaller/less invasive icon
-	    // image = 'Transfer Stopped';	    
+	    // image = "blocked";	    
 	    icon.title = "None loaded.";
 	}
 	icon.title += " See details.";
@@ -809,13 +848,13 @@
 	      var item = add_link_menu_item(nsdetails, s[j].url, strip_http(s[j].url), 2);
 	      // script status
 	      var icon = new_icon();
-	      var image = 'Transfer Stopped';
+	      var image = "blocked";
 	      if (allowed_host(h))
 	      {
-		  image = 'Transfer Success';
+		  image = "allowed";
 		  if (!s[j].loaded)
 		  {
-		      image = 'Transfer Size Mismatch';
+		      image = "not_loaded";
 		      icon.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
 		  }
 	      }
@@ -1186,7 +1225,7 @@ input[type=radio] + label { \n\
 	text-decoration:none; } \n\
 input[type=radio]:checked + label { background-color: #fa4; } \n\
 .noscript_global { padding: 0px 3px; width:14px; height:14px; vertical-align:middle; \
-    background: -o-skin('RSS'); } \n\
+    background:" + icon_background_prop("allowed_globally") + "; background-size:contain; } \n	\
 ";
 
 	// -o-linear-gradient(top, #FFFFFF 0px, #CCCCCC 100%) #E5E5E5;
