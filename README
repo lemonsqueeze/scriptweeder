@@ -1,7 +1,6 @@
                                   jsarmor
-                                  =======
-
                      [ noscript on steroids for opera ! ]
+
 ------------------------------------------------------------------------------
 
 jsarmor, like noscript, gives the user control over what scripts get run in
@@ -67,3 +66,10 @@ Features:
     and blocked/allowed/loaded status.
 
 
+------------------------------------------------------------------------------
+
+Other stuff:
+
+utils/google_nojs.js: 
+  shows how to disable javascript just on one site (doesn't need
+  jsarmor). This one does it for google search.

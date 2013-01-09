@@ -88,6 +88,15 @@ Optimization/Cleanup:
 
 [ FIXME! ]
 
+  - stackechange.com login page, getting jsarmor error in iframe code
+    (is their code interfering ??)
+    http://stackexchange.com/users/login?returnurl=%2f#log-in
+    
+    Event thread: load
+    Uncaught exception: TypeError: Cannot convert 'iframe.contentWindow' to object
+    Error thrown at line 1404, column 1 in populate_iframe():
+        iframe.contentWindow.name = 'noscript_iframe';
+
   - Move styles into CSS
   - FIXME comments in the code
 
