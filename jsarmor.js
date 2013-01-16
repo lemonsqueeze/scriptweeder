@@ -528,6 +528,39 @@
 	    }
 	}
 	return '[' + d + ']';
+    }
+
+    function raw_list_to_string(list)
+    {
+	var d = '';
+	var comma = '';
+	var a = list.split(' ');
+	for (var i = 0; i < a.length; i++)
+	{ 
+	    if (a[i] != '.')
+	    {
+		d = d + comma + a[i];
+		comma = '\n';
+	    }
+	}
+	return d;
+    }
+
+    // suitable for textarea input
+    function raw_string_to_list(str)
+    {
+	var a = str.split('\r\n'); // eeew
+	var l = '. ';
+	var sep = '';
+	for (var i = 0; i < a.length; i++)
+	{
+	    if (a[i] != '')
+	    {  // no blank lines
+		l = l + sep + a[i];
+		sep = ' ';
+	    }
+	}
+	return l;
     }    
 
     function get_size_kb(x)
@@ -809,6 +842,174 @@
       set_bool_setting('nstags', handle_noscript_tags);
       need_reload = true;
     }
+
+    /***************************** Settings menu *******************************/
+
+    function edit_whitelist()
+    {
+	var nsmenu = idoc.createElement('div');
+	nsmenu.id = 'noscript_menu';
+	nsmenu.align = 'left';
+	nsmenu.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;" +
+	// "background:#abb9ca;" +
+        "background: #ccc;" +
+	// "background: #efebe7;" +
+	"box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);";
+
+	var close_menu = function()
+	{
+	   td.removeChild(nsmenu);
+	   resize_iframe();
+	};
+	
+	var item = add_menu_item(nsmenu, "Global Whitelist");
+	
+	var text = idoc.createElement('textarea');
+	text.rows = 15;
+	text.cols = 40;
+	// how do we add padding to this thing ??
+	text.innerText = raw_list_to_string(global_setting('whitelist'));
+	nsmenu.appendChild(text);
+
+	var div = idoc.createElement('div');
+	nsmenu.appendChild(div);		
+	var button = idoc.createElement('button');
+	button.innerText = "Save";
+	button.onclick = function()
+	{
+	  set_global_setting('whitelist', raw_string_to_list(text.innerText));
+	  close_menu();
+	}
+	div.appendChild(button);
+	
+	var button = idoc.createElement('button');
+	button.innerText = "Cancel";
+	button.onclick = close_menu;
+	div.appendChild(button);	
+	
+	var td = idoc.getElementById('td_nsmenu');
+	td.appendChild(nsmenu);
+	//idoc.body.appendChild(nsmenu);
+	resize_iframe();
+    }
+    
+    function print_setting(host, settings)
+    {
+	var s = "";
+	for (k in settings)
+	{
+//	    if (k == 'hosts' &&
+//		settings[k] == '. ' + host) // default setting
+//		continue;
+//	    if (k != 'time')
+		s += ("  " + k + ":" + settings[k] + "\n");
+	}
+	return s;
+    }
+
+    function get_all_settings_by_host(glob, host_settings)
+    {
+	for (k in scriptStorage)
+	{
+	    var key = k;
+	    var settings = glob;
+	    if (key.indexOf(':') != -1)
+	    {   // host:key format
+		var host = k.slice(0, k.indexOf(':'));
+		key = k.slice(k.indexOf(':') + 1);
+		settings = host_settings[host];
+		if (!settings)
+		{
+		    settings = {};
+		    host_settings[host] = settings;
+		}		
+	    }
+	    settings[key] = scriptStorage.getItem(k);
+	}
+    }
+    
+    function export_settings()
+    {
+	var glob = {};
+	var host_settings = {};
+	var s = "";
+	get_all_settings_by_host(glob, host_settings)
+
+	s += "globals:\n";
+	s += print_setting('', glob);
+	s += "\nhost settings:\n";
+	
+	var hosts = get_keys(host_settings).sort();
+	for (var i in hosts)
+	{
+	    var host = hosts[i];
+	    s += host + ":\n";
+	    s += print_setting(host, host_settings[host]);
+	}
+
+	var url = "data:text/plain;base64," + btoa(s);
+	location.href = url;
+    }
+
+    // or use Object.keys(obj) if browser supports it.
+    function get_keys(obj)
+    {
+	var keys = [];
+	for(var key in obj)
+	    keys.push(key);
+	return keys;
+    }
+
+    
+    function settings_menu()
+    {
+	var nsdetails = idoc.createElement('div');
+	nsdetails.align = 'left';
+	nsdetails.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;" +
+	// "background:#abb9ca;" +
+        "background: #ccc;" +
+	// "background: #efebe7;" +
+	"box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);";
+	nsdetails.style.minWidth = "250px";
+//        nsdetails.style.display = 'inline-block';
+
+	// FIXME: sane menu logic to handle different menus
+	nsdetails.onmouseout = function(e)
+	{
+	   if (!mouseout_leaving_menu(e, nsdetails))
+	       return;	   
+	   td.removeChild(nsdetails);
+	   resize_iframe();	   
+	};
+	
+	var item = add_menu_item(nsdetails, "Settings:");
+	item.align = 'center';
+	item.className = 'noscript_title';
+
+	var wrap = function(f)
+	{ return function()
+	  {
+	    td.removeChild(nsdetails);
+	    f();
+	  };
+	};
+	var item = add_menu_item(nsdetails, "Help");
+	var item = add_menu_item(nsdetails, "Refresh method");
+	//var item = add_menu_item(nsdetails, "Iframe handling");
+	var item = add_menu_item(nsdetails, "Edit whitelist", 0, wrap(edit_whitelist));	
+	var item = add_menu_item(nsdetails, "Export Settings", 0, export_settings);
+	var item = add_menu_item(nsdetails, "Import Settings");		
+	var item = add_menu_item(nsdetails, "Reset settings");
+
+	var item = add_menu_item(nsdetails, "About");		
+
+	var td = idoc.getElementById('td_nsmenu');
+	td.appendChild(nsdetails);
+
+	//show_hide_menu(false);
+	resize_iframe();
+        nsdetails.style.display = 'inline-block';
+    }    
     
     /***************************** Details menu *******************************/
     
@@ -867,6 +1068,12 @@
 	var td = idoc.getElementById('td_nsmenu');
 	td.appendChild(nsdetails);
 
+	item = add_menu_item(nsdetails, "Options ...", 0, function()
+			     {
+			       td.removeChild(nsdetails);
+			       settings_menu();
+			     });
+	
 	show_hide_menu(false);
         nsdetails.style.display = 'inline-block';
     }
