@@ -26,6 +26,9 @@
 
 - Icon courtesy of Aha Soft (http://www.aha-soft.com)
 
+- Jan Bobrowski's file input styling kungfu
+    http://wizard.ae.krakow.pl/~jb/localio.html
+
 - The so very unholy "reload from cache by simulating click on an injected link"
   js trick using mozilla's simulateClick() method,
   whose author shall remain anonymous for now as i lost the link

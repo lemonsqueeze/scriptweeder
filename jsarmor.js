@@ -998,9 +998,14 @@
 	//var item = add_menu_item(nsdetails, "Iframe handling");
 	var item = add_menu_item(nsdetails, "Edit whitelist", 0, wrap(edit_whitelist));	
 	var item = add_menu_item(nsdetails, "Export Settings", 0, export_settings);
-	var item = add_menu_item(nsdetails, "Import Settings");		
+	
+	// Import Settings
+	var form = idoc.createElement('form');
+	form.id = "import_form";
+	form.innerHTML = "<input type=file id=import_btn autocomplete=off onchange=read_file(this)>Import Settings";
+	var item = add_menu_item(nsdetails, "", 0, function (){}, form);
+	
 	var item = add_menu_item(nsdetails, "Reset settings");
-
 	var item = add_menu_item(nsdetails, "About");		
 
 	var td = idoc.getElementById('td_nsmenu');
@@ -1420,6 +1425,10 @@
 .noscript_title { background-color:#d80; color:#ffffff; font-weight:bold; } \n\
 #noscript_button { border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } \n\
 #noscript_table div { width: auto; } \n\
+\n\
+#import_form {display:inline-block;position:relative;overflow:hidden;vertical-align:text-bottom} \n\
+#import_btn {display:block;position:absolute;top:0;right:0;margin:0;border:0;opacity:0} \n\
+\n\
 input[type=radio]         { display:none; } \n\
 input[type=radio] + label:hover   { background-color: #ddd; } \n\
 input[type=radio] + label { \n\
