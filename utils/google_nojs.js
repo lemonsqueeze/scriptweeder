@@ -1,56 +1,37 @@
 // ==UserScript==
-// @name google_nojs
-// @author lemonsqueeze https://github.com/lemonsqueeze/jsarmor
-// @version 1.0
-// @description Disable javascript just on google search.
-// @published 2013-01-09 11:00
+// @description Disable javascript just on google search
+// @include        http://www.google.*/webhp?*
+// @include        http://www.google.*/search?*
+// @include        http://www.google.*/ig?*
+// @include        http://www.google.*/
+// @include        http://www.google.*/#*
+// @include        https://www.google.*/webhp?*
+// @include        https://www.google.*/search?*
+// @include        https://www.google.*/ig?*
+// @include        https://www.google.*/
+// @include        https://www.google.*/#*
+// @include        https://encrypted.google.*/webhp?*
+// @include        https://encrypted.google.*/search?*
+// @include        https://encrypted.google.*/ig?*
+// @include        https://encrypted.google.*/
+// @include        https://encrypted.google.*/#*
 // ==/UserScript==
 
 (function() {
     
-    var h = location.hostname;
-    if (!(is_prefix("www.google.", h) ||
-	  is_prefix("encrypted.google.", h)))
-	return;
-    
-    var p = location.pathname;
-    if (!(p == "/" ||
-	  p == "/webhp" ||
-	  p == "/search" ||	  
-	  p == "/ig"))
-	return;
-    
-    // alert("google_nojs.js:\n\nblocking javascript.");
-
-    function is_prefix(p, str)
-    {
-	return (str.slice(0, p.length) == p);
-    }
-    
     function handle_noscript_tags()
     {
-	// interpret <noscript> tags as if javascript was disabled in opera	    
-	
 	for (var j = document.getElementsByTagName('noscript'); j[0];
 	     j = document.getElementsByTagName('noscript')) 
 	{
 	    var nstag = document.createElement('wasnoscript');
-	    nstag.innerHTML = j[0].innerText;
-	    
+	    nstag.innerHTML = j[0].innerText;	    
 	    j[0].parentNode.replaceChild(nstag, j[0]);
-	    // once reparenting is done, we have to get tags again
-	    // otherwise it misses some. weird ...		
 	}
     }
 
     function beforeextscript_handler(e)
     {
-        if (e.element.tagName.toLowerCase() != 'script')
-	{
-	  alert("google_nojs.user.js: BeforeExternalScript: non <script>: " + e.element.tagName);
-	  return;
-        }
-	
 	e.preventDefault();
     }
 
@@ -59,13 +40,16 @@
     {
       if (e.element.src) // external script
 	  return;
-      
       e.preventDefault();
     }    
 
+    // block inline scripts
     window.opera.addEventListener('BeforeScript',	  beforescript_handler, false);
+    
+    // block external scripts (won't even download)
     window.opera.addEventListener('BeforeExternalScript', beforeextscript_handler, false);
+    
+    // use this one if you want <noscript> tags interpreted as if javascript was disabled in opera.
     document.addEventListener('DOMContentLoaded',  handle_noscript_tags, false);
 
 })();
-
