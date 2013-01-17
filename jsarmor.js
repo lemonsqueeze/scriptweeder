@@ -951,6 +951,36 @@
 	location.href = url;
     }
 
+    function import_settings(e)
+    {
+	var files = e.target.files; // FileList object
+
+	alert("import_settings()");
+	
+	// Loop through the FileList and render image files as thumbnails.
+	//for (var i = 0, f; f = files[i]; i++) {
+	var f = files[0];
+
+	// Only process image files.
+	//if (!f.type.match('image.*')) {
+	//    continue;
+	//}
+
+	var reader = new FileReader();
+	
+	// Closure to capture the file information.
+	reader.onload = (function(theFile) {
+	    return function(e) {
+	    // e.target.result
+	    // escape(theFile.name)
+	    alert(e.target.result);
+	    };
+	    })(f);
+	
+	// Read in the image file as a data URL.
+	reader.readAsDataURL(f);
+    }
+
     // or use Object.keys(obj) if browser supports it.
     function get_keys(obj)
     {
@@ -1002,8 +1032,10 @@
 	// Import Settings
 	var form = idoc.createElement('form');
 	form.id = "import_form";
-	form.innerHTML = "<input type=file id=import_btn autocomplete=off onchange=read_file(this)>Import Settings";
-	var item = add_menu_item(nsdetails, "", 0, function (){}, form);
+
+	form.innerHTML = "<input type=file id=import_btn autocomplete=off onchange=foo() >Import Settings";
+	//form.childNodes[0].onchange = import_settings;
+	var item = add_menu_item(nsdetails, "", 0, function() {}, form);
 	
 	var item = add_menu_item(nsdetails, "Reset settings");
 	var item = add_menu_item(nsdetails, "About");		
