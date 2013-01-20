@@ -37,7 +37,36 @@ Urgent:
       -> potentially any external script can be run !!
     Also UI showing up: ugly and not useable.
     
+    - basic: iframe handling: "block all & shut up" / "show ui" ?
+
+    - special cases:
+      - block invisible iframes by default ?!
+      - iframes from current host
+
+---------------------------------------------------------
+    - better logic:
+       - merge iframe hosts in main menu (display special icon)
+       - iframe instance can get parent's url, and check if its host is allowed there.
+         if not -> block all, easy.
+         if yes -> use current settings (filtered, relaxed whatever)
+                   show ui if "show ui in iframe" enabled (?)
+       - cool bonus: placeholder + click to enable it (should jsarmor do this ?)
+           + option to do same for ppl using external iframe hider (wait -> becomes visible)
+
+    - add option:
+       - iframes handling "block all" "filtered = better logic" "treat as normal page"
+       - "show ui inside iframes"
+
+    ui problem in small iframes:
+    - make iframes scrollable when ui enabled ?
+    - or use popup ?
+
+    - what do we do for normal frames ??
+      can we even distinguish between frames and iframes ??
+
+------------------------------------------------------
     - Ideas:
+
       1) integrate with external iframe blocking ?
          (so we don't have to click on them on allowed sites)
          - UI: setting to block/allow per page/site/...
@@ -81,6 +110,8 @@ UI Enhancements:
     dev.opera.com/articles/view/beautiful-ui-styling-with-css3-text-shadow-box-shadow-and-border-radius/
 
 Before Release:
+  - test running inside frame
+  - test running inside iframe
   - test: - different versions of opera
           - windows.
   - documentation

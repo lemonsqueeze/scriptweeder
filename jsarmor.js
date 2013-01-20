@@ -55,6 +55,11 @@
     // when inline scripts are blocked, handle <noscript> tags
     // as if javascript was disabled in opera
     var default_handle_noscript_tags = true;
+
+    // whether to show jsarmor ui inside frames / iframes
+    var default_iframe_ui = false;
+
+    var help_url = "https://github.com/lemonsqueeze/jsarmor/wiki";
     
     /********************************* Init *********************************/
 
@@ -64,7 +69,7 @@
     // if (window != window.top)
     //   running in frame
 
-    // noscript ui's iframe, don't run in there
+    // jsarmor ui's iframe, don't recurse !
     if (window != window.top &&
 	window.name == 'noscript_iframe')
 	return;
@@ -203,6 +208,18 @@
 	set_scoped_setting(3, name, value);
     }
     
+    function global_bool_setting(name, default_value)
+    {
+	var c = global_setting(name);
+	c = (c == '' ? default_value : c == 'y');
+	return c;
+    }
+
+    function set_global_bool_setting(name, val)
+    {
+	set_global_setting(name, (val ? 'y' : 'n'));	
+    }
+
     function bool_setting(name, default_value)
     {
 	var c = setting(name);
@@ -214,7 +231,7 @@
     {
 	set_setting(name, (val ? 'y' : 'n'));	
     }
-
+    
     // all hosts settings should be accessed through these so default val get translated
     function hosts_setting()
     {
@@ -991,7 +1008,7 @@
     }
 
     
-    function settings_menu()
+    function options_menu()
     {
 	var nsdetails = idoc.createElement('div');
 	nsdetails.align = 'left';
@@ -1004,15 +1021,18 @@
 //        nsdetails.style.display = 'inline-block';
 
 	// FIXME: sane menu logic to handle different menus
+	var need_reload = false;
 	nsdetails.onmouseout = function(e)
 	{
 	   if (!mouseout_leaving_menu(e, nsdetails))
 	       return;	   
 	   td.removeChild(nsdetails);
-	   resize_iframe();	   
+	   resize_iframe();
+	   if (need_reload)
+	       reload_page();
 	};
 	
-	var item = add_menu_item(nsdetails, "Settings:");
+	var item = add_menu_item(nsdetails, "Options:");
 	item.align = 'center';
 	item.className = 'noscript_title';
 
@@ -1023,8 +1043,29 @@
 	    f();
 	  };
 	};
-	var item = add_menu_item(nsdetails, "Help");
-	var item = add_menu_item(nsdetails, "Refresh method");
+	
+
+	var f = function(event)
+	{
+	   var new_val = !global_bool_setting("iframe_ui", default_iframe_ui);
+	   set_global_bool_setting("iframe_ui", new_val);
+	   // update ui
+	   this.checkbox.checked = new_val;
+	   need_reload = true;
+	};	
+	var checkbox = make_checkbox(global_bool_setting("iframe_ui", default_iframe_ui));
+	var item = add_menu_item(nsdetails, "Show jsarmor interface in frames/iframes", 0, f, checkbox);
+	item.checkbox = item.firstChild;
+	
+	var item = add_menu_item(nsdetails, "Reload method");
+	
+	add_menu_separator(nsdetails);	
+
+	var item = add_menu_item(nsdetails, "Help", 0, function() { location.href = help_url; });
+	
+
+	
+	
 	//var item = add_menu_item(nsdetails, "Iframe handling");
 	var item = add_menu_item(nsdetails, "Edit whitelist", 0, wrap(edit_whitelist));	
 	var item = add_menu_item(nsdetails, "Export Settings", 0, export_settings);
@@ -1108,7 +1149,7 @@
 	item = add_menu_item(nsdetails, "Options ...", 0, function()
 			     {
 			       td.removeChild(nsdetails);
-			       settings_menu();
+			       options_menu();
 			     });
 	
 	show_hide_menu(false);
@@ -1755,6 +1796,11 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 
 	if (block_inline_scripts)
 	    check_handle_noscript_tags();
+
+	// display ui in frame / iframe ?
+	if (window != window.top &&
+	    !global_bool_setting("iframe_ui", default_iframe_ui))
+	    return;
 	
 	create_iframe();
     }
