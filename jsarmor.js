@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name JSArmor
+// @name jsarmor
 // @author lemonsqueeze https://github.com/lemonsqueeze/jsarmor
 // @description Block unwanted javascript. NoScript on steroids for opera !
 // @published 2012-10-08 11:00
@@ -15,7 +15,7 @@
 // Watch out, when running as userjs, document and window.document are the same,
 // but when running as an extension they're 2 different things!
 (function(document, location, opera, scriptStorage) {    
-    var version = 'JSArmor v1.44';
+    var version = 'jsarmor v2.0';
 
     /************************* Default Settings *******************************/
     
@@ -96,8 +96,8 @@
     if (global_setting('whitelist') == '')
     {
 	// FIXME: need a nice way to edit this.
-	alert("Welcome to JSArmor !\n\n" +
-	      "JSArmor's button will show up at the bottom right of pages using javascript.\n\n" +
+	alert("Welcome to jsarmor !\n\n" +
+	      "jsarmor's button will show up at the bottom right of pages using javascript.\n\n" +
 	      "The initial global whitelist is set to:\n\n[" +
 	      default_globally_allowed_hosts.join(', ') + "]");
 	set_global_setting('whitelist',
@@ -111,9 +111,9 @@
 	if (!scriptStorage)
 	{
 	    location.href = "opera:config#PersistentStorage|UserJSStorageQuota";
-	    alert("Welcome to JSArmor !\n\n" +
+	    alert("Welcome to jsarmor !\n\n" +
 		  "Script storage is currently disabled.\n" +
-		  "For JSArmor to work, set quota to\n" +
+		  "For jsarmor to work, set quota to\n" +
 		  "                 1000\n" +
 		  "on the following page.");
 	}
@@ -131,6 +131,9 @@
     var timestamp; // timestamp for current settings
     function set_scoped_setting(scope, name, value)
     {
+	// don't bother if nothing actually changed.
+	if (scoped_setting(scope, name) == value)
+	    return;
 	scriptStorage.setItem(scoped_prefixes[scope] + name, value);
 	// update timestamp, so other instances can detect changes
 	timestamp = 0 + Date.now();
@@ -140,7 +143,7 @@
 
     // scoped settings are either per page, site, domain, or global.
     var scope;                     // (0,     1,     2,      3)
-    var scoped_prefixes;    
+    var scoped_prefixes;
     function init_scope()
     {
 	scoped_prefixes =
@@ -210,7 +213,7 @@
     {
 	set_scoped_setting(3, name, value);
     }
-    
+
     function global_bool_setting(name, default_value)
     {
 	var c = global_setting(name);
@@ -222,7 +225,7 @@
     {
 	set_global_setting(name, (val ? 'y' : 'n'));	
     }
-
+    
     function bool_setting(name, default_value)
     {
 	var c = setting(name);
@@ -912,17 +915,39 @@
 	//idoc.body.appendChild(nsmenu);
 	resize_iframe();
     }
+
+    function is_default_bool_setting(k, val)
+    {
+	var check = function(c, default_value)
+	{
+	    c = (c == '' ? default_value : c == 'y');
+	    return (c == default_value);
+	};
+	
+	return ((k == 'inline' && check(val, default_block_inline_scripts)) ||
+		(k == 'nstags' && check(val, default_handle_noscript_tags)));
+    }
+    
+    // old settings names, not used anymore but could still be around after upgrade.
+    function is_old_setting(k)
+    {
+	return (k == 'time' ||
+		k === 'timestamp' ||
+		is_prefix("noscript_", k));
+    }
     
     function print_setting(host, settings)
     {
 	var s = "";
+	var prefix = (host == '' ? "" : host + ":")
 	for (k in settings)
 	{
-//	    if (k == 'hosts' &&
-//		settings[k] == '. ' + host) // default setting
-//		continue;
-//	    if (k != 'time')
-		s += ("  " + k + ":" + settings[k] + "\n");
+	    var val = settings[k];
+	    if (!is_old_setting(k) &&			// old names, not used anymore.
+		!(host != '' && val == '') &&		// empty host setting
+		!is_default_bool_setting(k, val)	// don't bother with default values
+	       )
+		s += (prefix + k + ":" + val + "\n");
 	}
 	return s;
     }
@@ -955,7 +980,7 @@
 	var s = "";
 	get_all_settings_by_host(glob, host_settings)
 
-	s += "globals:\n";
+	s += version + "\n\n";
 	s += print_setting('', glob);
 	s += "\nhost settings:\n";
 	
@@ -963,8 +988,10 @@
 	for (var i in hosts)
 	{
 	    var host = hosts[i];
-	    s += host + ":\n";
-	    s += print_setting(host, host_settings[host]);
+	    var settings = print_setting(host, host_settings[host]);
+	    // if there are still old settings lingering, we could end up with an empty string.
+	    if (settings != "") 
+		s += settings;
 	}
 
 	var url = "data:text/plain;base64," + btoa(s);
@@ -1035,7 +1062,7 @@
 	       reload_page();
 	};
 	
-	var item = add_menu_item(nsdetails, "Options:");
+	var item = add_menu_item(nsdetails, "Options");
 	item.align = 'center';
 	item.className = 'noscript_title';
 
@@ -1064,12 +1091,7 @@
 	
 	add_menu_separator(nsdetails);	
 
-	var item = add_menu_item(nsdetails, "Help", 0, function() { location.href = help_url; });
-	
-
-	
-	
-	//var item = add_menu_item(nsdetails, "Iframe handling");
+	var item = add_menu_item(nsdetails, "Help", 0, function() { location.href = help_url; });	
 	var item = add_menu_item(nsdetails, "Edit whitelist", 0, wrap(edit_whitelist));	
 	var item = add_menu_item(nsdetails, "Export Settings", 0, export_settings);
 	
@@ -1114,7 +1136,7 @@
 	   resize_iframe();	   
 	};
 	
-	var item = add_menu_item(nsdetails, "Scripts:");
+	var item = add_menu_item(nsdetails, "Scripts");
 	item.align = 'center';
 	item.className = 'noscript_title'
 
@@ -1185,7 +1207,7 @@
 	      reload_page();
 	};
 	
-	var item = add_menu_item(nsmenu, "JSArmor Settings ...");
+	var item = add_menu_item(nsmenu, "JSArmor");
 	item.title = version + ". Click to view global settings.";
 	item.align = 'center';
 	item.className = 'noscript_title'
@@ -1195,12 +1217,12 @@
   	  if (!event.ctrlKey)
 	  {
 	    var d = list_to_string(global_setting('whitelist'));
-	    alert("JSArmor \nGlobal whitelist: \n" + d);
+	    alert("jsarmor \nGlobal whitelist: \n" + d);
 	  
 	    return;
 	  }
 	  var d = list_to_string(hosts_setting());
-	  alert("JSArmor \nHosts allowed for this page: \n" + d);
+	  alert("jsarmor \nHosts allowed for this page: \n" + d);
 	};
 	
 	item = add_menu_item(nsmenu, "Set for: ", 0, null);
