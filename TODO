@@ -102,6 +102,7 @@ Features:
     import/export settings ...
 
 UI Enhancements:
+  - title bar: 2 color light effect
   - noscript title clobbers beautiful shaded effect
       increase top padding/margin ?
   - Scrolling problems: can we put scrollbars in DIV ?

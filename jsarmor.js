@@ -368,7 +368,7 @@
 	u = strip_http(u);
 	var a = u.match(/^([^/]*)\/([^/?&:]*)(.*)$/);
 	if (!a)
-	    alert("jsarmor.js: shouldn't happen");
+	    alert("jsarmor.js: split_url(): shouldn't happen");
 	return a.slice(1);
     }
     
@@ -998,34 +998,69 @@
 	location.href = url;
     }
 
-    function import_settings(e)
+    // make sure file looks like a valid settings file
+    function import_check_file(a)
+    {
+	if (!is_prefix("jsarmor", a[0]))
+	    return false;
+	for (var i = 1; i < a.length; i++)
+	{
+	    if (a[i] != '' &&
+	        a[i].indexOf(':') == -1)
+		return false;
+	}
+	return true;
+    }
+
+    function import_settings(a)
+    {
+	var hosts_section = false;
+	for (var i = 1; i < a.length; i++)
+	{
+	    var s = a[i];
+	    if (s == 'host settings:')
+	    {
+		hosts_section = true;
+		continue;
+	    }
+	    var j = s.indexOf(':');
+	    if (j == -1)
+		continue;
+	    var parts = s.split(':');
+	    var name = parts[0];
+	    var val = parts[1];
+	    if (hosts_section)
+	    {
+		name = parts[0] + ':' + parts[1];
+		val = parts[2];
+	    }
+	    scriptStorage.setItem(name, val);
+	}
+    }
+    
+    function load_file(e)
     {
 	var files = e.target.files; // FileList object
-
-	alert("import_settings()");
-	
-	// Loop through the FileList and render image files as thumbnails.
-	//for (var i = 0, f; f = files[i]; i++) {
 	var f = files[0];
-
-	// Only process image files.
-	//if (!f.type.match('image.*')) {
-	//    continue;
-	//}
-
 	var reader = new FileReader();
 	
-	// Closure to capture the file information.
-	reader.onload = (function(theFile) {
-	    return function(e) {
-	    // e.target.result
-	    // escape(theFile.name)
-	    alert(e.target.result);
-	    };
-	    })(f);
+	reader.onload = function(e)
+	{
+	    var s  = e.target.result;
+	    var a = s.split('\n');
+	    if (!import_check_file(a))
+	    {
+		alert("jsarmor:\n\nThis file doesn't look like a valid settings file.");
+		return;
+	    }
+	    // clear settings.
+	    scriptStorage.clear();
+	    import_settings(a);
+	    alert("jsarmor:\n\nLoaded !");
+	};
 	
-	// Read in the image file as a data URL.
-	reader.readAsDataURL(f);
+	reader.readAsBinaryString(f);
+	//reader.readAsText(f);
     }
 
     // or use Object.keys(obj) if browser supports it.
@@ -1035,6 +1070,13 @@
 	for(var key in obj)
 	    keys.push(key);
 	return keys;
+    }
+
+    function reset_settings()
+    {
+	if (!confirm("WARNING: All settings will be cleared !\n\nContinue ?"))
+	    return;
+	scriptStorage.clear();
     }
 
     
@@ -1074,7 +1116,9 @@
 	  };
 	};
 	
+	var item = add_menu_item(nsdetails, "Edit whitelist...", 2, wrap(edit_whitelist));
 
+	// show ui in iframes
 	var f = function(event)
 	{
 	   var new_val = !global_bool_setting("iframe_ui", default_iframe_ui);
@@ -1087,23 +1131,21 @@
 	var item = add_menu_item(nsdetails, "Show jsarmor interface in frames/iframes", 0, f, checkbox);
 	item.checkbox = item.firstChild;
 	
-	var item = add_menu_item(nsdetails, "Reload method");
+	var item = add_menu_item(nsdetails, "Reload method", 2);
 	
 	add_menu_separator(nsdetails);	
 
-	var item = add_menu_item(nsdetails, "Help", 0, function() { location.href = help_url; });	
-	var item = add_menu_item(nsdetails, "Edit whitelist", 0, wrap(edit_whitelist));	
-	var item = add_menu_item(nsdetails, "Export Settings", 0, export_settings);
+	var item = add_menu_item(nsdetails, "Help", 0, function() { location.href = help_url; });
+	var item = add_menu_item(nsdetails, "Clear all settings", 0, reset_settings);	
 	
 	// Import Settings
 	var form = idoc.createElement('form');
 	form.id = "import_form";
-
-	form.innerHTML = "<input type=file id=import_btn autocomplete=off onchange=foo() >Import Settings";
-	//form.childNodes[0].onchange = import_settings;
+	form.innerHTML = "<input type=file id=import_btn autocomplete=off >Import Settings...";
 	var item = add_menu_item(nsdetails, "", 0, function() {}, form);
-	
-	var item = add_menu_item(nsdetails, "Reset settings");
+	item.firstChild.firstChild.onchange = load_file;
+
+	var item = add_menu_item(nsdetails, "Export Settings...", 0, export_settings);	
 	var item = add_menu_item(nsdetails, "About");		
 
 	var td = idoc.getElementById('td_nsmenu');
