@@ -60,6 +60,9 @@
     var default_iframe_ui = false;
 
     var help_url = "https://github.com/lemonsqueeze/jsarmor/wiki";
+
+    // can be used to display stuff in jsarmor menu from outside scripts.
+    var enable_plugin_api = false;
     
     /********************************* Init *********************************/
 
@@ -1245,9 +1248,11 @@
 
 	add_menu_item(nsmenu, "Details ...", 0, show_details);
 
-	for (var prop in plugin_items)
-	    if (plugin_items.hasOwnProperty(prop))
-		add_menu_item(nsmenu, plugin_items[prop], 0, null);
+	// plugin api
+	if (enable_plugin_api)
+	    for (var prop in plugin_items)
+		if (plugin_items.hasOwnProperty(prop))
+		    add_menu_item(nsmenu, plugin_items[prop], 0, null);
     }
 
     function parent_menu()
@@ -1691,21 +1696,28 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
     }
 
     /**************************** Plugin API **********************************/
-    
-    if (window.noscript)
-	alert("jsarmor.js: window.noscript exists!!!");
-    // FIXME: when adding frame support, fix this.
-    window.noscript = new Object();    
 
-    var plugin_items = new Object();
-    // API for plugins to add items to noscript's menu    
-    window.noscript.add_item = function(name, value)
+    // plugin api: can be used to display extra stuff in the menu from other scripts.
+    // useful for debugging and hacking purposes when console.log() isn't ideal.
+    if (enable_plugin_api)
     {
-	//console.log("noscript: plugin added item: " + name + " : " + text);
-        plugin_items[name] = value;
-	if (nsmenu)
-	    repaint_ui();	
-    };
+	var plugin_items = new Object();
+	
+	if (window.noscript)
+	    alert("jsarmor.js: window.noscript exists!!!");
+	// FIXME: when adding frame support, fix this.
+	window.noscript = new Object();    
+	
+	
+	// API for plugins to add items to noscript's menu    
+	window.noscript.add_item = function(name, value)
+	{
+	    //console.log("noscript: plugin added item: " + name + " : " + text);
+            plugin_items[name] = value;
+	    if (nsmenu)
+		repaint_ui();	
+	};
+    }
     
     /****************************** Handlers **********************************/
     
