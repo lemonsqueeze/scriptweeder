@@ -32,7 +32,7 @@
     ];
 
     // Stuff we don't want to allow in relaxed mode which would otherwise be.
-    var helper_blacklist =     // XXX add ui to edit
+    var helper_blacklist =     // FIXME add ui to edit ?
     { "apis.google.com": 1,    // only used for google plus one
       "widgets.twimg.com": 1,  // twitter
       "static.ak.fbcdn.net": 1 // facebook
@@ -63,34 +63,41 @@
 
     // can be used to display stuff in jsarmor menu from outside scripts.
     var enable_plugin_api = false;
-    
-    /********************************* Init *********************************/
 
-    var init = false;
-    
-    // FIXME handle frames
-    // if (window != window.top)
-    //   running in frame
+    // 0: block all   1: ask parent   2: normal page
+    var default_iframe_logic = 1;
 
+    
+    /********************************* Globals *********************************/
+
+    /** stuff load_global_settings() takes care of **/
+    var current_host;
+    var current_domain;    
+    var block_inline_scripts = false;
+    var handle_noscript_tags = false;
+    var iframe_logic;
+
+    
+    /** other stuff **/
+    var button_image = null;
+    var icons;
+    
+    /********************************* Init ************************************/    
+    
     // jsarmor ui's iframe, don't recurse !
     if (window != window.top &&
 	window.name == 'noscript_iframe')
 	return;
 
-    // Do this first to avoid race conditions when running as extension.
-    init_handlers();   
-
-    var current_host = location.hostname;
-    var current_domain = get_domain(location.hostname);
-    var button_image = null;
-    var block_inline_scripts = false;
-    var handle_noscript_tags = false;
-
-    check_script_storage();
-    var icons;    
-    init_icons();
-    init_scope();    
-    init_mode();
+    // guard against race conditions which come up when running as extension.
+    // see init_handlers();
+    var init = false;
+    {
+	init_handlers();	
+	check_script_storage();
+	init_icons();
+	load_global_settings();
+    }
     init = true;
     
     if (global_setting('whitelist') == '')
@@ -104,6 +111,25 @@
 			   '. ' + default_globally_allowed_hosts.join(' '));
     }
 
+    function load_global_settings()
+    {
+	load_global_context(location.hostname);
+	init_iframe_logic();
+    }
+    
+    // can be used to check on another page's settings.
+    // (normal page settings that is, without iframe logic kicking in)
+    // call clear_domain_nodes() afterwards to discard store changes.
+    function load_global_context(host)
+    {
+	current_host = url;
+	current_domain = get_domain(url);
+	
+	init_scope();
+	init_mode();
+    }
+
+    
     /************************* Loading/Saving Settings ************************/
 
     function check_script_storage()
@@ -128,7 +154,7 @@
 	return o;
     }
 
-    var timestamp; // timestamp for current settings
+    var timestamp;			// settings timestamp    
     function set_scoped_setting(scope, name, value)
     {
 	// don't bother if nothing actually changed.
@@ -141,9 +167,12 @@
 	scriptStorage.setItem(scoped_prefixes[scope] + 'time', timestamp);
     }
 
-    // scoped settings are either per page, site, domain, or global.
-    var scope;                     // (0,     1,     2,      3)
-    var scoped_prefixes;
+    var scope;				// scoped settings are either per
+					// page, site, domain, or global.
+					//  (0,     1,     2,      3)
+    
+    var scoped_prefixes;		// prefixes
+    
     function init_scope()
     {
 	scoped_prefixes =
@@ -155,8 +184,9 @@
 	timestamp = setting('time');
     }
 
-    // copy settings over and change scope.
     var scoped_settings = ['mode', 'inline', 'nstags', 'hosts'];
+    
+    // copy settings over and change scope.
     function change_scope(new_scope)
     {
 	if (scope == new_scope)
@@ -179,10 +209,9 @@
     {
 	var t = setting('time');
 	if (t == timestamp)
-	    return; // nothing changed
+	    return;		// nothing changed
 	timestamp = t;
-	// alert(">>>>> settings changed!");
-	init_mode();  // reload settings
+	load_global_settings(); // reload settings
 	if (main_table)
 	    repaint_ui_now();
 	// FIXME: could reload page to use new settings if user wants to.
@@ -334,8 +363,8 @@
 	repaint_ui_now();
     }    
 
-    // block_all, filtered, relaxed, allow_all    
-    var mode;    
+    var mode;				// block_all, filtered, relaxed, allow_all
+    
     function init_mode()
     {
 	mode = setting('mode');
@@ -343,6 +372,84 @@
 	    mode = default_mode; 
 	set_mode_no_update(mode);
     }
+
+    /***************************** iframe handling **************************/
+    
+    function init_iframe_logic()
+    {
+	iframe_logic = global_setting('iframe');
+	if (iframe_logic == '')
+	    iframe_logic = default_iframe_logic; 
+
+	// running in iframe ? switch mode depending on iframe_logic	
+	// FIXME: add way to override with page setting *only*, that should be safe.
+	if (window != window.top)
+	{
+	    if (iframe_logic == 0)  // block all
+		set_mode_no_update('block_all');	    
+	    if (iframe_logic == 1)  // ask parent
+	    {
+		FIXME get parent hostname somehow;
+		
+		// does our parent allow us ?
+		load_global_context(parent_hostname);
+		var allowed = allowed_host(location.hostname);		
+		clear_domain_nodes();	// wipe out hosts nodes this will have created
+		load_global_context(location.hostname);
+
+		if (!allowed)
+		    set_mode_no_update('block_all');
+		// else: allowed. treat it as a normal page: current mode applies.
+	    }
+	    // (iframe_logic == 2) treat as normal page: nothing to do, easy.
+	}
+    }
+
+    // find iframes in the page and add their host so it shows up in the menu.
+    function add_iframe_hosts()
+    {
+	// FIXME: what do we do with normal frames ?
+	var iframes = document.getElementsByTagName('iframe');
+	for (var j = 0; j < iframes.length; j++)
+	{
+	    var f = iframes[j];
+	    // FIXME check what happens with weird urls (injected iframe, relative, local file ...)
+	    var host = url_hostname(f.src);
+	    add_iframe(f.src, host);
+	}
+    }
+
+    function add_iframe(url, host)
+    {
+	var domain = get_domain(host);
+	var i = new_script(url); // iframe really
+
+	var domain_node = get_domain_node(domain, true);
+	var host_node = get_host_node(host, domain_node, true);
+	host_node.iframes.push(i);
+	return s;
+    }
+
+    function iframe_icon(hn)
+    {
+	if (!hn.iframes)
+	    return null;
+
+	var n = hn.iframes.length;
+	var icon = new_icon();
+	icon.title = n + " iframe" + (n>1 ? "s" : "");
+	//icon.title += " See details.";
+	set_icon_image(icon, "iframe");
+	return icon;
+    }
+
+    // FIXME iframe placeholder ?
+    // FIXME get notified about new iframes
+    // that should do it:
+    //   DOMNodeInserted
+    //   DOMNodeRemoved
+    //   then repaint_ui()    
+    
     
     /***************************** Domain, url utils **************************/    
     
@@ -365,6 +472,8 @@
     // split url into [dir, file, tail]
     function split_url(u)
     {
+	// FIXME: can't we just use the builtin parser like url_hostname() ?
+	//        http://www.joezimjs.com/javascript/the-lazy-mans-url-parsing/
 	u = strip_http(u);
 	var a = u.match(/^([^/]*)\/([^/?&:]*)(.*)$/);
 	if (!a)
@@ -603,7 +712,8 @@
       var native_icons = {
         "allowed":		"-o-skin('Transfer Success')",
 	"blocked":		"-o-skin('Transfer Stopped')",
-	"not_loaded":		"-o-skin('Transfer Size Mismatch')",            
+	"not_loaded":		"-o-skin('Transfer Size Mismatch')",
+	"iframe":		"-o-skin('Menu Info')", // FIXME check how it looks in opera 12
 	"allowed_globally":	"-o-skin('RSS')",      
 	"block_all":		"-o-skin('Smiley Pacman')",
 	"filtered":		"-o-skin('Smiley Cool')",
@@ -710,7 +820,7 @@
 	return d.innerHTML;
     }
 
-    function add_table_item(table, col1, col2, col3, col4, col5, col6, f, color)
+    function add_table_item(table, col1, col2, col3, col4, col5, col6, col7, f, color)
     {
 	var tr = idoc.createElement('tr');
 	var s = "";
@@ -721,12 +831,13 @@
 	s += "<td>" + to_html(col4) + "</td>";
 	s += "<td width=1%>" + to_html(col5) + "</td>";
 	s += "<td width=1%>" + to_html(col6) + "</td>";
+	s += "<td width=1%>" + to_html(col7) + "</td>";
 	tr.innerHTML = s;
 //	tr.childNodes[0].style = "padding-left:" + (indent * 10) + "px;";
 	tr.childNodes[3].style = "color: #888888; text-align:right;";
 	if (color != '')
 	    tr.childNodes[4].style.color = color;
-	tr.childNodes[6].style = "text-align:right;";
+	tr.childNodes[7].style = "text-align:right;";
 	if (f)
 	{
 	    tr.onmouseover = function(){ this.style.backgroundColor = '#ddd'; };
@@ -749,14 +860,14 @@
 	return d;
     }
 
-    function add_radio_button(parent, text, target_scope)
+    function add_radio_button(parent, text, current, target, f)
     {
 	var r = idoc.createElement('input');
 	r.type = 'radio';
 	r.name = 'radio_group';
-	r.scope = target_scope;
-	r.checked = (scope == target_scope);
-	r.onclick = function() { change_scope(this.scope); };
+	r.number = target;
+	r.checked = (current == target);
+	r.onclick = function() { f(this.number); };
 	//r.style = "float:right;";
 
 	var t = idoc.createElement('label');
@@ -1118,6 +1229,17 @@
 	
 	var item = add_menu_item(nsdetails, "Edit whitelist...", 2, wrap(edit_whitelist));
 
+	var item = add_menu_item(nsdetails, "iframe logic", 2);
+	var set_iframe_logic = function (n)
+	{
+	    iframe_logic = n;
+	    set_global_setting('iframe', iframe_logic);
+	    need_reload = true;
+	};
+	add_radio_button(item, " Block all ",   iframe_logic, 0, set_iframe_logic);
+	add_radio_button(item, " Ask parent ",  iframe_logic, 1, set_iframe_logic);
+	add_radio_button(item, " Normal page ", iframe_logic, 2, set_iframe_logic);
+	
 	// show ui in iframes
 	var f = function(event)
 	{
@@ -1128,10 +1250,10 @@
 	   need_reload = true;
 	};	
 	var checkbox = make_checkbox(global_bool_setting("iframe_ui", default_iframe_ui));
-	var item = add_menu_item(nsdetails, "Show jsarmor interface in frames/iframes", 0, f, checkbox);
-	item.checkbox = item.firstChild;
-	
-	var item = add_menu_item(nsdetails, "Reload method", 2);
+	var item = add_menu_item(nsdetails, "Show jsarmor interface for each iframe", 0, f, checkbox);
+	item.checkbox = item.firstChild;       
+
+	var item = add_menu_item(nsdetails, "Reload method", 2);	
 	
 	add_menu_separator(nsdetails);	
 
@@ -1182,6 +1304,7 @@
 	item.align = 'center';
 	item.className = 'noscript_title'
 
+	// FIXME show iframes urls somewhere
 	foreach_host_node(function(host_node)
 	{
 	  var h = host_node.name;
@@ -1268,10 +1391,10 @@
 	};
 	
 	item = add_menu_item(nsmenu, "Set for: ", 0, null);
-	add_radio_button(item, " Page ", 0);
-	add_radio_button(item, " Site ", 1);
-	add_radio_button(item, " Domain ", 2);	
-	add_radio_button(item, " Global ", 3);
+	add_radio_button(item, " Page ",   scope, 0, change_scope);
+	add_radio_button(item, " Site ",   scope, 1, change_scope);
+	add_radio_button(item, " Domain ", scope, 2, change_scope);	
+	add_radio_button(item, " Global ", scope, 3, change_scope);
 
 //	add_menu_separator(nsmenu);
 //	add_menu_item(nsmenu, "External Scripts:");	
@@ -1408,7 +1531,7 @@
 	nsmenu.appendChild(table);
 
 	sort_domains();
-
+	
 	var found_not_loaded = false;
 	var item = null;
 	foreach_host_node(function(hn, dn)
@@ -1420,8 +1543,9 @@
 	    var not_loaded = icon_not_loaded(hn, checkbox.checked);
 	    var count = "[" + hn.scripts.length + "]";
 	    var color = (hn.helper_host ? '#000' : '');
-	    var icon = idoc.createElement('img');	    
-	    item = add_table_item(table, not_loaded, checkbox, host_part, d, icon, count, f, color);
+	    var icon = idoc.createElement('img');   // globally allowed icon
+	    var iframes = iframe_icon(hn);
+	    item = add_table_item(table, not_loaded, checkbox, host_part, d, icon, iframes, count, f, color);
 	    
 	    icon = item.childNodes[5].firstChild;
 	    init_global_icon(icon, h);
@@ -1684,6 +1808,11 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	return n;
     }
 
+    function clear_domain_nodes()
+    {
+	domain_nodes = [];
+    }
+
     function add_script(url, host)
     {
 	var domain = get_domain(host);
@@ -1769,11 +1898,10 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	
 	if (window.noscript)
 	    alert("jsarmor.js: window.noscript exists!!!");
-	// FIXME: when adding frame support, fix this.
-	window.noscript = new Object();    
+	// FIXME: this isn't great for seeing what happens in iframes ...
+	window.noscript = new Object();	
 	
-	
-	// API for plugins to add items to noscript's menu    
+	// API for plugins to add items to noscript's menu
 	window.noscript.add_item = function(name, value)
 	{
 	    //console.log("noscript: plugin added item: " + name + " : " + text);
@@ -1867,6 +1995,8 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
     
     function domcontentloaded_handler()
     {
+	add_iframe_hosts();
+	
         if (!domain_nodes.length && !total_inline) 
             return;  // no scripts ? exit.
 

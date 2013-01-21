@@ -10,6 +10,8 @@ ghostery etc ...
 
 [ main ]
 
+  - set_global_setting('version', version) on startup
+
   - doc or startup: warn about 
         - Speculative parser
         - userjs on https
@@ -18,6 +20,8 @@ ghostery etc ...
 
 
 Urgent:
+
+  - some kind of test suite.
 
   - Fix "event received before..." popup msg on install !
 
