@@ -12,8 +12,8 @@
  */
 
 
-// Watch out, when running as userjs, document and window.document are the same,
-// but when running as an extension they're 2 different things!
+// When running as userjs, document and window.document are the same,
+// but when running as an extension they're 2 different things, beware !
 (function(document, location, opera, scriptStorage) {    
     var version = 'jsarmor v2.0';
 
@@ -88,12 +88,11 @@
     if (window != window.top &&
 	window.name == 'noscript_iframe')
 	return;
-
-    // guard against race conditions which come up when running as extension.
-    // see init_handlers();
-    var init = false;
+    
+    var init = false;			// see call_handler();
+    if (true)
     {
-	init_handlers();	
+	init_handlers();
 	check_script_storage();
 	init_icons();
 	load_global_settings();
@@ -122,8 +121,8 @@
     // call clear_domain_nodes() afterwards to discard store changes.
     function load_global_context(host)
     {
-	current_host = url;
-	current_domain = get_domain(url);
+	current_host = host;
+	current_domain = get_domain(host);
 	
 	init_scope();
 	init_mode();
@@ -380,31 +379,43 @@
 	iframe_logic = global_setting('iframe');
 	if (iframe_logic == '')
 	    iframe_logic = default_iframe_logic; 
-
-	// running in iframe ? switch mode depending on iframe_logic	
-	// FIXME: add way to override with page setting *only*, that should be safe.
-	if (window != window.top)
+	
+	if (window == window.top)
+	    return;
+	
+	// running in iframe. switch mode depending on iframe_logic
+	// FIXME: add way to override with page setting *only*, which should be safe enough
+	
+	if (iframe_logic == 0)  // block all
+	    set_mode_no_update('block_all');	    
+	if (iframe_logic == 1)  // ask parent
 	{
-	    if (iframe_logic == 0)  // block all
-		set_mode_no_update('block_all');	    
-	    if (iframe_logic == 1)  // ask parent
+	    //FIXME find a real solution to get parent hostname somehow;
+	    //alert("In iframe parent logic!\n" + document.referrer);
+	    console.log("my window.name: " + window.name);
+	    return;
+	    if (!is_prefix("jsarmor:", window.name))
 	    {
-		FIXME get parent hostname somehow;
-		
-		// does our parent allow us ?
-		load_global_context(parent_hostname);
-		var allowed = allowed_host(location.hostname);		
-		clear_domain_nodes();	// wipe out hosts nodes this will have created
-		load_global_context(location.hostname);
-
-		if (!allowed)
-		    set_mode_no_update('block_all');
-		// else: allowed. treat it as a normal page: current mode applies.
+		alert("jsarmor, running inside iframe:\n\n we're screwed. (window.name=" + window.name + ")");
+		return;
 	    }
-	    // (iframe_logic == 2) treat as normal page: nothing to do, easy.
+	    var o = window.name.indexOf(':');
+	    var parent_hostname = window.name.slice(o + 1);
+	    alert("got window:" + parent_hostname);
+	    
+	    // does our parent allow us ?
+	    load_global_context(parent_hostname);
+	    var allowed = allowed_host(location.hostname);		
+	    clear_domain_nodes();	// wipe out hosts nodes this will have created
+	    load_global_context(location.hostname);
+	    
+	    if (!allowed)
+		set_mode_no_update('block_all');
+	    // else: allowed. treat it as a normal page: current mode applies.
 	}
+	// (iframe_logic == 2) treat as normal page: nothing to do, easy.
     }
-
+    
     // find iframes in the page and add their host so it shows up in the menu.
     function add_iframe_hosts()
     {
@@ -415,6 +426,9 @@
 	    var f = iframes[j];
 	    // FIXME check what happens with weird urls (injected iframe, relative, local file ...)
 	    var host = url_hostname(f.src);
+	    //alert("in parent");
+	    f.contentWindow.name = "yoeuoeuoue";
+	    //f.contentWindow.name = "jsarmor:" + current_host;
 	    add_iframe(f.src, host);
 	}
     }
@@ -427,7 +441,7 @@
 	var domain_node = get_domain_node(domain, true);
 	var host_node = get_host_node(host, domain_node, true);
 	host_node.iframes.push(i);
-	return s;
+	return i;
     }
 
     function iframe_icon(hn)
@@ -1803,6 +1817,7 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	var n = new Object();
 	n.name = host;
 	n.scripts = [];
+	n.iframes = [];
 	n.helper_host = relaxed_mode_helper_host(host, domain_node); // caching
 	hosts.push(n);
 	return n;
@@ -2021,6 +2036,7 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 	document.addEventListener('DOMContentLoaded',  wrap_handler(domcontentloaded_handler), false);
     }
 
+    // guard against race conditions which come up when running as extension.    
     function wrap_handler(h)
     {
 	return function(e){ call_handler(h, e); };
