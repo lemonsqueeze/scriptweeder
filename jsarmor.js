@@ -925,11 +925,9 @@
 	return button;
     }
 
-    function new_textarea(rows, cols, text)
+    function new_textarea(text)
     {
 	var a = idoc.createElement('textarea');
-	a.rows = rows;
-	a.cols = cols;
 	// how do we add padding to this thing ??
 	a.innerText = text;
 	return a;
@@ -988,7 +986,7 @@
 
     function edit_css_url()
     {
-	var nsmenu = new_menu();
+	var nsmenu = new_menu("css url to use");
 
 	var close_menu = function()
 	{
@@ -996,8 +994,7 @@
 	   resize_iframe();
 	};
 	
-	var item = add_menu_item(nsmenu, "enter css url to use:");
-	var text = new_textarea(1, 80, global_setting('css'));
+	var text = new_textarea(global_setting('css'));
 	nsmenu.appendChild(text);
 
 	var div = idoc.createElement('div');
@@ -1019,7 +1016,7 @@
     
     function edit_whitelist()
     {
-	var nsmenu = new_menu();
+	var nsmenu = new_menu("Global Whitelist");
 
 	var close_menu = function()
 	{
@@ -1027,9 +1024,7 @@
 	   resize_iframe();
 	};
 	
-	var item = add_menu_item(nsmenu, "Global Whitelist");
-	
-	var text = new_textarea(15, 40, raw_list_to_string(global_setting('whitelist')));
+	var text = new_textarea(raw_list_to_string(global_setting('whitelist')));
 	nsmenu.appendChild(text);
 	
 	var div = idoc.createElement('div');
@@ -1350,7 +1345,6 @@
     {
 	var menu = idoc.createElement('div');
 	menu.className = 'noscript_menu';
-	menu.align = 'left';	
 	if (title != "")
 	{
 	    var item = add_menu_item(menu, title);
@@ -1528,7 +1522,6 @@
 
 	var table = idoc.createElement('table');
 	table.id = "noscript_ftable";
-	table.cellSpacing = 0;
 	nsmenu.appendChild(table);
 
 	sort_domains();
@@ -1569,12 +1562,9 @@
     function create_main_table()
     {
 	var table = idoc.createElement('table');
-	table.id = 'noscript_table';
-	table.border = 0;
-	table.cellSpacing = 0;
-	table.cellPadding = 0;	
-	// background:-o-skin("Browser Window Skin")        
-
+	table.id = 'noscript_table';	
+	// useful for debugging layout:     table.border = 1;
+	
         var tooltip = "[Inline scripts] " + total_inline +
 	  (block_inline_scripts ? " blocked": "") +
 	  " (" + get_size_kb(total_inline_size) + "k), " +
@@ -1757,11 +1747,8 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 //	"border: 1px solid #CCC !important; " +	
 	(cornerposition < 3 ? 'top': 'bottom') + ':1px !important;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px !important;';
 	iframe.scrolling="no";
-//	iframe.frameborder="0";
 	iframe.allowtransparency="true";
-	//iframe.class="aomi"
-	//iframe.src=""; id="i0" title="about:blank
-
+	
 	iframe.onload = populate_iframe;
 	document.body.appendChild(iframe);
     }

@@ -10,18 +10,56 @@ ghostery etc ...
 
 [ main ]
 
-  - set_global_setting('version', version) on startup
+new features:
 
-  - doc or startup: warn about 
-        - Speculative parser
-        - userjs on https
+  - option to start with blank settings.
+
+  - button toggle option
+  - autohide button
+  - always hide and use opera button to show ?
+    no need to display it at all then ...
+
+  - bindings to do stuff from opera buttons ?
+
+  - style editor,
+    whatever is missing for styling (classes, ids...)
+
+  - reload method
+
+wip:
+  - what ui to access options menu ?
+    notebook ?  (inside a menu it's strange...)
+    popup ?
+
+  - tabs to organize options ?
+
+  - some kind of test suite.
+    make the external css hack available ?
+
+  - iframe handling
+  - do we want placeholder icon for blocked iframes ?
+  - channel stuff to block/allow from iframes ? (iframes in iframes ...)
+
+  - fix sizing bug after switching to css ...
+
+  - set_global_setting('version', version) on startup, 
+    will be needed later to detect upgrading...
+
+  - fix title bar bg image
 
   - find way to make it work as extension
 
 
-Urgent:
+doc:
+  - doc or startup: warn about 
+        - Speculative parser
+        - userjs on https
 
-  - some kind of test suite.
+mainstream show stoppers:
+  - ghostery's popup doesn't work
+  - extension !
+
+Urgent:
 
   - Fix "event received before..." popup msg on install !
 
@@ -32,8 +70,8 @@ Urgent:
   - Check what happens for http redirect on script url
     Which url shows up ??
 
-  - display something on main button to notify about important changes: 
-    like flash, or blink, small popup, tooltip ...
+  - display something on main button to notify about important changes ?
+    say flash, or blink, small popup, tooltip ...
     (especially important when new script is added after DOM loaded)
 
   - IFrame handling !
@@ -107,8 +145,6 @@ Features:
 
 UI Enhancements:
   - title bar: 2 color light effect
-  - noscript title clobbers beautiful shaded effect
-      increase top padding/margin ?
   - Scrolling problems: can we put scrollbars in DIV ?
     otherwise use popup window ?
   - transparent button ?
