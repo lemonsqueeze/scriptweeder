@@ -869,7 +869,7 @@
     function add_right_aligned_text(parent, text)
     {
 	var d = idoc.createElement('div');
-	d.style = "float:right;";
+	d.className = 'inline_script_size';
 	d.innerText = text;
 	parent.appendChild(d);
 	return d;
@@ -883,13 +883,11 @@
 	r.number = target;
 	r.checked = (current == target);
 	r.onclick = function() { f(this.number); };
-	//r.style = "float:right;";
 
 	var t = idoc.createElement('label');
 	t.radio = r;
 	t.innerText = text;
 	t.onclick = function() { this.radio.checked = true; this.radio.onclick(); }	
-	//t.style = "float:right;";	
 
 	parent.appendChild(r);	
 	parent.appendChild(t);	
@@ -907,8 +905,7 @@
     function add_menu_separator(menu)
     {
       var div = idoc.createElement('div');
-      //  width: 90%;
-      div.style = "height: 1px; display: block; background-color: #555555; margin-left: auto; margin-right: auto;";
+      div.className = 'separator';
       menu.appendChild(div);
     }
 
@@ -944,35 +941,12 @@
 	return icon;
     }
 
-    function show_global_icon()
-    { this.firstChild.style = "visibility: visible;";  }
-    function hide_global_icon()
-    { this.firstChild.style = "visibility: hidden;";  }
-    
-    function set_global_icon_ui(icon, visible)
+    function init_global_icon(icon, host)
     {
-	var td = icon.parentNode;
-	if (visible)
-	{
-	    td.onmouseout = null;
-	    td.onmouseover = null;
-	    return;
-	}
-	icon.style.visibility = "hidden";
-	td.onmouseout = hide_global_icon;
-	td.onmouseover = show_global_icon;	
-    }
-    
-    function init_global_icon(icon, h)
-    {
-	icon.className = "noscript_global";
 	icon.title = "Allowed Globally";
-	if (!host_allowed_globally(h))
-	{
-	    icon.style = "visibility: hidden;";
-	    icon.parentNode.onmouseover = show_global_icon;
-	    icon.parentNode.onmouseout = hide_global_icon;
-	}
+	icon.className = 'global_icon';
+	if (host_allowed_globally(host))
+	    icon.className += ' visible';	
     }
 
     function toggle_allow_inline(event)
@@ -1578,7 +1552,7 @@
 
 	  // update ui
 	  this.checkbox.checked = filtered_mode_allowed_host(h);
-	  set_global_icon_ui(this.icon, host_allowed_globally(h))
+	  init_global_icon(this.icon, h)
 
 	  if (mode != 'filtered' && mode != 'relaxed')
 	      set_mode('filtered');
