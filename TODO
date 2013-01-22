@@ -28,6 +28,10 @@ new features:
   - reload method
 
 wip:
+  - new css style switch.
+    (sizing bug when using css, but .. doesn't matter, it's gone with plain styles!)
+    indent is broken (see block all mode)
+
   - what ui to access options menu ?
     notebook ?  (inside a menu it's strange...)
     popup ?
@@ -40,8 +44,6 @@ wip:
   - iframe handling
   - do we want placeholder icon for blocked iframes ?
   - channel stuff to block/allow from iframes ? (iframes in iframes ...)
-
-  - fix sizing bug after switching to css ...
 
   - set_global_setting('version', version) on startup, 
     will be needed later to detect upgrading...

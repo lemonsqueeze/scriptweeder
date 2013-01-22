@@ -67,6 +67,17 @@
     // 0: block all   1: ask parent   2: normal page
     var default_iframe_logic = 1;
 
+    // load style from an external css.
+    // *note* this only works locally, won't work on remote sites.
+    // this is really nice for testing as you can just edit your css file directly.
+    // - set this to true, reload.
+    // - save jsarmor.css somewhere, put its address as a 'file:///...' url
+    //   in options menu, edit css url
+    // - open a good local html for testing, (test_offline/ in the repo has one)
+    // - edit css file, just reload to test changes !
+    //   (switch opera to offline mode for instantaneous reloads!)
+    // to revert set back to false, or set blank url.
+    var enable_external_css = false;
     
     /********************************* Globals *********************************/
 
@@ -1234,8 +1245,9 @@
 	}
 	
 	var item = add_menu_item(menu, "Edit whitelist...", 2, remove_menu_and(edit_whitelist));
-	var item = add_menu_item(menu, "Custom stylesheet...", 2, remove_menu_and(edit_css_url));	
-
+	if (enable_external_css)
+	    var item = add_menu_item(menu, "Custom stylesheet...", 2, remove_menu_and(edit_css_url));	
+	
 	var item = add_menu_item(menu, "iframe logic", 2);
 	var set_iframe_logic = function (n)
 	{
@@ -1666,12 +1678,15 @@
     // interface style used in jsarmor's iframe
     function style_init()
     {
-	// use external .css file ?
-	var css = global_setting('css');
-	if (css != '')
+	if (enable_external_css)
 	{
-	    add_css_link(css);
-	    return;
+	    // use external .css file ?
+	    var css = global_setting('css');
+	    if (css != '')
+	    {
+		add_css_link(css);
+		return;
+	    }
 	}
 
 	// otherwise use builtin style.
