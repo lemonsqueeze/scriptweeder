@@ -909,12 +909,30 @@
       menu.appendChild(div);
     }
 
-    function make_checkbox(checked)
+    function new_checkbox(checked)
     {
       var c = idoc.createElement('input');
       c.type = 'checkbox';
       c.defaultChecked = checked;
       return c;
+    }
+
+    function new_button(text, f)
+    {
+	var button = idoc.createElement('button');
+	button.innerText = text;
+	button.onclick = f;
+	return button;
+    }
+
+    function new_textarea(rows, cols, text)
+    {
+	var a = idoc.createElement('textarea');
+	a.rows = rows;
+	a.cols = cols;
+	// how do we add padding to this thing ??
+	a.innerText = text;
+	return a;
     }
 
     function icon_not_loaded(hn, allowed)
@@ -953,7 +971,7 @@
     {
       block_inline_scripts = !block_inline_scripts;
       this.checkbox.checked = block_inline_scripts;
-      this.nextSibling.style.display = (block_inline_scripts ? 'block' : 'none');
+      idoc.getElementById('handle_nstags').style.display = (block_inline_scripts ? 'block' : 'none');
       set_bool_setting('inline', block_inline_scripts);
       need_reload = true;
     }
@@ -966,19 +984,11 @@
       need_reload = true;
     }
 
-    /***************************** Settings menu *******************************/
-
+    /***************************** Options menu *******************************/
 
     function edit_css_url()
     {
-	var nsmenu = idoc.createElement('div');
-	nsmenu.id = 'noscript_menu';
-	nsmenu.align = 'left';
-	nsmenu.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;" +
-	// "background:#abb9ca;" +
-        "background: #ccc;" +
-	// "background: #efebe7;" +
-	"box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);";
+	var nsmenu = new_menu();
 
 	var close_menu = function()
 	{
@@ -987,45 +997,29 @@
 	};
 	
 	var item = add_menu_item(nsmenu, "enter css url to use:");
-	var text = idoc.createElement('textarea');
-	text.rows = 1;
-	text.cols = 80;
-	// how do we add padding to this thing ??
-	text.innerText = global_setting('css');
+	var text = new_textarea(1, 80, global_setting('css'));
 	nsmenu.appendChild(text);
 
 	var div = idoc.createElement('div');
 	nsmenu.appendChild(div);		
-	var button = idoc.createElement('button');
-	button.innerText = "Save";
-	button.onclick = function()
-	{
-	   set_global_setting('css', text.innerText);
-	   close_menu();
-	}
+	var button = new_button("Save", function()
+				{
+				   set_global_setting('css', text.innerText);
+				   close_menu();
+				});
 	div.appendChild(button);
 	
-	var button = idoc.createElement('button');
-	button.innerText = "Cancel";
-	button.onclick = close_menu;
+	var button = new_button("Cancel", close_menu);
 	div.appendChild(button);	
 	
 	var td = idoc.getElementById('td_nsmenu');
 	td.appendChild(nsmenu);
-	//idoc.body.appendChild(nsmenu);
 	resize_iframe();
     }
     
     function edit_whitelist()
     {
-	var nsmenu = idoc.createElement('div');
-	nsmenu.id = 'noscript_menu';
-	nsmenu.align = 'left';
-	nsmenu.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;" +
-	// "background:#abb9ca;" +
-        "background: #ccc;" +
-	// "background: #efebe7;" +
-	"box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);";
+	var nsmenu = new_menu();
 
 	var close_menu = function()
 	{
@@ -1035,32 +1029,23 @@
 	
 	var item = add_menu_item(nsmenu, "Global Whitelist");
 	
-	var text = idoc.createElement('textarea');
-	text.rows = 15;
-	text.cols = 40;
-	// how do we add padding to this thing ??
-	text.innerText = raw_list_to_string(global_setting('whitelist'));
+	var text = new_textarea(15, 40, raw_list_to_string(global_setting('whitelist')));
 	nsmenu.appendChild(text);
-
+	
 	var div = idoc.createElement('div');
 	nsmenu.appendChild(div);		
-	var button = idoc.createElement('button');
-	button.innerText = "Save";
-	button.onclick = function()
-	{
-	  set_global_setting('whitelist', raw_string_to_list(text.innerText));
-	  close_menu();
-	}
+	var button = new_button("Save", function()
+	    {
+	       set_global_setting('whitelist', raw_string_to_list(text.innerText));
+	       close_menu();
+	    });
 	div.appendChild(button);
 	
-	var button = idoc.createElement('button');
-	button.innerText = "Cancel";
-	button.onclick = close_menu;
-	div.appendChild(button);	
+	var button = new_button("Cancel", close_menu);
+	div.appendChild(button);
 	
 	var td = idoc.getElementById('td_nsmenu');
 	td.appendChild(nsmenu);
-	//idoc.body.appendChild(nsmenu);
 	resize_iframe();
     }
 
@@ -1230,45 +1215,33 @@
     
     function options_menu()
     {
-	var nsdetails = idoc.createElement('div');
-	nsdetails.align = 'left';
-	nsdetails.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;" +
-	// "background:#abb9ca;" +
-        "background: #ccc;" +
-	// "background: #efebe7;" +
-	"box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);";
-	nsdetails.style.minWidth = "250px";
-//        nsdetails.style.display = 'inline-block';
+	var menu = new_menu("Options");
+	menu.id = "options_menu";
 
 	// FIXME: sane menu logic to handle different menus
 	var need_reload = false;
-	nsdetails.onmouseout = function(e)
+	menu.onmouseout = function(e)
 	{
-	   if (!mouseout_leaving_menu(e, nsdetails))
+	   if (!mouseout_leaving_menu(e, menu))
 	       return;	   
-	   td.removeChild(nsdetails);
+	   td.removeChild(menu);
 	   resize_iframe();
 	   if (need_reload)
 	       reload_page();
 	};
 	
-	var item = add_menu_item(nsdetails, "Options");
-	item.align = 'center';
-	item.className = 'noscript_title';
-
-	var wrap = function(f)
+	function remove_menu_and(f)
 	{ return function()
 	  {
-	    td.removeChild(nsdetails);
+	    td.removeChild(menu);
 	    f();
 	  };
-	};
+	}
 	
-	var item = add_menu_item(nsdetails, "Edit whitelist...", 2, wrap(edit_whitelist));
+	var item = add_menu_item(menu, "Edit whitelist...", 2, remove_menu_and(edit_whitelist));
+	var item = add_menu_item(menu, "Custom stylesheet...", 2, remove_menu_and(edit_css_url));	
 
-	var item = add_menu_item(nsdetails, "Custom stylesheet...", 2, wrap(edit_css_url));	
-
-	var item = add_menu_item(nsdetails, "iframe logic", 2);
+	var item = add_menu_item(menu, "iframe logic", 2);
 	var set_iframe_logic = function (n)
 	{
 	    iframe_logic = n;
@@ -1288,72 +1261,58 @@
 	   this.checkbox.checked = new_val;
 	   need_reload = true;
 	};	
-	var checkbox = make_checkbox(global_bool_setting("iframe_ui", default_iframe_ui));
-	var item = add_menu_item(nsdetails, "Show jsarmor interface for each iframe", 0, f, checkbox);
+	var checkbox = new_checkbox(global_bool_setting("iframe_ui", default_iframe_ui));
+	var item = add_menu_item(menu, "Show jsarmor interface for each iframe", 0, f, checkbox);
 	item.checkbox = item.firstChild;       
 
-	var item = add_menu_item(nsdetails, "Reload method", 2);	
+	var item = add_menu_item(menu, "Reload method", 2);	
 	
-	add_menu_separator(nsdetails);	
+	add_menu_separator(menu);	
 
-	var item = add_menu_item(nsdetails, "Help", 0, function() { location.href = help_url; });
-	var item = add_menu_item(nsdetails, "Clear all settings", 0, reset_settings);	
+	var item = add_menu_item(menu, "Help", 0, function() { location.href = help_url; });
+	var item = add_menu_item(menu, "Clear all settings", 0, reset_settings);	
 	
 	// Import Settings
 	var form = idoc.createElement('form');
 	form.id = "import_form";
 	form.innerHTML = "<input type=file id=import_btn autocomplete=off >Import Settings...";
-	var item = add_menu_item(nsdetails, "", 0, function() {}, form);
+	var item = add_menu_item(menu, "", 0, function() {}, form);
 	item.firstChild.firstChild.onchange = load_file;
 
-	var item = add_menu_item(nsdetails, "Export Settings...", 0, export_settings);	
-	var item = add_menu_item(nsdetails, "About");		
+	var item = add_menu_item(menu, "Export Settings...", 0, export_settings);	
+	var item = add_menu_item(menu, "About");		
 
 	var td = idoc.getElementById('td_nsmenu');
-	td.appendChild(nsdetails);
+	td.appendChild(menu);
 
-	//show_hide_menu(false);
 	resize_iframe();
-        nsdetails.style.display = 'inline-block';
+        menu.style.display = 'inline-block';
     }    
     
     /***************************** Details menu *******************************/
     
     function show_details()
     {	
-	var nsdetails = idoc.createElement('div');
-	nsdetails.align = 'left';
-	nsdetails.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;" +
-	// "background:#abb9ca;" +
-        "background: #ccc;" +
-	// "background: #efebe7;" +
-	"box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);";
-	
-//        nsdetails.style.display = 'inline-block';
-
-	nsdetails.onmouseout = function(e)
+	var menu = new_menu("Scripts");
+	menu.onmouseout = function(e)
 	{
-	   if (!mouseout_leaving_menu(e, nsdetails))
+	   if (!mouseout_leaving_menu(e, menu))
 	       return;	   
-	   td.removeChild(nsdetails);
+	   td.removeChild(menu);
 	   resize_iframe();	   
 	};
 	
-	var item = add_menu_item(nsdetails, "Scripts");
-	item.align = 'center';
-	item.className = 'noscript_title'
-
 	// FIXME show iframes urls somewhere
 	foreach_host_node(function(host_node)
 	{
 	  var h = host_node.name;
 	  var s = host_node.scripts;
-	  // var item = add_menu_item(nsdetails, h + ":");	  
+	  // var item = add_menu_item(menu, h + ":");	  
 
 	  sort_scripts(s);
 	  for (var j = 0; j < s.length; j++)
 	  {
-	      var item = add_link_menu_item(nsdetails, s[j].url, strip_http(s[j].url), 2);
+	      var item = add_link_menu_item(menu, s[j].url, strip_http(s[j].url), 2);
 	      // script status
 	      var icon = new_icon();
 	      var image = "blocked";
@@ -1373,36 +1332,40 @@
 	});
 	
 	var td = idoc.getElementById('td_nsmenu');
-	td.appendChild(nsdetails);
+	td.appendChild(menu);
 
-	item = add_menu_item(nsdetails, "Options ...", 0, function()
+	item = add_menu_item(menu, "Options ...", 0, function()
 			     {
-			       td.removeChild(nsdetails);
+			       td.removeChild(menu);
 			       options_menu();
 			     });
 	
 	show_hide_menu(false);
-        nsdetails.style.display = 'inline-block';
+        menu.style.display = 'inline-block';
     }
    
     /****************************** Main menu *********************************/
-        
-    var nsmenu = null;
+
+    function new_menu(title)
+    {
+	var menu = idoc.createElement('div');
+	menu.className = 'noscript_menu';
+	menu.align = 'left';	
+	if (title != "")
+	{
+	    var item = add_menu_item(menu, title);
+	    item.className = 'noscript_title';
+	}	
+	return menu;
+    }
+
+    var nsmenu = null;			// the main menu
     var need_reload = false;
+
     function create_menu()
     {
-	nsmenu = idoc.createElement('div');
-	nsmenu.id = 'noscript_menu';
-	nsmenu.align = 'left';
-	nsmenu.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;" +
-	// "background:#abb9ca;" +
-        "background: #ccc;" +
-	// "background: #efebe7;" +
-	"box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);"
-	+ "padding: 1px 1px;";
-	
-        nsmenu.style.display = 'none';
-
+	nsmenu = new_menu("JSArmor");
+	nsmenu.style.display = 'none';
 	nsmenu.onmouseout = function(e)
 	{
 	  if (!mouseout_leaving_menu(e, nsmenu))
@@ -1411,13 +1374,10 @@
 	  if (need_reload)
 	      reload_page();
 	};
-	
-	var item = add_menu_item(nsmenu, "JSArmor");
-	item.title = version + ". Click to view global settings.";
-	item.align = 'center';
-	item.className = 'noscript_title'
-        // item.style = 'background-color:#0000ff; color:#ffffff; font-weight:bold;';
-	item.onclick = function(event)
+
+	var title = nsmenu.firstChild;
+	title.title = version + ". Click to view global settings.";
+	title.onclick = function(event)
 	{       
   	  if (!event.ctrlKey)
 	  {
@@ -1430,7 +1390,7 @@
 	  alert("jsarmor \nHosts allowed for this page: \n" + d);
 	};
 	
-	item = add_menu_item(nsmenu, "Set for: ", 0, null);
+	var item = add_menu_item(nsmenu, "Set for: ", 0, null);
 	add_radio_button(item, " Page ",   scope, 0, change_scope);
 	add_radio_button(item, " Site ",   scope, 1, change_scope);
 	add_radio_button(item, " Domain ", scope, 2, change_scope);	
@@ -1443,15 +1403,16 @@
 
 	if (mode == 'block_all')
 	{
-	    var checkbox = make_checkbox(block_inline_scripts);
+	    var checkbox = new_checkbox(block_inline_scripts);
 	    var label = "Block Inline Scripts";
 	    item = add_menu_item(nsmenu, label, 1, toggle_allow_inline, checkbox);
 	    item.checkbox = item.firstChild;
 	    add_right_aligned_text(item, " [" + get_size_kb(total_inline_size) + "k]");
 	
-	    var checkbox = make_checkbox(handle_noscript_tags);
+	    var checkbox = new_checkbox(handle_noscript_tags);
 	    var label = "Pretend Javascript Disabled";
 	    item = add_menu_item(nsmenu, label, 1, toggle_handle_noscript_tags, checkbox);
+	    item.id = "handle_nstags";
 	    item.checkbox = item.firstChild;
 	    item.title = "Interpret noscript tags as if javascript was disabled in opera."
 	    if (!block_inline_scripts)
@@ -1578,7 +1539,7 @@
 	{
 	    var d = dn.name;
 	    var h = hn.name;
-	    var checkbox = make_checkbox(allowed_host(h));
+	    var checkbox = new_checkbox(allowed_host(h));
 	    var host_part = h.slice(0, h.length - d.length);
 	    var not_loaded = icon_not_loaded(hn, checkbox.checked);
 	    var count = "[" + hn.scripts.length + "]";
@@ -1738,8 +1699,6 @@
 	idoc.close();
 
 	style_init();
-	
-	idoc.body.style.margin = '0px';
 	create_main_table();
 	parent_main_table();
 	resize_iframe();

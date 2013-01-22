@@ -1,36 +1,82 @@
-#noscript_menu div  {padding:0px 1px 0px 1px;} 
+/* jsarmor stylesheet */
 
-#noscript_table { position:fixed;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:99999999;direction:ltr;font-family:sans-serif; font-size:small; margin-bottom:0px; }  
-#noscript_table > tr > td { text-align: right; padding: 0px 0px 0px 0px;} 
-#noscript_ftable { width:100%; } 
-#noscript_ftable > tr > td { padding: 0px 0px 1px 0px;} 
+body			{ margin:0px; }
 
-.noscript_title { background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAYCAYAAAA7zJfaAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90BFRUGLEa8gbIAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAUElEQVQI102KOwqAQBDFsm+9/3Fs9RqChdgIVjYi6nxsLLYJCYSc+xTLgFhHhD8t0m5kAQo39Jojj0RuLzquQLUkUuG3qtJmJ9plOyua9uADjaopUrsHkrMAAAAASUVORK5CYII=) repeat-x; color:#ffffff; font-weight:bold; } 
+/* the main table: contains everything (main button, menu ...)  */
+#noscript_table		{ position:fixed; width:auto; height:auto; background:transparent; 
+			  white-space:nowrap; z-index:99999999; direction:ltr; font-family:sans-serif;  
+			  font-size:small;  margin-bottom:0px; 
+			}  
+#noscript_table > tr > td { text-align: right; padding: 0px 0px 0px 0px;}
+#noscript_table div	{ width: auto; } 
 
-#noscript_button { border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } 
-#noscript_table div { width: auto; } 
+/* main button */
+#noscript_button	{ border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } 
 
-/* import file ... */
-#import_form {display:inline-block;position:relative;overflow:hidden;vertical-align:text-bottom} 
-#import_btn {display:block;position:absolute;top:0;right:0;margin:0;border:0;opacity:0} 
+/*************************************************************************************************************/
 
-/* radio buttons */
-input[type=radio]         { display:none; } 
-input[type=radio] + label:hover   { background-color: #ddd; } 
-input[type=radio] + label { 
-	box-shadow:inset 0px 1px 0px 0px #ffffff; 
-	border-radius:6px; 
-	border:1px solid #dcdcdc; 
-	background-color: #c7c7c7;  
-	display:inline-block; 
-	padding:1px 5px; 
-	text-decoration:none; } 
-input[type=radio]:checked + label { background-color: #fa4; } 
+/* main menu */
+.noscript_menu		{ color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;
+			  background: #ccc;
+			  box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);
+			  padding: 1px 1px; 
+			}
+.noscript_menu div	{ padding:0px 1px 0px 1px; } 
+.noscript_title		{ color:#ffffff; font-weight:bold; text-align:center; background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAYCAYAAAA7zJfaAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90BFRUGLEa8gbIAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAUElEQVQI102KOwqAQBDFsm+9/3Fs9RqChdgIVjYi6nxsLLYJCYSc+xTLgFhHhD8t0m5kAQo39Jojj0RuLzquQLUkUuG3qtJmJ9plOyua9uADjaopUrsHkrMAAAAASUVORK5CYII=) repeat-x; } 
+
+/* host table */
+#noscript_ftable		{ width:100%; } 
+#noscript_ftable > tr > td	{ padding: 0px 0px 1px 0px;} 
+
+/* menu items */
+.indent1		{ padding-left:12px }
+.indent2		{ padding-left:22px }
+.highlight:hover	{ background-color:#ddd; }
+
+/* mode menu item */
+.current_mode		{ background-color:#fa4 }
+
+/* hostnames display */
+.host_part		{ color:#888; text-align:right; }
+.helper_host		{ color:#000; }
+.script_count		{ text-align:right; }
+.inline_script_size	{ float:right; }
+
+/* "script allowed globally" icon */
+.global_icon		{ visibility:hidden; padding: 0px 3px; width:14px; height:14px; vertical-align:middle;
+			  background-size:contain; 
+			  background:-o-skin('RSS'); }
+.global_icon.visible	{ visibility:visible; }
+td:hover > .global_icon	{ visibility:visible; } 
+
+/*************************************************************************************************************/
+/* Details menu */
 
 
-/**********************************************************************/
-/* new stuff */
+/*************************************************************************************************************/
+/* Options menu */
 
+#options_menu		{ min-width:250px; }
+
+.separator	{ height: 1px; display: block; background-color: #555555; margin-left: auto; margin-right: auto; }
+
+/* import file (make form and button look like a menuitem) */
+#import_form	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }
+#import_btn	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }
+
+/*************************************************************************************************************/
+/* widgets */
+
+/* radio buttons (scope etc) */
+input[type=radio]			{ display:none; } 
+input[type=radio] + label:hover		{ background-color: #ddd; } 
+input[type=radio] + label		{ box-shadow:inset 0px 1px 0px 0px #ffffff; border-radius:6px; 
+					  border:1px solid #dcdcdc; background-color: #c7c7c7;  
+					  display:inline-block; padding:1px 5px; text-decoration:none; 
+					} 
+input[type=radio]:checked + label	{ background-color: #fa4; } 
+
+/* icons */
 img { width:22px; height:22px; vertical-align:middle; background-size:contain; }
 
 img.allowed		{ background:-o-skin('Transfer Success'); }
@@ -44,32 +90,4 @@ img.relaxed		{ background:-o-skin('Smiley Tongue'); }
 img.allow_all		{ background:-o-skin('Smiley Cry'); }
 
 
-/* menu items */
-.noscript_item		{  }
-.indent1		{ padding-left:12px }
-.indent2		{ padding-left:22px }
-
-.highlight:hover	{ background-color:#ddd; }
-/*.noscript_item		{ background-color:transparent }*/
-
-
-/* mode menu item */
-.current_mode		{ background-color:#fa4 }
-
-
-/* hostnames display */
-.host_part	{ color:#888; text-align:right; }
-.helper_host    { color:#000; }
-.script_count	{ text-align:right; }
-
-.inline_script_size	{ float:right; }
-
-.separator	{ height: 1px; display: block; background-color: #555555; margin-left: auto; margin-right: auto; }
-
-/* "script allowed globally" icon */
-.global_icon		{ visibility:hidden; padding: 0px 3px; width:14px; height:14px; vertical-align:middle;
-			  background-size:contain; 
-			  background:-o-skin('RSS'); }     /* FIXME */
-.global_icon.visible	{ visibility:visible; }
-td:hover > .global_icon	{ visibility:visible; } 
 
