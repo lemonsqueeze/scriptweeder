@@ -305,15 +305,26 @@
 			   0, 0, 0, 0, 0, false, false, false, false, 0, null);
 	a.dispatchEvent(evt);	
     }
-    
+
+    // inject style as plain text with a <style> element.
     function new_style(str)
     {
-	var el= idoc.createElement('style');
-	el.type= 'text/css';
-	el.media= 'screen';
+	var el = idoc.createElement('style');
+	el.type = 'text/css';
+	el.media = 'screen';
 	el.appendChild(idoc.createTextNode(str));
 	idoc.head.appendChild(el);
 	return el;
+    }
+
+    // use external css for styling.
+    function add_css_link(url)
+    {
+	var link = idoc.createElement('link');
+	link.rel = "stylesheet";
+	link.type = "text/css";
+	link.href = url;
+	idoc.head.appendChild(link);
     }
 
     function check_handle_noscript_tags()
@@ -994,6 +1005,54 @@
 
     /***************************** Settings menu *******************************/
 
+
+    function edit_css_url()
+    {
+	var nsmenu = idoc.createElement('div');
+	nsmenu.id = 'noscript_menu';
+	nsmenu.align = 'left';
+	nsmenu.style="color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;" +
+	// "background:#abb9ca;" +
+        "background: #ccc;" +
+	// "background: #efebe7;" +
+	"box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);";
+
+	var close_menu = function()
+	{
+	   td.removeChild(nsmenu);
+	   resize_iframe();
+	};
+	
+	var item = add_menu_item(nsmenu, "enter css url to use:");
+	var text = idoc.createElement('textarea');
+	text.rows = 1;
+	text.cols = 80;
+	// how do we add padding to this thing ??
+	text.innerText = global_setting('css');
+	nsmenu.appendChild(text);
+
+	var div = idoc.createElement('div');
+	nsmenu.appendChild(div);		
+	var button = idoc.createElement('button');
+	button.innerText = "Save";
+	button.onclick = function()
+	{
+	   set_global_setting('css', text.innerText);
+	   close_menu();
+	}
+	div.appendChild(button);
+	
+	var button = idoc.createElement('button');
+	button.innerText = "Cancel";
+	button.onclick = close_menu;
+	div.appendChild(button);	
+	
+	var td = idoc.getElementById('td_nsmenu');
+	td.appendChild(nsmenu);
+	//idoc.body.appendChild(nsmenu);
+	resize_iframe();
+    }
+    
     function edit_whitelist()
     {
 	var nsmenu = idoc.createElement('div');
@@ -1243,6 +1302,8 @@
 	};
 	
 	var item = add_menu_item(nsdetails, "Edit whitelist...", 2, wrap(edit_whitelist));
+
+	var item = add_menu_item(nsdetails, "Custom stylesheet...", 2, wrap(edit_css_url));	
 
 	var item = add_menu_item(nsdetails, "iframe logic", 2);
 	var set_iframe_logic = function (n)
@@ -1687,6 +1748,21 @@
     }
     
     /**************************** Injected iframe logic ***********************/
+
+    // interface style used in jsarmor's iframe
+    function style_init()
+    {
+	// use external .css file ?
+	var css = global_setting('css');
+	if (css != '')
+	{
+	    add_css_link(css);
+	    return;
+	}
+
+	// otherwise use builtin style.
+	new_style(noscript_style);
+    }
     
     function populate_iframe()
     {
@@ -1697,8 +1773,16 @@
 	idoc.open();
 	idoc.write("<!DOCTYPE HTML>\n<html><head></head><body></body></html>");
 	idoc.close();
+
+	style_init();
 	
-	var noscript_style =
+	idoc.body.style.margin = '0px';
+	create_main_table();
+	parent_main_table();
+	resize_iframe();
+    }
+
+    var noscript_style =
 "\n\
 #noscript_menu div  {padding:0px 1px 0px 1px;} \n\
 #noscript_table { position:fixed;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:99999999;direction:ltr;font-family:sans-serif; font-size:small; margin-bottom:0px; }  \n\
@@ -1726,16 +1810,8 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
 .noscript_global { padding: 0px 3px; width:14px; height:14px; vertical-align:middle; \
     background:" + icon_background_prop("allowed_globally") + "; background-size:contain; } \n	\
 ";
-
 	// -o-linear-gradient(top, #FFFFFF 0px, #CCCCCC 100%) #E5E5E5;
 	
-	new_style(noscript_style);
-	idoc.body.style.margin = '0px';
-	create_main_table();
-	parent_main_table();
-	resize_iframe();
-    }
-
     function resize_iframe()
     {
 	var content = idoc.body.firstChild;
