@@ -837,7 +837,7 @@
 	return d.innerHTML;
     }
 
-    function add_table_item(table, col1, col2, col3, col4, col5, col6, col7, f, color)
+    function add_table_item(table, col1, col2, col3, col4, col5, col6, col7, f, helper_host)
     {
 	var tr = idoc.createElement('tr');
 	var s = "";
@@ -850,16 +850,14 @@
 	s += "<td width=1%>" + to_html(col6) + "</td>";
 	s += "<td width=1%>" + to_html(col7) + "</td>";
 	tr.innerHTML = s;
-//	tr.childNodes[0].style = "padding-left:" + (indent * 10) + "px;";
-	tr.childNodes[3].style = "color: #888888; text-align:right;";
-	if (color != '')
-	    tr.childNodes[4].style.color = color;
-	tr.childNodes[7].style = "text-align:right;";
+	tr.childNodes[3].className = 'host_part';
+	tr.childNodes[4].className = 'domain_part';
+	if (helper_host)
+	    tr.childNodes[4].className += ' helper_host';
+	tr.childNodes[7].className = 'script_count';
 	if (f)
 	{
-	    tr.onmouseover = function(){ this.style.backgroundColor = '#ddd'; };
-//	    tr.onmouseover = function(){ this.style.backgroundColor = '#fa4'; };
-	    tr.onmouseout  = function(){ this.style.backgroundColor = 'transparent'; };
+	    tr.className = 'highlight';
 	    tr.onclick = f;
 	}
 	// make text non selectable
@@ -1610,10 +1608,10 @@
 	    var host_part = h.slice(0, h.length - d.length);
 	    var not_loaded = icon_not_loaded(hn, checkbox.checked);
 	    var count = "[" + hn.scripts.length + "]";
-	    var color = (hn.helper_host ? '#000' : '');
+	    var helper = hn.helper_host;
 	    var icon = idoc.createElement('img');   // globally allowed icon
 	    var iframes = iframe_icon(hn);
-	    item = add_table_item(table, not_loaded, checkbox, host_part, d, iframes, icon, count, f, color);
+	    item = add_table_item(table, not_loaded, checkbox, host_part, d, iframes, icon, count, f, helper);
 	    
 	    icon = item.childNodes[6].firstChild;
 	    init_global_icon(icon, h);

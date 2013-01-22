@@ -60,3 +60,8 @@ img.allow_all		{ background:-o-skin('Smiley Cry'); }
 /* mode menu item */
 .current_mode		{ background-color:#fa4 }
 
+
+/* hostnames display */
+.host_part	{ color:#888; text-align:right; }
+.helper_host    { color:#000; }
+.script_count	{ text-align:right; }
