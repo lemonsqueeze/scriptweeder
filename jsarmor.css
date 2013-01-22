@@ -3,29 +3,29 @@
 body			{ margin:0px; }
 
 /* the main table: contains everything (main button, menu ...)  */
-#noscript_table		{ position:fixed; width:auto; height:auto; background:transparent; 
+#jsarmor_table		{ position:fixed; width:auto; height:auto; background:transparent; 
 			  white-space:nowrap; z-index:99999999; direction:ltr; font-family:sans-serif;  
 			  font-size:small;  margin-bottom:0px; 
 			}
-#noscript_table > tr > td { text-align: right; padding: 0px 0px 0px 0px;}
-#noscript_table div	{ width: auto; } 
+#jsarmor_table > tr > td { text-align: right; padding: 0px 0px 0px 0px;}
+#jsarmor_table div	{ width: auto; } 
 
 /* main button */
-#noscript_button	{ border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } 
+#jsarmor_button		{ border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } 
 
 /*************************************************************************************************************/
 
 /* main menu */
-.noscript_menu		{ color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;
+.jsarmor_menu		{ color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;
 			  background: #ccc;  padding: 1px 1px; text-align:left;
 			  box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);
 			}
-.noscript_menu div	{ padding:0px 1px 0px 1px; } 
-.noscript_title		{ color:#ffffff; font-weight:bold; text-align:center; background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAYCAYAAAA7zJfaAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90BFRUGLEa8gbIAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAUElEQVQI102KOwqAQBDFsm+9/3Fs9RqChdgIVjYi6nxsLLYJCYSc+xTLgFhHhD8t0m5kAQo39Jojj0RuLzquQLUkUuG3qtJmJ9plOyua9uADjaopUrsHkrMAAAAASUVORK5CYII=) repeat-x; } 
+.jsarmor_menu div	{ padding:0px 1px 0px 1px; } 
+.jsarmor_title		{ color:#ffffff; font-weight:bold; text-align:center; background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAYCAYAAAA7zJfaAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90BFRUGLEa8gbIAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAUElEQVQI102KOwqAQBDFsm+9/3Fs9RqChdgIVjYi6nxsLLYJCYSc+xTLgFhHhD8t0m5kAQo39Jojj0RuLzquQLUkUuG3qtJmJ9plOyua9uADjaopUrsHkrMAAAAASUVORK5CYII=) repeat-x; } 
 
 /* host table */
-#noscript_ftable		{ width:100%; } 
-#noscript_ftable > tr > td	{ padding: 0px 0px 1px 0px;} 
+#jsarmor_ftable		{ width:100%; } 
+#jsarmor_ftable > tr > td	{ padding: 0px 0px 1px 0px;} 
 
 /* menu items */
 .indent1		{ padding-left:12px }
@@ -41,7 +41,7 @@ body			{ margin:0px; }
 .script_count		{ text-align:right; }
 .inline_script_size	{ float:right; }
 
-/* "script allowed globally" icon */
+/* 'script allowed globally' icon */
 .global_icon		{ visibility:hidden; padding: 0px 3px; width:14px; height:14px; vertical-align:middle;
 			  background-size:contain; 
 			  background:-o-skin('RSS'); }

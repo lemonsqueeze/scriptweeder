@@ -86,7 +86,7 @@
     
     // jsarmor ui's iframe, don't recurse !
     if (window != window.top &&
-	window.name == 'noscript_iframe')
+	window.name == 'jsarmor_iframe')
 	return;
     
     var init = false;			// see call_handler();
@@ -799,7 +799,7 @@
     function add_menu_item(nsmenu, text, indent, f, child)
     {
       var item = idoc.createElement('div');
-      item.className = 'noscript_item';
+      item.className = 'jsarmor_item';
       if (child)
 	  item.appendChild(child);
       if (indent)				// CSSFIXME find a better way
@@ -1344,11 +1344,11 @@
     function new_menu(title)
     {
 	var menu = idoc.createElement('div');
-	menu.className = 'noscript_menu';
+	menu.className = 'jsarmor_menu';
 	if (title != "")
 	{
 	    var item = add_menu_item(menu, title);
-	    item.className = 'noscript_title';
+	    item.className = 'jsarmor_title';
 	}	
 	return menu;
     }
@@ -1471,7 +1471,7 @@
 	var reltg = e.relatedTarget;
 	if (reltg)
 	{
-  	    if (reltg.id == 'noscript_button')
+  	    if (reltg.id == 'jsarmor_button')
 		return false; // moving back to button, doesn't count
 	    while (reltg != menu && reltg.nodeName != 'HTML')
 		reltg = reltg.parentNode;
@@ -1521,7 +1521,7 @@
 	};
 
 	var table = idoc.createElement('table');
-	table.id = "noscript_ftable";
+	table.id = "jsarmor_ftable";
 	nsmenu.appendChild(table);
 
 	sort_domains();
@@ -1562,7 +1562,7 @@
     function create_main_table()
     {
 	var table = idoc.createElement('table');
-	table.id = 'noscript_table';	
+	table.id = 'jsarmor_table';	
 	// useful for debugging layout:     table.border = 1;
 	
         var tooltip = "[Inline scripts] " + total_inline +
@@ -1583,7 +1583,7 @@
 	    tooltip += " (" + loaded_external + " loaded)";
 
         var r = idoc.createElement('button');
-	r.id = 'noscript_button';
+	r.id = 'jsarmor_button';
 	r.title = tooltip;
 	button_image = new_icon_mode(mode);
 	r.appendChild(button_image);
@@ -1675,12 +1675,12 @@
 	}
 
 	// otherwise use builtin style.
-	new_style(noscript_style);
+	new_style(jsarmor_style);
     }
     
     function populate_iframe()
     {
-	iframe.contentWindow.name = 'noscript_iframe';
+	iframe.contentWindow.name = 'jsarmor_iframe';
 	idoc = iframe.contentWindow.document;
 
 	// set doctype, we want strict mode, not quirks mode!
@@ -1694,35 +1694,98 @@
 	resize_iframe();
     }
 
-    var noscript_style =
-"\n\
-#noscript_menu div  {padding:0px 1px 0px 1px;} \n\
-#noscript_table { position:fixed;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:99999999;direction:ltr;font-family:sans-serif; font-size:small; margin-bottom:0px; }  \n\
-#noscript_table > tr > td { text-align: right; padding: 0px 0px 0px 0px;} \n\
-#noscript_ftable { width:100%; } \n\
-#noscript_ftable > tr > td { padding: 0px 0px 1px 0px;} \n\
-.noscript_title { background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAYCAYAAAA7zJfaAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90BFRUGLEa8gbIAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAUElEQVQI102KOwqAQBDFsm+9/3Fs9RqChdgIVjYi6nxsLLYJCYSc+xTLgFhHhD8t0m5kAQo39Jojj0RuLzquQLUkUuG3qtJmJ9plOyua9uADjaopUrsHkrMAAAAASUVORK5CYII=) repeat-x; color:#ffffff; font-weight:bold; } \n\
-#noscript_button { border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } \n\
-#noscript_table div { width: auto; } \n\
+    var jsarmor_style =
+"/* jsarmor stylesheet */\n\
 \n\
-#import_form {display:inline-block;position:relative;overflow:hidden;vertical-align:text-bottom} \n\
-#import_btn {display:block;position:absolute;top:0;right:0;margin:0;border:0;opacity:0} \n\
+body			{ margin:0px; }\n\
 \n\
-input[type=radio]         { display:none; } \n\
-input[type=radio] + label:hover   { background-color: #ddd; } \n\
-input[type=radio] + label { \n\
-	box-shadow:inset 0px 1px 0px 0px #ffffff; \n\
-	border-radius:6px; \n\
-	border:1px solid #dcdcdc; \n\
-	background-color: #c7c7c7;  \n\
-	display:inline-block; \n\
-	padding:1px 5px; \n\
-	text-decoration:none; } \n\
-input[type=radio]:checked + label { background-color: #fa4; } \n\
-.noscript_global { padding: 0px 3px; width:14px; height:14px; vertical-align:middle; \
-    background:" + icon_background_prop("allowed_globally") + "; background-size:contain; } \n	\
+/* the main table: contains everything (main button, menu ...)  */\n\
+#jsarmor_table		{ position:fixed; width:auto; height:auto; background:transparent; \n\
+			  white-space:nowrap; z-index:99999999; direction:ltr; font-family:sans-serif;  \n\
+			  font-size:small;  margin-bottom:0px; \n\
+			}\n\
+#jsarmor_table > tr > td { text-align: right; padding: 0px 0px 0px 0px;}\n\
+#jsarmor_table div	{ width: auto; } \n\
+\n\
+/* main button */\n\
+#jsarmor_button		{ border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } \n\
+\n\
+/*************************************************************************************************************/\n\
+\n\
+/* main menu */\n\
+.jsarmor_menu		{ color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;\n\
+			  background: #ccc;  padding: 1px 1px; text-align:left;\n\
+			  box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);\n\
+			}\n\
+.jsarmor_menu div	{ padding:0px 1px 0px 1px; } \n\
+.jsarmor_title		{ color:#ffffff; font-weight:bold; text-align:center; background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAYCAYAAAA7zJfaAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90BFRUGLEa8gbIAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAUElEQVQI102KOwqAQBDFsm+9/3Fs9RqChdgIVjYi6nxsLLYJCYSc+xTLgFhHhD8t0m5kAQo39Jojj0RuLzquQLUkUuG3qtJmJ9plOyua9uADjaopUrsHkrMAAAAASUVORK5CYII=) repeat-x; } \n\
+\n\
+/* host table */\n\
+#jsarmor_ftable		{ width:100%; } \n\
+#jsarmor_ftable > tr > td	{ padding: 0px 0px 1px 0px;} \n\
+\n\
+/* menu items */\n\
+.indent1		{ padding-left:12px }\n\
+.indent2		{ padding-left:22px }\n\
+.highlight:hover	{ background-color:#ddd; }\n\
+\n\
+/* mode menu item */\n\
+.current_mode		{ background-color:#fa4 }\n\
+\n\
+/* hostnames display */\n\
+.host_part		{ color:#888; text-align:right; }\n\
+.helper_host		{ color:#000; }\n\
+.script_count		{ text-align:right; }\n\
+.inline_script_size	{ float:right; }\n\
+\n\
+/* 'script allowed globally' icon */\n\
+.global_icon		{ visibility:hidden; padding: 0px 3px; width:14px; height:14px; vertical-align:middle;\n\
+			  background-size:contain; \n\
+			  background:-o-skin('RSS'); }\n\
+.global_icon.visible	{ visibility:visible; }\n\
+td:hover > .global_icon	{ visibility:visible; } \n\
+\n\
+/*************************************************************************************************************/\n\
+/* Options menu */\n\
+\n\
+#options_menu		{ min-width:250px; }\n\
+\n\
+.separator	{ height: 1px; display: block; background-color: #555555; margin-left: auto; margin-right: auto; }\n\
+\n\
+/* import file (make form and button look like a menuitem) */\n\
+#import_form	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }\n\
+#import_btn	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }\n\
+\n\
+/*************************************************************************************************************/\n\
+/* generic stuff */\n\
+\n\
+table					{ border-spacing:0px; border-collapse: collapse; }\n\
+\n\
+/* radio buttons (scope etc) */\n\
+input[type=radio]			{ display:none; } \n\
+input[type=radio] + label:hover		{ background-color: #ddd; } \n\
+input[type=radio] + label		{ box-shadow:inset 0px 1px 0px 0px #ffffff; border-radius:6px; \n\
+					  border:1px solid #dcdcdc; background-color: #c7c7c7;  \n\
+					  display:inline-block; padding:1px 5px; text-decoration:none; \n\
+					} \n\
+input[type=radio]:checked + label	{ background-color: #fa4; } \n\
+\n\
+/* icons */\n\
+img { width:22px; height:22px; vertical-align:middle; background-size:contain; }\n\
+\n\
+img.allowed		{ background:-o-skin('Transfer Success'); }\n\
+img.blocked		{ background:-o-skin('Transfer Stopped'); }\n\
+img.not_loaded		{ background:-o-skin('Transfer Size Mismatch'); }\n\
+img.iframe		{ background:-o-skin('Menu Info'); }\n\
+img.allowed_globally	{ background:-o-skin('RSS'); }\n\
+img.block_all		{ background:-o-skin('Smiley Pacman'); }\n\
+img.filtered		{ background:-o-skin('Smiley Cool'); }\n\
+img.relaxed		{ background:-o-skin('Smiley Tongue'); }\n\
+img.allow_all		{ background:-o-skin('Smiley Cry'); }\n\
+\n\
+textarea		{ width:400px; height:300px; }\n\
 ";
-	// -o-linear-gradient(top, #FFFFFF 0px, #CCCCCC 100%) #E5E5E5;
+
 	
     function resize_iframe()
     {
@@ -1738,7 +1801,7 @@ input[type=radio]:checked + label { background-color: #fa4; } \n\
     function create_iframe()
     {
 	iframe = document.createElement('iframe');
-	iframe.id = 'noscript_iframe';
+	iframe.id = 'jsarmor_iframe';
 	iframe.style = "position:fixed !important;width:auto !important;height:auto !important;background:transparent !important;white-space:nowrap !important;z-index:99999999 !important;direction:ltr !important;font-family:sans-serif !important; font-size:small !important; margin-bottom:0px !important;" +
 	
 // "width: 300px !important; height: 100px !important;"

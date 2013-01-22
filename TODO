@@ -23,6 +23,7 @@ new features:
 
   - style editor,
     whatever is missing for styling (classes, ids...)
+    rename #noscript stuff
 
   - reload method
 
