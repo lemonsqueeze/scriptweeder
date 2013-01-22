@@ -1024,6 +1024,38 @@
 	td.appendChild(nsmenu);
 	resize_iframe();
     }
+
+    function edit_style()
+    {
+	var nsmenu = new_menu("style");
+
+	var close_menu = function()
+	{
+	   td.removeChild(nsmenu);
+	   resize_iframe();
+	};
+
+	var style = global_setting('style');
+	style = (style == '' ? builtin_style : style);
+	var text = new_textarea(style);
+	nsmenu.appendChild(text);
+
+	var div = idoc.createElement('div');
+	nsmenu.appendChild(div);		
+	var button = new_button("Save", function()
+				{
+				   set_global_setting('style', text.innerText);
+				   close_menu();
+				});
+	div.appendChild(button);
+	
+	var button = new_button("Cancel", close_menu);
+	div.appendChild(button);	
+	
+	var td = idoc.getElementById('td_nsmenu');
+	td.appendChild(nsmenu);
+	resize_iframe();
+    }
     
     function edit_whitelist()
     {
@@ -1245,8 +1277,11 @@
 	}
 	
 	var item = add_menu_item(menu, "Edit whitelist...", 2, remove_menu_and(edit_whitelist));
+	
 	if (enable_external_css)
-	    var item = add_menu_item(menu, "Custom stylesheet...", 2, remove_menu_and(edit_css_url));	
+	    var item = add_menu_item(menu, "Custom stylesheet...", 2, remove_menu_and(edit_css_url));
+	
+	var item = add_menu_item(menu, "Edit style...", 2, remove_menu_and(edit_style));	
 	
 	var item = add_menu_item(menu, "iframe logic", 2);
 	var set_iframe_logic = function (n)
@@ -1689,8 +1724,10 @@
 	    }
 	}
 
-	// otherwise use builtin style.
-	new_style(jsarmor_style);
+	// use custom style ?
+	var style = global_setting('style');
+	style = (style == '' ? builtin_style : style);
+	new_style(style);
     }
     
     function populate_iframe()
@@ -1709,7 +1746,7 @@
 	resize_iframe();
     }
 
-    var jsarmor_style =
+    var builtin_style =
 "/* jsarmor stylesheet */\n\
 \n\
 body			{ margin:0px; }\n\

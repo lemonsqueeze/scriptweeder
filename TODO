@@ -21,13 +21,18 @@ new features:
 
   - bindings to do stuff from opera buttons ?
 
-  - style editor,
-    whatever is missing for styling (classes, ids...)
-    rename #noscript stuff
-
   - reload method
 
+  - take out layout 
+  - we're gonna need some kind of 'safe mode' startup in case we screw up
+    maybe load page with hash in url: #jsarmor_safemode ...
+
 wip:
+  - style editor,
+    FIXME need to escape \n for export file to work ...    
+    whatever is missing for styling (classes, ids...)
+
+
   - new css style switch.
     (sizing bug when using css, but .. doesn't matter, it's gone with plain styles!)
     indent is broken (see block all mode)
