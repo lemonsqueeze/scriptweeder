@@ -769,7 +769,6 @@
     function new_icon(image)
     {
       var icon = idoc.createElement('img');
-      icon.style = "width:22px;height:22px; vertical-align:middle;";
       if (image)
 	  set_icon_image(icon, image);
       return icon;	
@@ -782,8 +781,7 @@
     
     function set_icon_image(icon, image_name)
     {
-	icon.style.background = icon_background_prop(image_name);
-	icon.style.backgroundSize = "contain";
+	icon.className = image_name;
     }
     
     function new_icon_mode(mode)
@@ -804,15 +802,13 @@
       item.className = 'noscript_item';
       if (child)
 	  item.appendChild(child);
-      if (indent)
-	  item.style = "padding-left:" + (indent * 10 + 2) + "px;";
+      if (indent)				// CSSFIXME find a better way
+	  item.className += " indent" + indent;
       item.innerHTML += text;
       if (f)
       {
-	item.onmouseover = function(){ this.style.backgroundColor = '#ddd'; };
-//	item.onmouseover = function(){ this.style.backgroundColor = '#fa4'; };
-	item.onmouseout  = function(){ this.style.backgroundColor = 'transparent'; };
-	item.onclick = f;
+	  item.className += " highlight";
+	  item.onclick = f;
       }
       // make text non selectable
       item.onmousedown = function(){ return false; };
@@ -825,12 +821,7 @@
 	var handler = function() { set_mode(tmode); };
 	var item = add_menu_item(nsmenu, title, 0, handler, new_icon_mode(tmode));
 	if (mode == tmode)
-	{
-	    item.style = "background-color:#fa4;";
-	    //item.style = "background-color:#ddd;";
-	    item.onmouseover = null;
-	    item.onmouseout = null;
-	}
+	    item.className = " current_mode";
 	return item;
     }
 

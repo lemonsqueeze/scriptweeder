@@ -1,15 +1,20 @@
 #noscript_menu div  {padding:0px 1px 0px 1px;} 
+
 #noscript_table { position:fixed;width:auto;height:auto;background:transparent;white-space:nowrap;z-index:99999999;direction:ltr;font-family:sans-serif; font-size:small; margin-bottom:0px; }  
 #noscript_table > tr > td { text-align: right; padding: 0px 0px 0px 0px;} 
 #noscript_ftable { width:100%; } 
 #noscript_ftable > tr > td { padding: 0px 0px 1px 0px;} 
+
 .noscript_title { background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAYCAYAAAA7zJfaAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90BFRUGLEa8gbIAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAUElEQVQI102KOwqAQBDFsm+9/3Fs9RqChdgIVjYi6nxsLLYJCYSc+xTLgFhHhD8t0m5kAQo39Jojj0RuLzquQLUkUuG3qtJmJ9plOyua9uADjaopUrsHkrMAAAAASUVORK5CYII=) repeat-x; color:#ffffff; font-weight:bold; } 
+
 #noscript_button { border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } 
 #noscript_table div { width: auto; } 
 
+/* import file ... */
 #import_form {display:inline-block;position:relative;overflow:hidden;vertical-align:text-bottom} 
 #import_btn {display:block;position:absolute;top:0;right:0;margin:0;border:0;opacity:0} 
 
+/* radio buttons */
 input[type=radio]         { display:none; } 
 input[type=radio] + label:hover   { background-color: #ddd; } 
 input[type=radio] + label { 
@@ -21,6 +26,37 @@ input[type=radio] + label {
 	padding:1px 5px; 
 	text-decoration:none; } 
 input[type=radio]:checked + label { background-color: #fa4; } 
+
+/* "script allowed globally" icon  */
 .noscript_global { padding: 0px 3px; width:14px; height:14px; vertical-align:middle;
-    background:" + icon_background_prop("allowed_globally") + "; background-size:contain; }
+		   background-size:contain; 
+		   background:-o-skin('RSS'); }     /* FIXME */
+
+/**********************************************************************/
+/* new stuff */
+
+img { width:22px; height:22px; vertical-align:middle; background-size:contain; }
+
+img.allowed		{ background:-o-skin('Transfer Success'); }
+img.blocked		{ background:-o-skin('Transfer Stopped'); }
+img.not_loaded		{ background:-o-skin('Transfer Size Mismatch'); }
+img.iframe		{ background:-o-skin('Menu Info'); }
+img.allowed_globally	{ background:-o-skin('RSS'); }
+img.block_all		{ background:-o-skin('Smiley Pacman'); }
+img.filtered		{ background:-o-skin('Smiley Cool'); }
+img.relaxed		{ background:-o-skin('Smiley Tongue'); }
+img.allow_all		{ background:-o-skin('Smiley Cry'); }
+
+
+/* menu items */
+.noscript_item		{  }
+.indent1		{ padding-left:12px }
+.indent2		{ padding-left:22px }
+
+.highlight:hover	{ background-color:#ddd; }
+/*.noscript_item		{ background-color:transparent }*/
+
+
+/* mode menu item */
+.current_mode		{ background-color:#fa4 }
 
