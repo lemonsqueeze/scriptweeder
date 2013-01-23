@@ -1,58 +1,12 @@
-    // icon set to use: 'native' or 'opera_11'
-    var icon_set = 'opera_11';
-
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
-
-    // whether to show jsarmor ui inside frames / iframes
-    var default_iframe_ui = false;
-
-    var help_url = "https://github.com/lemonsqueeze/jsarmor/wiki";
 
     // can be used to display stuff in jsarmor menu from outside scripts.
     var enable_plugin_api = false;
 
-    // load style from an external css.
-    // *note* this only works locally, won't work on remote sites.
-    // this is really nice for testing as you can just edit your css file directly.
-    // - set this to true, reload.
-    // - save jsarmor.css somewhere, put its address as a 'file:///...' url
-    //   in options menu, edit css url
-    // - open a good local html for testing, (test_offline/ in the repo has one)
-    // - edit css file, just reload to test changes !
-    //   (switch opera to offline mode for instantaneous reloads!)
-    // to revert set back to false, or set blank url.
-    var enable_external_css = false;
-
     /********************************* Globals *********************************/
 
-    /** other stuff **/
     var button_image = null;
-    var icons;
-
-
-	init_icons();
-
-    // inject style as plain text with a <style> element.
-    function new_style(str)
-    {
-	var el = idoc.createElement('style');
-	el.type = 'text/css';
-	el.media = 'screen';
-	el.appendChild(idoc.createTextNode(str));
-	idoc.head.appendChild(el);
-	return el;
-    }
-
-    // use external css for styling.
-    function add_css_link(url)
-    {
-	var link = idoc.createElement('link');
-	link.rel = "stylesheet";
-	link.type = "text/css";
-	link.href = url;
-	idoc.head.appendChild(link);
-    }
 
     /***************************** iframe handling **************************/
 
@@ -71,41 +25,6 @@
 
     /****************************** UI primitives *****************************/
 
-    function init_icons()
-    {
-    
-      var native_icons = {
-        "allowed":		"-o-skin('Transfer Success')",
-	"blocked":		"-o-skin('Transfer Stopped')",
-	"not_loaded":		"-o-skin('Transfer Size Mismatch')",
-	"iframe":		"-o-skin('Menu Info')", // FIXME check how it looks in opera 12
-	"allowed_globally":	"-o-skin('RSS')",      
-	"block_all":		"-o-skin('Smiley Pacman')",
-	"filtered":		"-o-skin('Smiley Cool')",
-	"relaxed":		"-o-skin('Smiley Tongue')",
-	"allow_all":		"-o-skin('Smiley Cry')"
-      };
-
-      var opera_11_icons = {
-        "allowed":		'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNAay06AAAAAVdEVYdENyZWF0aW9uIFRpbWUAMTkvNS8wOcYlgL0AAAGASURBVDiNpZPLK0RRHMc/xz3FxmNBSEosBkVXSpQyFqRYTB4Lq2ujbCby/AuUZDESCyuWUwwp2ciwF3cjbMjWCoW45xoLznXnwcL86tSv7+/7e/+OSCQSZCM5WXkDUitCCA+c3c0dAcYB8xuygeXF0NuG5ujKhacIwexubhEQ9zmmig10LobeHrSf9FuVMv5y5tsWB5o04M0gHC2wHFeajivJ9KzWKHVlIRxXmuFogZU2A6WMid/SdgbGaKzoI08WcXZ3ADABbCZVoFxpKleiXElNcQdaLy806W2Y4+X9kdX4iMa9Nr0AjjJwlEFL1TBT3TsMNc/jKAOrbQUQLBwM8PT67PEytCBtwDy5ihEobaerfhSzsoeS/ErWTya5vb/20+30AK4RATYA1o5m+EgIOgKDbJ1GiF/GgJ+sQEQrSXcwsFJ9jm+Nwdp+jq9iqTO1t8M3TZnvwJVB4FgHObzYS6XYQNAPJFWgpXepzuJrVf5TjuxPX25qTtop/1ey/o2ftG6clPyKKlYAAAAASUVORK5CYII=")',
-	"blocked":		'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNAay06AAAAAVdEVYdENyZWF0aW9uIFRpbWUAMTkvNS8wOcYlgL0AAAEHSURBVDiNpZNBagIxFIa/iAfoIRSKLXRc1YUL3XXRCwjCFC9QjzK9gOiqV+huNm66Mou2COMhPIB56aImTTIwgvND4OUlf/K/lz/KWksbdFqxga4LlFI+eViMX4BXIDunNPDWW23Xbo9TrnygFIfF+AYoA2IKDUx7q+3R8brhqjXSROa8VgJDl/A9qOajHCMZRrgwsmo+yms9sCdZhlf13z+jq6vZYzhdApv4ACNN0rFG0lISBfGGSwd4/PvAiI5qTRH3QdcVnKQA1m6+f35oElS4IPLBz9P9juZnBNCDj6+h48VWNjKplZJKNzIJKZECh+/pbc7fU4VWLu7K/caXnFr5WrT+jb97bZAgYc+wFgAAAABJRU5ErkJggg==")',
-	"not_loaded":		'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAADBQTFRFAAAA////AAAAAAAAAAAAAAAAAAAAAAAAkAAAlwAAtAAAvgAAyAAA0QAA2AAA3QAA7lpb0AAAAAh0Uk5TAAAMEx4wP0EqzeGOAAAAQElEQVQIW2MShAImBigAMT7JQxk2Rz5AGP8/KUAZH6FS/z/gZJzaBxO5+wDCMAtiQDPnzH2oCM9eqBrG9wIMDABr1Bip1wrS4AAAAABJRU5ErkJggg==")',
-	"iframe":		"-o-skin('Menu Info')", // FIXME check how it looks in opera 12
-	"allowed_globally":	'url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABV0RVh0Q3JlYXRpb24gVGltZQAxOS81LzA5xiWAvQAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNAay06AAAAI4SURBVDiNlZNNSFRRGIafe+feuToqDWL5U4wmM+Mm0magsM20qEXSImgRhgTR376gTYtoWbQuMpcpuW0RrUIIwdCEMQO1CY0w/6AmlTv3zpyfFre8CVp44CzO4bzP974f5zNWHnUnXNfI+z5x9rAch2Ispjst1zXyhh2LJ44ksasd0Pq/4rJXZnWmEHddN2/5PoHY8NArcyA8YBeIYYLlEN3XyoGOJF8np+IWgF0VRS9PY195C4D+XkAvTaKmh9GbSyFAK6iU0D/miTYeBcD6c6/KIixUn8SoT2KmepAfhhETA9udCA9T6hCgpEYJjTdwBqMhReRwjkh7DqOuiUj2KkZzhvKrO2h/I4SoAGAC6N8A++wDzLYcojBCabCPyrugstlyjOj5xyiht7aWhAAlNVIoIgcz2F0XqbrwBOfcQ/ypl5Re3w8eNqSwjl9DCoUUCiXVdoASGm+0H7k6B0DkUIaay0NUFt7jjfYD4HRfh5rmwIXcIYI78pSfz3rZeH4D7W9iOLXEeu5RGhtC+5sARDO9O0UAJTTVp29T19ePkrD+4lbQ5UQWsyFNaWwwOLdmd3dQfeISdmuWWO4mfmEcsRzEsdOnKH+eCACNaZQMNKEDpVE6glgKBJXFmaAnH98EoqYOvE/j4X8yqrYcGDN3T+r6ljRUPMTaPLpc+uc8GE4NdmM70nIoLs5imUoW19e+xGv3t2EnOncV/oVAygobqwuYShYtS4lO4bv54rfZPY2zqWTRUrLrF4hoKuU62VtvAAAAAElFTkSuQmCC")',
-	"block_all":		"-o-skin('Smiley Pacman')",
-	"filtered":		"-o-skin('Smiley Cool')",
-	"relaxed":		"-o-skin('Smiley Tongue')",
-	"allow_all":		"-o-skin('Smiley Cry')"
-      };
-
-      icons = native_icons;
-      var tmp = eval(icon_set + '_icons');
-      if (typeof(tmp) != "object")
-	  alert("jsarmor:\n\nerror initializing icons !");
-      else
-	  icons = tmp;
-    }
-    
     function new_icon(image)
     {
       var icon = idoc.createElement('img');
@@ -114,11 +33,6 @@
       return icon;	
     }
 
-    function icon_background_prop(image_name)
-    {
-	return icons[image_name] + " no-repeat center";
-    }
-    
     function set_icon_image(icon, image_name)
     {
 	icon.className = image_name;
@@ -671,15 +585,6 @@
 
     function mouseout_leaving_menu(e, menu)
     {
-	// if (!e)
-	//    var e = window.event;
-	
-	// object we're moving out of
-	// var tg = (window.event) ? e.srcElement : e.target;
-	// if (tg != nsdetails) // moving out of one its children.
-	//  return; we actually need that case!
-	
-	// e.relatedTarget: object we're moving to.
 	var reltg = e.relatedTarget;
 	if (reltg)
 	{
@@ -872,44 +777,6 @@
 	    show_hide_menu(true);
 	}
     }
-    
-    /**************************** Injected iframe logic ***********************/
-
-    // interface style used in jsarmor's iframe
-    function style_init()
-    {
-	if (enable_external_css)
-	{
-	    // use external .css file ?
-	    var css = global_setting('css');
-	    if (css != '')
-	    {
-		add_css_link(css);
-		return;
-	    }
-	}
-
-	// use custom style ?
-	var style = global_setting('style');
-	style = (style == '' ? builtin_style : style);
-	new_style(style);
-    }
-    
-    function populate_iframe()
-    {
-	iframe.contentWindow.name = 'jsarmor_iframe';
-	idoc = iframe.contentWindow.document;
-
-	// set doctype, we want strict mode, not quirks mode!
-	idoc.open();
-	idoc.write("<!DOCTYPE HTML>\n<html><head></head><body></body></html>");
-	idoc.close();
-
-	style_init();
-	create_main_table();
-	parent_main_table();
-	resize_iframe();
-    }
 
     var builtin_style =
 "/* jsarmor stylesheet */\n\
@@ -1002,36 +869,6 @@ img.allow_all		{ background:-o-skin('Smiley Cry'); }\n\
 \n\
 textarea		{ width:400px; height:300px; }\n\
 ";
-
-	
-    function resize_iframe()
-    {
-	var content = idoc.body.firstChild;
-	//iframe.style.width = content.clientWidth + 'px';
-	//iframe.style.height = content.clientHeight + 'px';
-	iframe.style.width = content.scrollWidth + 'px';
-	iframe.style.height = content.scrollHeight + 'px';
-    }    	    
-    
-    var iframe = null;
-    var idoc = null;
-    function create_iframe()
-    {
-	iframe = document.createElement('iframe');
-	iframe.id = 'jsarmor_iframe';
-	iframe.style = "position:fixed !important;width:auto !important;height:auto !important;background:transparent !important;white-space:nowrap !important;z-index:99999999 !important;direction:ltr !important;font-family:sans-serif !important; font-size:small !important; margin-bottom:0px !important;" +
-	
-// "width: 300px !important; height: 100px !important;"
-	"margin-top: 0px !important; margin-right: 0px !important; margin-bottom: 0px !important; margin-left: 0px !important; padding-top: 0px !important; padding-right: 0px !important; padding-bottom: 0px !important; padding-left: 0px !important; border-top-width: 0px !important; border-right-width: 0px !important; border-bottom-width: 0px !important; border-left-width: 0px !important; border-top-style: none !important; border-right-style: none !important; border-bottom-style: none !important; border-left-style: none !important; background-color: transparent !important; visibility: visible !important; content: normal !important; outline-width: medium !important; outline-style: none !important; background-image: none !important; min-width: 0px !important; min-height: 0px !important; " +
-	
-//	"border: 1px solid #CCC !important; " +	
-	(cornerposition < 3 ? 'top': 'bottom') + ':1px !important;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px !important;';
-	iframe.scrolling="no";
-	iframe.allowtransparency="true";
-	
-	iframe.onload = populate_iframe;
-	document.body.appendChild(iframe);
-    }
 
     /**************************** Plugin API **********************************/
 
