@@ -1,0 +1,22 @@
+#!/usr/bin/perl
+# the javascript preprocessor
+
+sub doit
+{
+    my ($in) = @_;
+    foreach my $s (<$in>)
+    {
+	if ($s =~ m|^\@include \"(.*)\"|)
+	{
+	    my $file = $1;
+	    open(IN, "< $file") || die("couldn't open file $file");
+	    doit(IN);
+	    close(IN);
+	    next;
+	}
+	print $s;
+    }
+}
+
+open(IN, "< $ARGV[0]") || die "couldn't open file '$ARGV[0]'";
+doit(IN);
