@@ -192,7 +192,7 @@
 	    return;		// nothing changed
 	timestamp = t;
 	load_global_settings(); // reload settings
-	if (main_table)
+	if (main_ui) //UIFIXME
 	    repaint_ui_now();
 	// FIXME: could reload page to use new settings if user wants to.
     }
@@ -485,12 +485,12 @@
 	  handle_noscript_tags = bool_setting('nstags',
 					      default_handle_noscript_tags);	  
       }      
-UIFIXME
-      if (button_image)
-	  set_icon_mode(button_image, mode);
+// UIFIXME
+//      if (button_image)
+//	  set_icon_mode(button_image, mode);
     }
 
-UIFIXME
+// UIFIXME
     // Set mode, repaint ui, and flag for reload
     function set_mode(new_mode)
     {
@@ -1004,7 +1004,7 @@ UIFIXME
       total_inline++;
       total_inline_size += e.element.text.length;
       
-      if (main_table)
+      if (main_ui) //UIFIXME
 	  repaint_ui();
       
       if (block_inline_scripts)
@@ -1039,7 +1039,7 @@ UIFIXME
 
         if (!allowed)
 	    e.preventDefault();
-	if (main_table)
+	if (main_ui) // UIFIXME
 	    repaint_ui();
     }
 
@@ -1064,7 +1064,7 @@ UIFIXME
 	    repaint_ui();
     }
 
-UIFIXME    
+//UIFIXME    
     function domcontentloaded_handler()
     {
 	add_iframe_hosts();
@@ -1106,6 +1106,9 @@ UIFIXME
 	else
 	    h(e);
     }
+
+@include "core_ui.js"
+@include "builtin_ui.js"
     
-})(window.document, window.location, window.opera, window.opera.scriptStorage);
+})(window.document, window.location, window.opera, window.opera.scriptStorage);	// last_line_tag
 

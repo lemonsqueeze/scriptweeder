@@ -1,4 +1,4 @@
-
+    /********************************* Core ui *********************************/
 
     // whether to show jsarmor ui inside frames / iframes
     var default_iframe_ui = false;
@@ -42,11 +42,90 @@
 	idoc.head.appendChild(link);
     }
 
+    /**************************** External layout ***********************/
+
+    // ui template
+    var layout;
+    
+    // layout of interface used in jsarmor's iframe
+    function init_layout()
+    {
+	// use custom layout ?
+	var html = global_setting('html');
+	html = (html != '' ? html : builtin_html);
+	
+	// prepend '_' to all ids
+	html = html.replace(/ id=\"/g, ' id="_');
+	
+	layout = idoc.createElement('div');
+	layout.style.display = 'none';
+	layout.innerHTML = html;
+	// needs to be parented for getElementById() to work
+	idoc.body.appendChild(layout);
+
+	// set special ids
+	idoc.body.id = "body";
+    }
+
+    function new_widget(id)
+    {
+	var w = idoc.getElementById('_' + id);
+	if (!w)
+	{
+	    alert("jsarmor:\n\nnew_widget(" + id + "): couldn't find template by that name");
+	    return null;
+	}
+	if (_get_widget(id))
+	{
+	    alert("jsarmor:\n\nnew_widget(" + id + "): this id already exists !");
+	    return null;	    
+	}
+	
+	// crap, cloneNode doesn't copy event handlers
+	var c = w.cloneNode(true);
+	de_underscore_ids(c);
+	// alert("cloned " + c.id + "!");
+	return c;
+    }    
+
+    function add_widget(widget_id, parent_id)
+    {
+	var p = get_widget(parent_id);
+	var w = new_widget(widget_id);
+	p.appendChild(w);
+	return w;
+    }
+
+    function get_widget(id)
+    {
+	var w = idoc.getElementById(id);
+	if (w == null)
+	    alert("jsarmor:\n\nget_widget(" + id + "): there is no element by that name !");
+	return w;
+    }
+
+    // unsafe version
+    function _get_widget(id)
+    {
+	return idoc.getElementById(id);
+    }
+
+    // remove leading '_' on all ids
+    function de_underscore_ids(node)
+    {
+	if (node.id)
+	    node.id = node.id.slice(1);
+	var l = node.getElementsByTagName('*');
+	for (var i = 0; i < l.length; l++)
+	    if (l[i].id)
+		l[i].id = l[i].id.slice(1);
+    }
+
     
     /**************************** Injected iframe logic ***********************/
 
     // interface style used in jsarmor's iframe
-    function style_init()
+    function init_style()
     {
 	if (enable_external_css)
 	{
@@ -75,9 +154,10 @@
 	idoc.write("<!DOCTYPE HTML>\n<html><head></head><body></body></html>");
 	idoc.close();
 
-	style_init();
-	create_main_table();
-	parent_main_table();
+	init_style();
+	init_layout();	
+	create_main_ui();
+	parent_main_ui();
 	resize_iframe();
     }
 

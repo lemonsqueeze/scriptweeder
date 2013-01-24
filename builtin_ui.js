@@ -1,3 +1,5 @@
+    /********************************* Builtin ui *********************************/
+
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
 
@@ -672,16 +674,35 @@
 	if (item && !found_not_loaded) // indent
 	    item.childNodes[0].innerHTML = "&nbsp;&nbsp;";
     }
+
+
+    /**************************** Plugin API **********************************/
+
+    // plugin api: can be used to display extra stuff in the menu from other scripts.
+    // useful for debugging and hacking purposes when console.log() isn't ideal.
+    if (enable_plugin_api)
+    {
+	var plugin_items = new Object();
+	
+	if (window.noscript)
+	    alert("jsarmor.js: window.noscript exists!!!");
+	// FIXME: this isn't great for seeing what happens in iframes ...
+	window.noscript = new Object();	
+	
+	// API for plugins to add items to noscript's menu
+	window.noscript.add_item = function(name, value)
+	{
+	    //console.log("noscript: plugin added item: " + name + " : " + text);
+            plugin_items[name] = value;
+	    if (nsmenu)
+		repaint_ui();	
+	};
+    }
     
     /***************************** Main table *********************************/
-    
-    var main_table = null;
-    function create_main_table()
+
+    function main_button_tooltip()
     {
-	var table = idoc.createElement('table');
-	table.id = 'jsarmor_table';	
-	// useful for debugging layout:     table.border = 1;
-	
         var tooltip = "[Inline scripts] " + total_inline +
 	  (block_inline_scripts ? " blocked": "") +
 	  " (" + get_size_kb(total_inline_size) + "k), " +
@@ -698,6 +719,27 @@
 	tooltip += " blocked";
 	if (loaded_external)
 	    tooltip += " (" + loaded_external + " loaded)";
+	return tooltip;
+    }
+
+    var main_ui = null;
+    function create_main_ui()
+    {
+	main_ui = add_widget("main", "body");
+
+	// var tooltip = main_button_tooltip();
+	//var b = get_widget("button");
+	//b.title = tooltip;
+    }
+
+
+    function _create_main_table()
+    {
+	var table = idoc.createElement('table');
+	table.id = 'jsarmor_table';	
+	// useful for debugging layout:     table.border = 1;
+	
+	var tooltip = main_button_tooltip();
 
         var r = idoc.createElement('button');
 	r.id = 'jsarmor_button';
@@ -737,12 +779,12 @@
 	tr.appendChild(td);
         table.appendChild(tr);
 
-	main_table = table;
+//	main_table = table;
     }
 
-    function parent_main_table()
+    function parent_main_ui()
     {
-	idoc.body.appendChild(main_table);
+	idoc.body.appendChild(main_ui);
     }
 
     /***************************** Repaint logic ******************************/
@@ -766,11 +808,11 @@
 	// menu logic slightly more complicated than just calling
 	// show_hide_menu() at the end -> no flickering at all this way!!
 	var menu_shown = nsmenu && nsmenu.style.display != 'none';	
-	create_main_table();
+	create_main_ui();
 	if (menu_shown)
 	    create_menu();	
-	idoc.body.removeChild(idoc.body.firstChild); // remove main_table
-	parent_main_table();
+	idoc.body.removeChild(idoc.body.lastChild); // remove main_ui
+	parent_main_ui();
 	if (menu_shown)
 	{
 	    parent_menu();	
@@ -870,26 +912,6 @@ img.allow_all		{ background:-o-skin('Smiley Cry'); }\n\
 textarea		{ width:400px; height:300px; }\n\
 ";
 
-    /**************************** Plugin API **********************************/
 
-    // plugin api: can be used to display extra stuff in the menu from other scripts.
-    // useful for debugging and hacking purposes when console.log() isn't ideal.
-    if (enable_plugin_api)
-    {
-	var plugin_items = new Object();
-	
-	if (window.noscript)
-	    alert("jsarmor.js: window.noscript exists!!!");
-	// FIXME: this isn't great for seeing what happens in iframes ...
-	window.noscript = new Object();	
-	
-	// API for plugins to add items to noscript's menu
-	window.noscript.add_item = function(name, value)
-	{
-	    //console.log("noscript: plugin added item: " + name + " : " + text);
-            plugin_items[name] = value;
-	    if (nsmenu)
-		repaint_ui();	
-	};
-    }
-
+    var builtin_html =
+    '<div id="main"><button id="button">yeah!</button></div>';
