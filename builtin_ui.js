@@ -725,7 +725,7 @@
     var main_ui = null;
     function create_main_ui()
     {
-	main_ui = add_widget("main", "body");
+	main_ui = new_widget("main");
 
 	// var tooltip = main_button_tooltip();
 	//var b = get_widget("button");
@@ -914,4 +914,4 @@ textarea		{ width:400px; height:300px; }\n\
 
 
     var builtin_html =
-    '<div id="main"><button id="button">yeah!</button></div>';
+    '<div class="main"><button class="button">yeah!</button></div>';

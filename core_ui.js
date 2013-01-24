@@ -54,39 +54,49 @@
 	var html = global_setting('html');
 	html = (html != '' ? html : builtin_html);
 	
-	// prepend '_' to all ids
-	html = html.replace(/ id=\"/g, ' id="_');
-	
 	layout = idoc.createElement('div');
-	layout.style.display = 'none';
 	layout.innerHTML = html;
-	// needs to be parented for getElementById() to work
-	idoc.body.appendChild(layout);
-
-	// set special ids
-	idoc.body.id = "body";
+	
+	// special classes
+	idoc.body.className = "body";
     }
 
-    function new_widget(id)
+    // find element in parent with that class_name
+    function get_widget(parent, class_name)
     {
-	var w = idoc.getElementById('_' + id);
-	if (!w)
+	return _get_widget(parent, class_name, false, "get_widget");
+    }
+
+    function new_widget(class_name)
+    {
+	// get fragment from template layout.
+	var f = _get_widget(layout, class_name, true, "new_widget");
+	if (!f)
+	    return null;
+	
+	// crap, cloneNode() doesn't copy event handlers ...
+	var w = f.cloneNode(true);
+	return w;
+    }    
+
+    function _get_widget(parent, class_name, unique, fname)
+    {
+    	var l = getElementsByClassName(parent, class_name);
+	if (l.length == 1)
+	    return l[0];
+	if (!l.length)
 	{
-	    alert("jsarmor:\n\nnew_widget(" + id + "): couldn't find template by that name");
+	    alert("jsarmor:\n\n" + fname +"(" + class_name + "): couldn't find widget by that name");
+	    return null;
+	}	
+	if (unique)	// should be unique ?
+	{
+	    alert("jsarmor:\n\n" + fname +"(" + class_name + "): multiple matches !");
 	    return null;
 	}
-	if (_get_widget(id))
-	{
-	    alert("jsarmor:\n\nnew_widget(" + id + "): this id already exists !");
-	    return null;	    
-	}
-	
-	// crap, cloneNode doesn't copy event handlers
-	var c = w.cloneNode(true);
-	de_underscore_ids(c);
-	// alert("cloned " + c.id + "!");
-	return c;
-    }    
+	return l[0];	// return first match.
+    }
+
 
     function add_widget(widget_id, parent_id)
     {
@@ -96,29 +106,28 @@
 	return w;
     }
 
-    function get_widget(id)
+    function getElementsByClassName(node, classname)
     {
-	var w = idoc.getElementById(id);
-	if (w == null)
-	    alert("jsarmor:\n\nget_widget(" + id + "): there is no element by that name !");
-	return w;
-    }
-
-    // unsafe version
-    function _get_widget(id)
-    {
-	return idoc.getElementById(id);
-    }
-
-    // remove leading '_' on all ids
-    function de_underscore_ids(node)
-    {
-	if (node.id)
-	    node.id = node.id.slice(1);
-	var l = node.getElementsByTagName('*');
-	for (var i = 0; i < l.length; l++)
-	    if (l[i].id)
-		l[i].id = l[i].id.slice(1);
+	if (node.getElementsByClassName) { // use native implementation if available
+	    return node.getElementsByClassName(classname);
+	} else {
+	    return (function getElementsByClass(searchClass,node) {
+		    if ( node == null )
+			node = document;
+		    var classElements = [],
+		    els = node.getElementsByTagName("*"),
+		    elsLen = els.length,
+		    pattern = new RegExp("(^|\\s)"+searchClass+"(\\s|$)"), i, j;
+		    
+		    for (i = 0, j = 0; i < elsLen; i++) {
+			if ( pattern.test(els[i].className) ) {
+			    classElements[j] = els[i];
+			    j++;
+			}
+		    }
+		    return classElements;
+		})(classname, node);
+	}
     }
 
     
