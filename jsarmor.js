@@ -499,7 +499,8 @@
 	repaint_ui_now();
     }    
 
-    var mode;				// block_all, filtered, relaxed, allow_all
+    var mode;				// current_mode
+    var modes = [ 'block_all', 'filtered', 'relaxed', 'allow_all' ];
     
     function init_mode()
     {
@@ -629,6 +630,12 @@
     function is_prefix(p, str)
     {
 	return (str.slice(0, p.length) == p);
+    }
+
+    function element_tag_is(el, tag)
+    {
+	return (el.tagName &&
+		el.tagName.toLowerCase() == tag);
     }
     
     function get_domain(h)
@@ -1013,7 +1020,7 @@
 
     function beforeextscript_handler(e)				 
     {
-        if (e.element.tagName.toLowerCase() != 'script')
+        if (!element_tag_is(e.element, 'script'))
 	{
 	  alert("jsarmor.js: BeforeExternalScript: non <script>: " + e.element.tagName);
 	  return;
@@ -1049,7 +1056,7 @@
     function beforeload_handler(ev)
     {
 	var e = ev.event.target;
-        if (!e || !e.tagName || e.tagName.toLowerCase() != 'script' || !e.src)
+        if (!e || !e.tagName || !element_tag_is(e, 'script') || !e.src)
 	    return; // not an external script.	    
 	var host = url_hostname(e.src);
 	var script = find_script(e.src, host);
@@ -1114,6 +1121,9 @@
 
     var help_url = "https://github.com/lemonsqueeze/jsarmor/wiki";
 
+    // use stored custom style and layout ?
+    var enable_custom_style = false;
+    var enable_custom_layout = false;
 
     // load style from an external css.
     // *note* this only works locally, won't work on remote sites.
@@ -1160,7 +1170,7 @@
     function init_layout()
     {
 	// use custom layout ?
-	var html = global_setting('html');
+	var html = (enable_custom_layout ? global_setting('html') : '');
 	html = (html != '' ? html : builtin_html);
 	
 	layout = idoc.createElement('div');
@@ -1257,7 +1267,7 @@
 	}
 
 	// use custom style ?
-	var style = global_setting('style');
+	var style = (enable_custom_style ? global_setting('style') : '');
 	style = (style == '' ? builtin_style : style);
 	new_style(style);
     }
@@ -1441,22 +1451,36 @@
 	return d;
     }
 
-    function add_radio_button(parent, text, current, target, f)
+    function setup_checkbox_item(widget, current, f)
     {
-	var r = idoc.createElement('input');
-	r.type = 'radio';
-	r.name = 'radio_group';
-	r.number = target;
-	r.checked = (current == target);
-	r.onclick = function() { f(this.number); };
+	var checkbox = widget.getElementsByTagName('input')[0];
+	widget.checkbox = checkbox;
+	checkbox.checked = current;
+	widget.onclick = f;
+    }
 
-	var t = idoc.createElement('label');
-	t.radio = r;
-	t.innerText = text;
-	t.onclick = function() { this.radio.checked = true; this.radio.onclick(); }	
+    function setup_radio_buttons(widget, current, f)
+    {
+	var l = widget.getElementsByTagName('input');
+	
+	for (var i = 0; i < l.length; i++)
+	{
+	    var radio = l[i];
+	    radio.checked = (current == i);
+	    radio.number = i;
+	    radio.onclick = function() { f(this.number); };
 
-	parent.appendChild(r);	
-	parent.appendChild(t);	
+	    // take care of label if it's there
+	    for (var t = radio.nextSibling; t; t = t.nextSibling)
+	    {
+		if (element_tag_is(t, 'label'))
+		{
+		    t.radio = radio;
+		    t.onclick = function() { this.radio.checked = true; this.radio.onclick(); }
+		    break;
+		}
+	    }
+	}
     }
 
     function add_link_menu_item(menu, url, label, indent)
@@ -1535,7 +1559,7 @@
     {
       block_inline_scripts = !block_inline_scripts;
       this.checkbox.checked = block_inline_scripts;
-      idoc.getElementById('handle_nstags').style.display = (block_inline_scripts ? 'block' : 'none');
+      get_widget(nsmenu, "handle_nstags").style.display = (block_inline_scripts ? 'block' : 'none');
       set_bool_setting('inline', block_inline_scripts);
       need_reload = true;
     }
@@ -1796,8 +1820,9 @@
 
     function create_menu()
     {
-	nsmenu = new_menu("JSArmor");
+	nsmenu = new_widget("jsarmor_menu");
 	nsmenu.style.display = 'none';
+	
 	nsmenu.onmouseout = function(e)
 	{
 	  if (!mouseout_leaving_menu(e, nsmenu))
@@ -1807,77 +1832,63 @@
 	      reload_page();
 	};
 
-	var title = nsmenu.firstChild;
-	title.title = version + ". Click to view global settings.";
-	title.onclick = function(event)
-	{       
-  	  if (!event.ctrlKey)
-	  {
-	    var d = list_to_string(global_setting('whitelist'));
-	    alert("jsarmor \nGlobal whitelist: \n" + d);
-	  
-	    return;
-	  }
-	  var d = list_to_string(hosts_setting());
-	  alert("jsarmor \nHosts allowed for this page: \n" + d);
-	};
-	
-	var item = add_menu_item(nsmenu, "Set for: ", 0, null);
-	add_radio_button(item, " Page ",   scope, 0, change_scope);
-	add_radio_button(item, " Site ",   scope, 1, change_scope);
-	add_radio_button(item, " Domain ", scope, 2, change_scope);	
-	add_radio_button(item, " Global ", scope, 3, change_scope);
+	var title = get_widget(nsmenu, "jsarmor_title");
+	title.title = version;
 
-//	add_menu_separator(nsmenu);
-//	add_menu_item(nsmenu, "External Scripts:");	
-	item = add_mode_menu_item(nsmenu, "Block All", 'block_all');
-	item.title = "Block all scripts.";
+	var scope_item = get_widget(nsmenu, "scope");
+	setup_radio_buttons(scope_item, scope, change_scope)
 
 	if (mode == 'block_all')
-	{
-	    var checkbox = new_checkbox(block_inline_scripts);
-	    var label = "Block Inline Scripts";
-	    item = add_menu_item(nsmenu, label, 1, toggle_allow_inline, checkbox);
-	    item.checkbox = item.firstChild;
-	    add_right_aligned_text(item, " [" + get_size_kb(total_inline_size) + "k]");
-	
-	    var checkbox = new_checkbox(handle_noscript_tags);
-	    var label = "Pretend Javascript Disabled";
-	    item = add_menu_item(nsmenu, label, 1, toggle_handle_noscript_tags, checkbox);
-	    item.id = "handle_nstags";
-	    item.checkbox = item.firstChild;
-	    item.title = "Interpret noscript tags as if javascript was disabled in opera."
-	    if (!block_inline_scripts)
-		item.style += "display:none;";
+	{	
+	    var w = get_widget(nsmenu, "block_inline");
+	    w.style = "display:block;";	    
+	    setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);
+
+	    var w = get_widget(nsmenu, "inline_script_size");
+	    w.innerText = " [" + get_size_kb(total_inline_size) + "k]";
+
+	    var w = get_widget(nsmenu, "handle_nstags");
+	    setup_checkbox_item(w, handle_noscript_tags, toggle_handle_noscript_tags);
+	    if (block_inline_scripts)
+		w.style = "display:block;";
 	}
 
-	item = add_mode_menu_item(nsmenu, 'Filtered', 'filtered');
-	item.title = "Select which scripts to run. (current site allowed by default, inline scripts always allowed.)"
-	if (mode == 'filtered')
-	    add_ftable(nsmenu);
+	function setup_mode_item_handler(w, mode)
+	{
+	    w.onclick = function() { set_mode(mode); };
+	}
+	
+	// take care of mode menu items.
+	for (var i = 0; i < modes.length; i++)
+	{
+	    // get item for this mode, wherever it is.
+	    var w = get_widget(nsmenu, "mode_" + modes[i]);
+	    if (modes[i] == mode)
+		w.className = "current_mode";
+	    else
+		setup_mode_item_handler(w, modes[i]);
 
-	item = add_mode_menu_item(nsmenu, 'Relaxed', 'relaxed');
-	item.title = "Allow related and helper domains.";
-	if (mode == 'relaxed')
-	    add_ftable(nsmenu);
+	    // now add host table	    
+	    if (mode == 'block_all' ||
+		modes[i] != mode)	// is it current mode ?
+		continue;
+	    add_host_table_after(w);
+	}
+	
+	var w = get_widget(nsmenu, "details_item");
+	w.onclick = show_details;
 
-	item = add_mode_menu_item(nsmenu, 'Allow All', 'allow_all');
-	item.title = "Allow everything ..."
-	if (mode == 'allow_all')
-	    add_ftable(nsmenu);
-
-	add_menu_item(nsmenu, "Details ...", 0, show_details);
-
+	// FIXME put it back
 	// plugin api
-	if (enable_plugin_api)
-	    for (var prop in plugin_items)
-		if (plugin_items.hasOwnProperty(prop))
-		    add_menu_item(nsmenu, plugin_items[prop], 0, null);
+	// if (enable_plugin_api)
+	// for (var prop in plugin_items)
+	// if (plugin_items.hasOwnProperty(prop))
+	// add_menu_item(nsmenu, plugin_items[prop], 0, null);
     }
 
     function parent_menu()
     {
-	var td = idoc.getElementById('td_nsmenu');
+	var td = get_widget(main_ui, "td_nsmenu");
 	td.appendChild(nsmenu);		
     }
 
@@ -1910,6 +1921,11 @@
 	return true;
     }
 
+    function add_host_table_after(item)
+    {
+	
+    }
+	
     function add_ftable(nsmenu)
     {
 	var f = function(event)
@@ -2035,34 +2051,22 @@
     var main_ui = null;
     function create_main_ui()
     {
-	main_ui = new_widget("main");
-
-	// var tooltip = main_button_tooltip();
-	//var b = get_widget("button");
-	//b.title = tooltip;
-    }
-
-
-    function _create_main_table()
-    {
-	var table = idoc.createElement('table');
-	table.id = 'jsarmor_table';	
-	// useful for debugging layout:     table.border = 1;
+	main_ui = new_widget("jsarmor_table");
 	
-	var tooltip = main_button_tooltip();
+	var b = get_widget(main_ui, "jsarmor_button");	
+	var tooltip = main_button_tooltip();	
+	b.title = tooltip;
 
-        var r = idoc.createElement('button');
-	r.id = 'jsarmor_button';
-	r.title = tooltip;
-	button_image = new_icon_mode(mode);
-	r.appendChild(button_image);
-	r.onmouseover = function()
+	var i = get_widget(main_ui, "mode_icon");
+	set_icon_mode(i, mode);
+
+	b.onmouseover = function()
 	{
 	  // console.log("button mouseover");
 	  show_hide_menu(true);    // menu can disappear if we switch these two, strange
 	  check_changed_settings();
 	};
-        r.onclick = function(event)
+        b.onclick = function(event)
 	{
 	  // cycle through the modes
 	  if (mode == 'block_all')      set_mode('filtered');
@@ -2070,26 +2074,11 @@
 	  else if (mode == 'relaxed')  set_mode('allow_all');
 	  else if (mode == 'allow_all') set_mode('block_all');
 	};
-	r.onmouseout = function(e)
+	b.onmouseout = function(e)
 	{
 	  if (need_reload)
 	      reload_page();	      
-	};
-
-	var tr = idoc.createElement('tr');
-	var td = idoc.createElement('td');
-	td.id = 'td_nsmenu';
-	
-	tr.appendChild(td);
-        table.appendChild(tr);
-
-	var tr = idoc.createElement('tr');
-	var td = idoc.createElement('td');
-	td.appendChild(r);
-	tr.appendChild(td);
-        table.appendChild(tr);
-
-//	main_table = table;
+	};	
     }
 
     function parent_main_ui()
@@ -2137,15 +2126,15 @@
 body			{ margin:0px; }  \n\
   \n\
 /* the main table: contains everything (main button, menu ...)  */  \n\
-#jsarmor_table		{ position:fixed; width:auto; height:auto; background:transparent;   \n\
+.jsarmor_table		{ position:fixed; width:auto; height:auto; background:transparent;   \n\
 			  white-space:nowrap; z-index:99999999; direction:ltr; font-family:sans-serif;    \n\
 			  font-size:small;  margin-bottom:0px;   \n\
 			}  \n\
-#jsarmor_table > tr > td { text-align: right; padding: 0px 0px 0px 0px;}  \n\
-#jsarmor_table div	{ width: auto; }   \n\
+.jsarmor_table > tbody > tr > td { text-align: right; padding: 0px 0px 0px 0px;}  \n\
+.jsarmor_table div	{ width: auto; }   \n\
   \n\
 /* main button */  \n\
-#jsarmor_button		{ border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; }   \n\
+.jsarmor_button		{ border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; }   \n\
   \n\
 /*************************************************************************************************************/  \n\
   \n\
@@ -2158,8 +2147,8 @@ body			{ margin:0px; }  \n\
 .jsarmor_title		{ color:#ffffff; font-weight:bold; text-align:center; background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAYCAYAAAA7zJfaAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90BFRUGLEa8gbIAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAUElEQVQI102KOwqAQBDFsm+9/3Fs9RqChdgIVjYi6nxsLLYJCYSc+xTLgFhHhD8t0m5kAQo39Jojj0RuLzquQLUkUuG3qtJmJ9plOyua9uADjaopUrsHkrMAAAAASUVORK5CYII=) repeat-x; }   \n\
   \n\
 /* host table */  \n\
-#jsarmor_ftable		{ width:100%; }   \n\
-#jsarmor_ftable > tr > td	{ padding: 0px 0px 1px 0px;}   \n\
+.jsarmor_ftable		{ width:100%; }   \n\
+.jsarmor_ftable > tbody > tr > td	{ padding: 0px 0px 1px 0px;}   \n\
   \n\
 /* menu items */  \n\
 .indent1		{ padding-left:12px }  \n\
@@ -2185,13 +2174,13 @@ td:hover > .global_icon	{ visibility:visible; }   \n\
 /*************************************************************************************************************/  \n\
 /* Options menu */  \n\
   \n\
-#options_menu		{ min-width:250px; }  \n\
+.options_menu		{ min-width:250px; }  \n\
   \n\
 .separator	{ height: 1px; display: block; background-color: #555555; margin-left: auto; margin-right: auto; }  \n\
   \n\
 /* import file (make form and button look like a menuitem) */  \n\
-#import_form	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }  \n\
-#import_btn	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }  \n\
+.import_form	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }  \n\
+.import_btn	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }  \n\
   \n\
 /*************************************************************************************************************/  \n\
 /* generic stuff */  \n\
@@ -2224,9 +2213,93 @@ textarea		{ width:400px; height:300px; }  \n\
 ";
 
     var builtin_html = 
-'<div class="main">  \n\
-  <button class="button">yeah!</button>  \n\
+'<table class="jsarmor_table">  \n\
+  <tr>  \n\
+    <td class="td_nsmenu">  \n\
+      <!-- menu goes here -->  \n\
+    </td>  \n\
+  </tr>  \n\
+  <tr>  \n\
+    <td>  \n\
+      <button class="jsarmor_button" >  \n\
+	<img class="filtered mode_icon">  \n\
+      </button>  \n\
+    </td>  \n\
+  </tr>  \n\
+</table>  \n\
+  \n\
+  \n\
+  \n\
+<!-- main menu -->  \n\
+<div class="jsarmor_menu">  \n\
+  <div class="jsarmor_title" title="jsarmor v2.0. Click to view global settings.">  \n\
+    JSArmor</div>  \n\
+  <div class="jsarmor_item scope">  \n\
+    Set for: <input type="radio" name="radio_group">  \n\
+      <label>  \n\
+	Page </label>  \n\
+      <input type="radio" name="radio_group">  \n\
+	<label>  \n\
+	  Site </label>  \n\
+	<input type="radio" name="radio_group">  \n\
+	  <label>  \n\
+	    Domain </label>  \n\
+	  <input type="radio" name="radio_group">  \n\
+	    <label>  \n\
+	      Global </label>  \n\
+  </div>  \n\
+  <div class="mode_block_all jsarmor_item highlight" title="Block all scripts.">  \n\
+    <img class="block_all">  \n\
+      Block All</div>  \n\
+  <div class="block_inline jsarmor_item indent1 highlight" style="display:none;">  \n\
+    <input type="checkbox" checked="true">  \n\
+      Block Inline Scripts<div class="inline_script_size">  \n\
+	[0.1k]</div>  \n\
+  </div>  \n\
+  <div class="handle_nstags jsarmor_item indent1 highlight"  \n\
+       title="Interpret noscript tags as if javascript was disabled  \n\
+	      in opera." style="display:none;" >  \n\
+    <input type="checkbox" checked="true">  \n\
+      Pretend Javascript Disabled</div>  \n\
+  <div class="mode_filtered jsarmor_item highlight" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">  \n\
+    <img class="filtered">  \n\
+      Filtered</div>  \n\
+  <!-- host table could go here -->  \n\
+  <div class="mode_relaxed jsarmor_item highlight" title="Allow related and helper domains.">  \n\
+    <img class="relaxed">  \n\
+      Relaxed</div>  \n\
+  <div class="mode_allow_all jsarmor_item highlight" title="Allow everything ...">  \n\
+    <img class="allow_all">  \n\
+      Allow All</div>  \n\
+  <div class="details_item jsarmor_item highlight">  \n\
+    Details ...</div>  \n\
 </div>  \n\
+  \n\
+  \n\
+  \n\
+<!-- host table -->  \n\
+  <table class="jsarmor_ftable">  \n\
+    <tr class="highlight">  \n\
+      <td width="1%">  \n\
+	&nbsp;&nbsp;</td>  \n\
+      <td width="1%">  \n\
+      </td>  \n\
+      <td width="1%">  \n\
+	<input type="checkbox" checked="true">  \n\
+      </td>  \n\
+      <td width="1%" class="host_part">  \n\
+	code.</td>  \n\
+      <td class="domain_part helper_host">  \n\
+	jquery.com</td>  \n\
+      <td width="1%">  \n\
+      </td>  \n\
+      <td width="1%">  \n\
+	<img title="Allowed Globally" class="global_icon visible">  \n\
+      </td>  \n\
+      <td width="1%" class="script_count">  \n\
+	[1]</td>  \n\
+    </tr>  \n\
+  </table>  \n\
 ';
 
     

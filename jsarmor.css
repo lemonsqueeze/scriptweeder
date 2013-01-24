@@ -3,15 +3,15 @@
 body			{ margin:0px; }
 
 /* the main table: contains everything (main button, menu ...)  */
-#jsarmor_table		{ position:fixed; width:auto; height:auto; background:transparent; 
+.jsarmor_table		{ position:fixed; width:auto; height:auto; background:transparent; 
 			  white-space:nowrap; z-index:99999999; direction:ltr; font-family:sans-serif;  
 			  font-size:small;  margin-bottom:0px; 
 			}
-#jsarmor_table > tr > td { text-align: right; padding: 0px 0px 0px 0px;}
-#jsarmor_table div	{ width: auto; } 
+.jsarmor_table > tbody > tr > td { text-align: right; padding: 0px 0px 0px 0px;}
+.jsarmor_table div	{ width: auto; } 
 
 /* main button */
-#jsarmor_button		{ border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } 
+.jsarmor_button		{ border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; } 
 
 /*************************************************************************************************************/
 
@@ -24,8 +24,8 @@ body			{ margin:0px; }
 .jsarmor_title		{ color:#ffffff; font-weight:bold; text-align:center; background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAYCAYAAAA7zJfaAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90BFRUGLEa8gbIAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAUElEQVQI102KOwqAQBDFsm+9/3Fs9RqChdgIVjYi6nxsLLYJCYSc+xTLgFhHhD8t0m5kAQo39Jojj0RuLzquQLUkUuG3qtJmJ9plOyua9uADjaopUrsHkrMAAAAASUVORK5CYII=) repeat-x; } 
 
 /* host table */
-#jsarmor_ftable		{ width:100%; } 
-#jsarmor_ftable > tr > td	{ padding: 0px 0px 1px 0px;} 
+.jsarmor_ftable		{ width:100%; } 
+.jsarmor_ftable > tbody > tr > td	{ padding: 0px 0px 1px 0px;} 
 
 /* menu items */
 .indent1		{ padding-left:12px }
@@ -51,13 +51,13 @@ td:hover > .global_icon	{ visibility:visible; }
 /*************************************************************************************************************/
 /* Options menu */
 
-#options_menu		{ min-width:250px; }
+.options_menu		{ min-width:250px; }
 
 .separator	{ height: 1px; display: block; background-color: #555555; margin-left: auto; margin-right: auto; }
 
 /* import file (make form and button look like a menuitem) */
-#import_form	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }
-#import_btn	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }
+.import_form	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }
+.import_btn	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }
 
 /*************************************************************************************************************/
 /* generic stuff */

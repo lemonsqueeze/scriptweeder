@@ -5,6 +5,9 @@
 
     var help_url = "https://github.com/lemonsqueeze/jsarmor/wiki";
 
+    // use stored custom style and layout ?
+    var enable_custom_style = false;
+    var enable_custom_layout = false;
 
     // load style from an external css.
     // *note* this only works locally, won't work on remote sites.
@@ -51,7 +54,7 @@
     function init_layout()
     {
 	// use custom layout ?
-	var html = global_setting('html');
+	var html = (enable_custom_layout ? global_setting('html') : '');
 	html = (html != '' ? html : builtin_html);
 	
 	layout = idoc.createElement('div');
@@ -148,7 +151,7 @@
 	}
 
 	// use custom style ?
-	var style = global_setting('style');
+	var style = (enable_custom_style ? global_setting('style') : '');
 	style = (style == '' ? builtin_style : style);
 	new_style(style);
     }

@@ -131,22 +131,36 @@
 	return d;
     }
 
-    function add_radio_button(parent, text, current, target, f)
+    function setup_checkbox_item(widget, current, f)
     {
-	var r = idoc.createElement('input');
-	r.type = 'radio';
-	r.name = 'radio_group';
-	r.number = target;
-	r.checked = (current == target);
-	r.onclick = function() { f(this.number); };
+	var checkbox = widget.getElementsByTagName('input')[0];
+	widget.checkbox = checkbox;
+	checkbox.checked = current;
+	widget.onclick = f;
+    }
 
-	var t = idoc.createElement('label');
-	t.radio = r;
-	t.innerText = text;
-	t.onclick = function() { this.radio.checked = true; this.radio.onclick(); }	
+    function setup_radio_buttons(widget, current, f)
+    {
+	var l = widget.getElementsByTagName('input');
+	
+	for (var i = 0; i < l.length; i++)
+	{
+	    var radio = l[i];
+	    radio.checked = (current == i);
+	    radio.number = i;
+	    radio.onclick = function() { f(this.number); };
 
-	parent.appendChild(r);	
-	parent.appendChild(t);	
+	    // take care of label if it's there
+	    for (var t = radio.nextSibling; t; t = t.nextSibling)
+	    {
+		if (element_tag_is(t, 'label'))
+		{
+		    t.radio = radio;
+		    t.onclick = function() { this.radio.checked = true; this.radio.onclick(); }
+		    break;
+		}
+	    }
+	}
     }
 
     function add_link_menu_item(menu, url, label, indent)
@@ -225,7 +239,7 @@
     {
       block_inline_scripts = !block_inline_scripts;
       this.checkbox.checked = block_inline_scripts;
-      idoc.getElementById('handle_nstags').style.display = (block_inline_scripts ? 'block' : 'none');
+      get_widget(nsmenu, "handle_nstags").style.display = (block_inline_scripts ? 'block' : 'none');
       set_bool_setting('inline', block_inline_scripts);
       need_reload = true;
     }
@@ -486,8 +500,9 @@
 
     function create_menu()
     {
-	nsmenu = new_menu("JSArmor");
+	nsmenu = new_widget("jsarmor_menu");
 	nsmenu.style.display = 'none';
+	
 	nsmenu.onmouseout = function(e)
 	{
 	  if (!mouseout_leaving_menu(e, nsmenu))
@@ -497,77 +512,63 @@
 	      reload_page();
 	};
 
-	var title = nsmenu.firstChild;
-	title.title = version + ". Click to view global settings.";
-	title.onclick = function(event)
-	{       
-  	  if (!event.ctrlKey)
-	  {
-	    var d = list_to_string(global_setting('whitelist'));
-	    alert("jsarmor \nGlobal whitelist: \n" + d);
-	  
-	    return;
-	  }
-	  var d = list_to_string(hosts_setting());
-	  alert("jsarmor \nHosts allowed for this page: \n" + d);
-	};
-	
-	var item = add_menu_item(nsmenu, "Set for: ", 0, null);
-	add_radio_button(item, " Page ",   scope, 0, change_scope);
-	add_radio_button(item, " Site ",   scope, 1, change_scope);
-	add_radio_button(item, " Domain ", scope, 2, change_scope);	
-	add_radio_button(item, " Global ", scope, 3, change_scope);
+	var title = get_widget(nsmenu, "jsarmor_title");
+	title.title = version;
 
-//	add_menu_separator(nsmenu);
-//	add_menu_item(nsmenu, "External Scripts:");	
-	item = add_mode_menu_item(nsmenu, "Block All", 'block_all');
-	item.title = "Block all scripts.";
+	var scope_item = get_widget(nsmenu, "scope");
+	setup_radio_buttons(scope_item, scope, change_scope)
 
 	if (mode == 'block_all')
-	{
-	    var checkbox = new_checkbox(block_inline_scripts);
-	    var label = "Block Inline Scripts";
-	    item = add_menu_item(nsmenu, label, 1, toggle_allow_inline, checkbox);
-	    item.checkbox = item.firstChild;
-	    add_right_aligned_text(item, " [" + get_size_kb(total_inline_size) + "k]");
-	
-	    var checkbox = new_checkbox(handle_noscript_tags);
-	    var label = "Pretend Javascript Disabled";
-	    item = add_menu_item(nsmenu, label, 1, toggle_handle_noscript_tags, checkbox);
-	    item.id = "handle_nstags";
-	    item.checkbox = item.firstChild;
-	    item.title = "Interpret noscript tags as if javascript was disabled in opera."
-	    if (!block_inline_scripts)
-		item.style += "display:none;";
+	{	
+	    var w = get_widget(nsmenu, "block_inline");
+	    w.style = "display:block;";	    
+	    setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);
+
+	    var w = get_widget(nsmenu, "inline_script_size");
+	    w.innerText = " [" + get_size_kb(total_inline_size) + "k]";
+
+	    var w = get_widget(nsmenu, "handle_nstags");
+	    setup_checkbox_item(w, handle_noscript_tags, toggle_handle_noscript_tags);
+	    if (block_inline_scripts)
+		w.style = "display:block;";
 	}
 
-	item = add_mode_menu_item(nsmenu, 'Filtered', 'filtered');
-	item.title = "Select which scripts to run. (current site allowed by default, inline scripts always allowed.)"
-	if (mode == 'filtered')
-	    add_ftable(nsmenu);
+	function setup_mode_item_handler(w, mode)
+	{
+	    w.onclick = function() { set_mode(mode); };
+	}
+	
+	// take care of mode menu items.
+	for (var i = 0; i < modes.length; i++)
+	{
+	    // get item for this mode, wherever it is.
+	    var w = get_widget(nsmenu, "mode_" + modes[i]);
+	    if (modes[i] == mode)
+		w.className = "current_mode";
+	    else
+		setup_mode_item_handler(w, modes[i]);
 
-	item = add_mode_menu_item(nsmenu, 'Relaxed', 'relaxed');
-	item.title = "Allow related and helper domains.";
-	if (mode == 'relaxed')
-	    add_ftable(nsmenu);
+	    // now add host table	    
+	    if (mode == 'block_all' ||
+		modes[i] != mode)	// is it current mode ?
+		continue;
+	    add_host_table_after(w);
+	}
+	
+	var w = get_widget(nsmenu, "details_item");
+	w.onclick = show_details;
 
-	item = add_mode_menu_item(nsmenu, 'Allow All', 'allow_all');
-	item.title = "Allow everything ..."
-	if (mode == 'allow_all')
-	    add_ftable(nsmenu);
-
-	add_menu_item(nsmenu, "Details ...", 0, show_details);
-
+	// FIXME put it back
 	// plugin api
-	if (enable_plugin_api)
-	    for (var prop in plugin_items)
-		if (plugin_items.hasOwnProperty(prop))
-		    add_menu_item(nsmenu, plugin_items[prop], 0, null);
+	// if (enable_plugin_api)
+	// for (var prop in plugin_items)
+	// if (plugin_items.hasOwnProperty(prop))
+	// add_menu_item(nsmenu, plugin_items[prop], 0, null);
     }
 
     function parent_menu()
     {
-	var td = idoc.getElementById('td_nsmenu');
+	var td = get_widget(main_ui, "td_nsmenu");
 	td.appendChild(nsmenu);		
     }
 
@@ -600,6 +601,11 @@
 	return true;
     }
 
+    function add_host_table_after(item)
+    {
+	
+    }
+	
     function add_ftable(nsmenu)
     {
 	var f = function(event)
@@ -725,34 +731,22 @@
     var main_ui = null;
     function create_main_ui()
     {
-	main_ui = new_widget("main");
-
-	// var tooltip = main_button_tooltip();
-	//var b = get_widget("button");
-	//b.title = tooltip;
-    }
-
-
-    function _create_main_table()
-    {
-	var table = idoc.createElement('table');
-	table.id = 'jsarmor_table';	
-	// useful for debugging layout:     table.border = 1;
+	main_ui = new_widget("jsarmor_table");
 	
-	var tooltip = main_button_tooltip();
+	var b = get_widget(main_ui, "jsarmor_button");	
+	var tooltip = main_button_tooltip();	
+	b.title = tooltip;
 
-        var r = idoc.createElement('button');
-	r.id = 'jsarmor_button';
-	r.title = tooltip;
-	button_image = new_icon_mode(mode);
-	r.appendChild(button_image);
-	r.onmouseover = function()
+	var i = get_widget(main_ui, "mode_icon");
+	set_icon_mode(i, mode);
+
+	b.onmouseover = function()
 	{
 	  // console.log("button mouseover");
 	  show_hide_menu(true);    // menu can disappear if we switch these two, strange
 	  check_changed_settings();
 	};
-        r.onclick = function(event)
+        b.onclick = function(event)
 	{
 	  // cycle through the modes
 	  if (mode == 'block_all')      set_mode('filtered');
@@ -760,26 +754,11 @@
 	  else if (mode == 'relaxed')  set_mode('allow_all');
 	  else if (mode == 'allow_all') set_mode('block_all');
 	};
-	r.onmouseout = function(e)
+	b.onmouseout = function(e)
 	{
 	  if (need_reload)
 	      reload_page();	      
-	};
-
-	var tr = idoc.createElement('tr');
-	var td = idoc.createElement('td');
-	td.id = 'td_nsmenu';
-	
-	tr.appendChild(td);
-        table.appendChild(tr);
-
-	var tr = idoc.createElement('tr');
-	var td = idoc.createElement('td');
-	td.appendChild(r);
-	tr.appendChild(td);
-        table.appendChild(tr);
-
-//	main_table = table;
+	};	
     }
 
     function parent_main_ui()

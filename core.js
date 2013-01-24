@@ -499,7 +499,8 @@
 	repaint_ui_now();
     }    
 
-    var mode;				// block_all, filtered, relaxed, allow_all
+    var mode;				// current_mode
+    var modes = [ 'block_all', 'filtered', 'relaxed', 'allow_all' ];
     
     function init_mode()
     {
@@ -629,6 +630,12 @@
     function is_prefix(p, str)
     {
 	return (str.slice(0, p.length) == p);
+    }
+
+    function element_tag_is(el, tag)
+    {
+	return (el.tagName &&
+		el.tagName.toLowerCase() == tag);
     }
     
     function get_domain(h)
@@ -1013,7 +1020,7 @@
 
     function beforeextscript_handler(e)				 
     {
-        if (e.element.tagName.toLowerCase() != 'script')
+        if (!element_tag_is(e.element, 'script'))
 	{
 	  alert("jsarmor.js: BeforeExternalScript: non <script>: " + e.element.tagName);
 	  return;
@@ -1049,7 +1056,7 @@
     function beforeload_handler(ev)
     {
 	var e = ev.event.target;
-        if (!e || !e.tagName || e.tagName.toLowerCase() != 'script' || !e.src)
+        if (!e || !e.tagName || !element_tag_is(e, 'script') || !e.src)
 	    return; // not an external script.	    
 	var host = url_hostname(e.src);
 	var script = find_script(e.src, host);
