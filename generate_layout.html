@@ -12,7 +12,7 @@ body{font-family:Ubuntu}
 Paste <tt>jsarmor.ui</tt> in here to generate <tt>jsarmor.html</tt>, or try
 html macros on this one.
 <div>
-<textarea rows=24 cols=70 id="layout" spellcheck="false">
+<textarea rows=24 cols=80 id="layout" spellcheck="false">
 
 <div id="1">
   <widget item="42">
@@ -35,7 +35,7 @@ html macros on this one.
 <button onclick="doit()" >Generate html !</button>
 <p></p>
 <button onclick="saveit()">Save Result</button><br>
-<textarea rows=24 cols=70 id="html" spellcheck="false"></textarea>
+<textarea rows=24 cols=80 id="html" spellcheck="false"></textarea>
 
 <script>
 function clearit()
@@ -101,6 +101,15 @@ function hmxp(hmxp_str)
 	return defs;
     }
 
+    function all_attributes(n)
+    {
+	var a = n.attributes;
+	var s = "";
+	for (var i = 0; i < a.length; i++)
+	    s += " " + a[i].name + '="' + a[i].value + '"';
+	return s;
+    }
+    
     function eval_tag_macro(macro, node, tag)
     {
 	var div = doc.createElement('div');
@@ -108,6 +117,10 @@ function hmxp(hmxp_str)
 	s = s.replace("<!--", "");
 	s = s.replace("-->", "");
 
+	// {@} == all attributes
+	if (s.indexOf("{@}") != -1)
+	    s = s.replace("{@}", all_attributes(node));
+	
 	// now substitute parameters
 	var a = macro.attributes;
 	for (var i = 1; i < a.length; i++)

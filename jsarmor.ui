@@ -94,7 +94,7 @@
 --></def> 
 
 <def handle_noscript_tags ><!--
-  <checkbox_item class="handle_nstags" label="Pretend Javascript Disabled" title="Interpret noscript tags as if javascript was disabled in opera.">
+  <checkbox_item class="handle_nstags" var="handle_noscript_tags" label="Pretend Javascript Disabled" title="Interpret noscript tags as if javascript was disabled in opera.">
 --></def> 
 
 
@@ -106,21 +106,17 @@
 --></def>
 
 
-<def checkbox_item class label title ><!--
-  <checkbox_item_begin class="{class}" label="{label}" title="{title}" >
-  <checkbox_item_end>
---></def>
-
-<def checkbox_item_begin class label title ><!--
+<def checkbox_item class var label title ><!--
+  <handler init="alert('in init handler!')" >
   <div class="{class} jsarmor_item indent1 highlight" title="{title}" >
-    <input type="checkbox" checked="true">{label}
+    <input type="checkbox" checked="true">{label}</div>
 --></def>
-
-<def checkbox_item_end><!--
-  </div>
---></def>
-
 
 <def menu_item class label ><!--
   <div class="{class} jsarmor_item highlight">{label}</div>
+--></def>
+
+
+<def handler ><!--
+  <hdlr {@} ></hdlr>
 --></def>

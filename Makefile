@@ -21,7 +21,7 @@ jsarmor.css.js: jsarmor.css
 	@sed -e 's|$$|  \\n\\|' < $< >> $@ 
 	@echo '";' >> $@
 
-# layout
+# layout generation pipeline
 quick_ui.html: jsarmor.ui generate_layout.html
 	@echo generating $@
 	@grep -n textarea generate_layout.html | head -2 | cut -d: -f1 | \
@@ -33,7 +33,11 @@ $(GEN_LAYOUT): quick_ui.html
 
 jsarmor.html: $(GEN_LAYOUT)
 	@echo generating $@
-	@cat $(GEN_LAYOUT) | sed -e 's|>|>\n|g' > $@
+	@cat $(GEN_LAYOUT) | sed -e 's|>|>\n|g' | grep -v hdlr > $@
+
+handlers.xml: $(GEN_LAYOUT)
+	@echo generating $@
+	@cat $(GEN_LAYOUT) | sed -e 's|>|>\n|g' | grep '<hdlr' > $@
 
 jsarmor.html.js: jsarmor.html
 	@echo generating $@
