@@ -1,0 +1,178 @@
+<html>
+<head>
+<style>
+@font-face{font-family:"Ubuntu";font-style:normal;font-weight:bold;src:local("Ubuntu Bold"),local("Ubuntu-Bold"),url(https://themes.googleusercontent.com/static/fonts/ubuntu/v3/0ihfXUL2emPh0ROJezvraD8E0i7KZn-EPnyo3HZu7kw.woff) format("woff")}@font-face{font-family:"Ubuntu";font-style:normal;font-weight:normal;src:local("Ubuntu"),url(https://themes.googleusercontent.com/static/fonts/ubuntu/v3/_xyN3apAT_yRRDeqB3sPRg.woff) format("woff")}
+
+body{font-family:Ubuntu}
+</style>
+</head>
+<body>
+<h1>Generate layout</h1>
+
+Paste <tt>jsarmor.ui</tt> in here to generate <tt>jsarmor.html</tt>, or try
+html macros on this one.
+<div>
+<textarea rows=24 cols=70 id="layout" spellcheck="false">
+
+<div id="1">
+  <widget item="42">
+</div>
+<div id="3"></div>
+
+
+<def widget item ><!-- 
+   <p>{item}</p>
+   <other_widget title="{item}" label="fake link"></bar>
+--></def>
+
+<def other_widget title label ><!-- 
+   <a title="{title}">{label}</a>
+--></def>
+
+</textarea>
+</div>
+<button onclick="clearit()" >Clear</button>
+<button onclick="doit()" >Generate html !</button>
+<p></p>
+Result:<br>
+<textarea rows=24 cols=70 id="html" spellcheck="false"></textarea>
+
+<script>
+function clearit()
+{
+    var w = document.getElementById('layout');
+    w.innerText = "";
+    var w = document.getElementById('html');
+    w.innerText = "";
+}
+
+function doit()
+{
+    var input = document.getElementById('layout');
+    var layout = input.innerText;
+    layout = "<!-- generated from jsarmor.ui, do not edit ! -->\n" + hmxp(layout);
+    var output = document.getElementById('html');
+    output.innerText = layout;
+}
+
+// expand html macros
+function hmxp(hmxp_str)
+{
+    // these create xml parsers which won't work here ...
+    //   var doc = (new DOMParser()).parseFromString('<dummy>', 'text/xml');
+    //   doc.removeChild(doc.documentElement);
+    // or this:
+    //   var doc = document.implementation.createDocument("", "", null);
+    
+    // so ...
+    var doc = document;
+
+    // first, turn that into a DOM tree    
+    var main = doc.createElement('div');
+    main.innerHTML = hmxp_str;
+    // we don't even need to parent it ...
+    //doc.appendChild(main);
+    //doc.body.appendChild(main);
+    
+    expand_macros();
+    return main.innerHTML;
+
+
+    function get_defs()
+    {
+	// FIXME warn about multiple definitions
+        var l = main.getElementsByTagName('def');
+	var defs = new Object();
+	for (var i = 0; i < l.length; i++)
+	{
+	    var d = l[i];
+	    // name is first attribute
+	    var name = d.attributes[0].name;
+	    //alert("added def " + name);
+	    defs[name] = d;
+	}
+	return defs;
+    }
+
+    function eval_tag_macro(macro, node, tag)
+    {
+	var div = doc.createElement('div');
+        var s = macro.innerHTML;
+	s = s.replace("<!--", "");
+	s = s.replace("-->", "");
+
+	// now substitute parameters
+	var a = macro.attributes;
+	for (var i = 1; i < a.length; i++)
+	{
+	    var name = a[i].name;
+	    var val = a[i].value; // macro default value
+	    if (node.hasAttribute(name))
+		val = node.getAttribute(name);
+	    else
+//		if (val == "")	    
+		{
+		    alert("<" + tag + "> tag: missing parameter '" + name + "'");
+		    return null;
+		}
+	    var pattern = new RegExp("{" + name + "}", 'g');
+	    s = s.replace(pattern, val);
+	}
+	
+	div.innerHTML = s;
+	//alert("after subst: " + s);
+	// alert("children: " + div.children.length);
+	return div;
+    }
+
+    function reparent_nodes(before, nodes, parent)
+    {
+	while (nodes.firstChild)
+	    parent.insertBefore(nodes.firstChild, before);
+    }
+
+    function replace_a_node(nodes, defs)
+    {
+        for (var i = 0; i < nodes.length; i++)
+	{		    
+	    var n = nodes[i];    
+	    var tag = n.tagName.toLowerCase();
+	    if (tag == 'def')	// remove def tags
+	    {
+		n.parentNode.removeChild(n);
+		return true;
+	    }
+	    if (defs[tag])
+	    {
+	        //alert("i have a def for " + n.tagName);
+
+		// we're not using closing tags, so our siblings end up as children. move them up
+		reparent_nodes(n.nextSibling, n, n.parentNode);
+		
+	        var subst = eval_tag_macro(defs[tag], n, tag);
+		reparent_nodes(n, subst, n.parentNode);
+		n.parentNode.removeChild(n);
+		return true;
+	    }
+	}
+	return false; // didn't do anything
+    }
+    
+    function expand_macros()
+    {
+        var defs = get_defs()
+	var nodes;
+	
+	do {
+	    nodes = main.getElementsByTagName('*');
+	} while (replace_a_node(nodes, defs));
+    }    
+}
+
+
+
+</script>
+
+
+</body>
+</html>

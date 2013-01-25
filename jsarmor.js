@@ -2213,20 +2213,25 @@ textarea		{ width:400px; height:300px; }  \n\
 ";
 
     var builtin_html = 
-'<table class="jsarmor_table">  \n\
-  <tr>  \n\
-    <td class="td_nsmenu">  \n\
-      <!-- menu goes here -->  \n\
-    </td>  \n\
-  </tr>  \n\
-  <tr>  \n\
-    <td>  \n\
-      <button class="jsarmor_button" >  \n\
-	<img class="filtered mode_icon">  \n\
-      </button>  \n\
-    </td>  \n\
-  </tr>  \n\
+'<!-- generated from jsarmor.ui, do not edit ! -->  \n\
+  \n\
+<table class="jsarmor_table">  \n\
+  <tbody>  \n\
+    <tr>  \n\
+      <td class="td_nsmenu">  \n\
+	<!-- menu goes here -->  \n\
+      </td>  \n\
+    </tr>  \n\
+    <tr>  \n\
+      <td>  \n\
+	<button class="jsarmor_button">  \n\
+	  <img class="filtered mode_icon">  \n\
+	</button>  \n\
+      </td>  \n\
+    </tr>  \n\
+  </tbody>  \n\
 </table>  \n\
+  \n\
   \n\
   \n\
   \n\
@@ -2235,30 +2240,28 @@ textarea		{ width:400px; height:300px; }  \n\
   <div class="jsarmor_title" title="jsarmor v2.0. Click to view global settings.">  \n\
     JSArmor</div>  \n\
   <div class="jsarmor_item scope">  \n\
-    Set for: <input type="radio" name="radio_group">  \n\
+    Set for:      <input type="radio" name="radio_group">  \n\
       <label>  \n\
-	Page </label>  \n\
+	Page</label>  \n\
       <input type="radio" name="radio_group">  \n\
 	<label>  \n\
-	  Site </label>  \n\
+	  Site</label>  \n\
 	<input type="radio" name="radio_group">  \n\
 	  <label>  \n\
-	    Domain </label>  \n\
+	    Domain</label>  \n\
 	  <input type="radio" name="radio_group">  \n\
 	    <label>  \n\
-	      Global </label>  \n\
+	      Global</label>  \n\
   </div>  \n\
   <div class="mode_block_all jsarmor_item highlight" title="Block all scripts.">  \n\
     <img class="block_all">  \n\
       Block All</div>  \n\
-  <div class="block_inline jsarmor_item indent1 highlight" style="display:none;">  \n\
+  <div class="block_inline jsarmor_item indent1 highlight">  \n\
     <input type="checkbox" checked="true">  \n\
       Block Inline Scripts<div class="inline_script_size">  \n\
 	[0.1k]</div>  \n\
   </div>  \n\
-  <div class="handle_nstags jsarmor_item indent1 highlight"  \n\
-       title="Interpret noscript tags as if javascript was disabled  \n\
-	      in opera." style="display:none;" >  \n\
+  <div class="handle_nstags jsarmor_item indent1 highlight" title="Interpret noscript tags as if javascript was disabled in opera.">  \n\
     <input type="checkbox" checked="true">  \n\
       Pretend Javascript Disabled</div>  \n\
   <div class="mode_filtered jsarmor_item highlight" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">  \n\
@@ -2274,11 +2277,9 @@ textarea		{ width:400px; height:300px; }  \n\
   <div class="details_item jsarmor_item highlight">  \n\
     Details ...</div>  \n\
 </div>  \n\
-  \n\
-  \n\
-  \n\
 <!-- host table -->  \n\
-  <table class="jsarmor_ftable">  \n\
+<table class="jsarmor_ftable">  \n\
+  <tbody>  \n\
     <tr class="highlight">  \n\
       <td width="1%">  \n\
 	&nbsp;&nbsp;</td>  \n\
@@ -2299,7 +2300,11 @@ textarea		{ width:400px; height:300px; }  \n\
       <td width="1%" class="script_count">  \n\
 	[1]</td>  \n\
     </tr>  \n\
-  </table>  \n\
+  </tbody>  \n\
+</table>  \n\
+<!----------------------------------- definitions ---------------------------------->  \n\
+<!--------------------------- low level building blocks ---------------------------->  \n\
+  \n\
 ';
 
     
