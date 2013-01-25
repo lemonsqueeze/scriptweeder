@@ -34,7 +34,7 @@ html macros on this one.
 <button onclick="clearit()" >Clear</button>
 <button onclick="doit()" >Generate html !</button>
 <p></p>
-Result:<br>
+<button onclick="saveit()">Save Result</button><br>
 <textarea rows=24 cols=70 id="html" spellcheck="false"></textarea>
 
 <script>
@@ -53,6 +53,13 @@ function doit()
     layout = "<!-- generated from jsarmor.ui, do not edit ! -->\n" + hmxp(layout);
     var output = document.getElementById('html');
     output.innerText = layout;
+}
+
+function saveit()
+{
+    var res = document.getElementById('html').innerText;
+    var url = "data:application/binary;base64," + btoa(res);
+    location.href = url;
 }
 
 // expand html macros
