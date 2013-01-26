@@ -10,113 +10,52 @@
 --></def>
 
 
-<table class="jsarmor_table">
-  <tr>
-    <td class="td_nsmenu">
-      <!-- menu goes here -->
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <button class="jsarmor_button" >
-	<img class="filtered mode_icon">
-      </button>
-    </td>
-  </tr>
-</table>
-
-
-<!-- main menu -->
-<div class="jsarmor_menu">
-  <div class="jsarmor_title" title="jsarmor v2.0. Click to view global settings.">
-    JSArmor</div>
-  <scope_widget>
-  <mode_menu_item mode="block_all" label="Block All" title="Block all scripts.">
-  <block_inline_scripts>
-  <handle_noscript_tags>
-  <mode_menu_item mode="filtered" label="Filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">
-  <!-- host table could go here -->
-  <mode_menu_item mode="relaxed" label="Relaxed" title="Allow related and helper domains.">
-  <mode_menu_item mode="allow_all" label="Allow All" title="Allow everything ...">
-  <menu_item class="details_item" label="Details ...">
+<!-- main ui -->
+<div id="main" class="menu_parent">
+  <div id="main_button" >
+    <button><img></button>
+  </div>
 </div>
 
 
-<!-- host table -->
-  <table class="jsarmor_ftable">
-    <tr class="highlight">
-      <td width="1%">
-	&nbsp;&nbsp;</td>
-      <td width="1%">
-      </td>
-      <td width="1%">
-	<input type="checkbox" checked="true">
-      </td>
-      <td width="1%" class="host_part">
-	code.</td>
-      <td class="domain_part helper_host">
-	jquery.com</td>
-      <td width="1%">
-      </td>
-      <td width="1%">
-	<img title="Allowed Globally" class="global_icon visible">
-      </td>
-      <td width="1%" class="script_count">
-	[1]</td>
-    </tr>
-  </table>
+<!-- main menu -->
+<div id="main_menu" class="menu" >
+  <menu_title label="JSArmor">
+  <ul>
+    <scope>
+    <mode_menu_item mode="block_all" label="Block All" title="Block all scripts." >
+    <mode_menu_item mode="filtered" label="Filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" >
+    <mode_menu_item mode="relaxed" label="Relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" >
+    <mode_menu_item mode="allow_all" label="Allow All" title="Allow everything…" >
+    <menu_item id="details_item" label="Details…">
+  </ul>
+</div>
 
 
+<!-------------------------------------- low level building blocks ---------------------------------------->
 
-<!----------------------------------- definitions ---------------------------------->
+<def menu_title label ><!--
+  <h1 id="title">{label}</h1>
+--></def>
 
-<def scope_widget ><!--
-  <div class="jsarmor_item scope">Set for:
-    <radio_button label="Page" >
-    <radio_button label="Site" >
-    <radio_button label="Domain" >
-    <radio_button label="Global" >
-  </div>
+<def menu_item id label ><!--
+  <li id="{id}">{label}</li>
 --></def>
 
 <def mode_menu_item mode label title ><!--
-  <div class="mode_{mode} jsarmor_item highlight" title="{title}">
-    <img class="{mode}">{label}</div>
+  <li class="{mode}" title="{title}">{label}</li>
 --></def>
 
-
-<def block_inline_scripts ><!--
-  <div class="block_inline jsarmor_item indent1 highlight" >
-    <input type="checkbox" checked="true">
-      Block Inline Scripts<div class="inline_script_size">
-	[0.1k]</div>
-  </div>
---></def> 
-
-<def handle_noscript_tags ><!--
-  <checkbox_item class="handle_nstags" var="handle_noscript_tags" label="Pretend Javascript Disabled" title="Interpret noscript tags as if javascript was disabled in opera.">
---></def> 
-
-
-<!--------------------------- low level building blocks ---------------------------->
+<def scope><!--
+  <li id="scope">Set for:
+    <radio_button label="Page">
+    <radio_button label="Site">
+    <radio_button label="Domain">
+    <radio_button label="Global">
+  </li>
+--></def>
 
 <def radio_button label ><!--
-  <input type="radio" name="radio_group">
-      <label>{label}</label>
+  <input type="radio" name="radio_group"><label> {label} </label>
 --></def>
 
-
-<def checkbox_item class var label title ><!--
-  <handler init="alert('in init handler!')" >
-  <div class="{class} jsarmor_item indent1 highlight" title="{title}" >
-    <input type="checkbox" checked="true">{label}</div>
---></def>
-
-<def menu_item class label ><!--
-  <div class="{class} jsarmor_item highlight">{label}</div>
---></def>
-
-
-<def handler ><!--
-  <hdlr {@} ></hdlr>
---></def>

@@ -1,86 +1,42 @@
 <!-- generated from jsarmor.ui, do not edit ! -->
-<table class="jsarmor_table">
-  <tbody>
-<tr>
-    <td class="td_nsmenu">
-      <!-- menu goes here -->
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <button class="jsarmor_button">
-	<img class="filtered mode_icon">
-      </button>
-    </td>
-  </tr>
-</tbody>
-</table>
-<!-- main menu -->
-<div class="jsarmor_menu">
-  <div class="jsarmor_title" title="jsarmor v2.0. Click to view global settings.">
-    JSArmor</div>
-    <div class="jsarmor_item scope">
-Set for:      <input type="radio" name="radio_group">
-      <label>
-Page</label>
-      <input type="radio" name="radio_group">
-      <label>
-Site</label>
-      <input type="radio" name="radio_group">
-      <label>
-Domain</label>
-      <input type="radio" name="radio_group">
-      <label>
-Global</label>
+<!-- main ui -->
+<div id="main" class="menu_parent">
+  <div id="main_button">
+    <button>
+<img>
+</button>
   </div>
-    <div class="mode_block_all jsarmor_item highlight" title="Block all scripts.">
-    <img class="block_all">
-Block All</div>
-    <div class="block_inline jsarmor_item indent1 highlight">
-    <input type="checkbox" checked="true">
-      Block Inline Scripts<div class="inline_script_size">
-	[0.1k]</div>
-  </div>
-  <div class="handle_nstags jsarmor_item indent1 highlight" title="Interpret noscript tags as if javascript was disabled in opera.">
-    <input type="checkbox" checked="true">
-Pretend Javascript Disabled</div>
-    <div class="mode_filtered jsarmor_item highlight" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">
-    <img class="filtered">
-Filtered</div>
-  <!-- host table could go here -->
-    <div class="mode_relaxed jsarmor_item highlight" title="Allow related and helper domains.">
-    <img class="relaxed">
-Relaxed</div>
-    <div class="mode_allow_all jsarmor_item highlight" title="Allow everything ...">
-    <img class="allow_all">
-Allow All</div>
-    <div class="details_item jsarmor_item highlight">
-Details ...</div>
 </div>
-<!-- host table -->
-  <table class="jsarmor_ftable">
-    <tbody>
-<tr class="highlight">
-      <td width="1%">
-	&nbsp;&nbsp;</td>
-      <td width="1%">
-      </td>
-      <td width="1%">
-	<input type="checkbox" checked="true">
-      </td>
-      <td width="1%" class="host_part">
-	code.</td>
-      <td class="domain_part helper_host">
-	jquery.com</td>
-      <td width="1%">
-      </td>
-      <td width="1%">
-	<img title="Allowed Globally" class="global_icon visible">
-      </td>
-      <td width="1%" class="script_count">
-	[1]</td>
-    </tr>
-  </tbody>
-</table>
-<!----------------------------------- definitions ---------------------------------->
-  <!--------------------------- low level building blocks ---------------------------->
+<!-- main menu -->
+<div id="main_menu" class="menu">
+    <h1 id="title">
+JSArmor</h1>
+  <ul>
+      <li id="scope">
+Set for:      <input type="radio" name="radio_group">
+<label>
+ Page </label>
+      <input type="radio" name="radio_group">
+<label>
+ Site </label>
+      <input type="radio" name="radio_group">
+<label>
+ Domain </label>
+      <input type="radio" name="radio_group">
+<label>
+ Global </label>
+  </li>
+      <li class="block_all" title="Block all scripts.">
+Block All</li>
+      <li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">
+Filtered</li>
+      <li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">
+Relaxed</li>
+      <li class="allow_all" title="Allow everything…">
+Allow All</li>
+      <li id="details_item">
+Details…</li>
+  </ul>
+</div>
+<!-------------------------------------- low level building blocks ---------------------------------------->
+

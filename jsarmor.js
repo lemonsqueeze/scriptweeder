@@ -1180,7 +1180,7 @@
 	idoc.body.className = "body";
     }
 
-    // find element in parent with that class_name
+    // find element in parent with that id or class_name
     function get_widget(parent, class_name)
     {
 	return _get_widget(parent, class_name, false, "get_widget");
@@ -1200,7 +1200,12 @@
 
     function _get_widget(parent, class_name, unique, fname)
     {
-    	var l = getElementsByClassName(parent, class_name);
+	var id = get_by_id(parent, class_name);
+	if (id)
+	    return id;
+	
+	// try className then ...
+	var l = getElementsByClassName(parent, class_name);
 	if (l.length == 1)
 	    return l[0];
 	if (!l.length)
@@ -1225,6 +1230,31 @@
 	return w;
     }
 
+    function get_root_node(n)
+    {
+	var p = null;
+	for (; n && p != n; n = n.parentNode)
+	    p = n;
+	return n;
+    }
+
+    // FIXME, optimize all this
+    function get_by_id(parent, id)
+    {
+	var root_node = get_root_node(parent);
+	if (root_node && element_tag_is(root_node, "html"))
+	    return idoc.getElementById(id);
+
+	// unparented, do it by hand ...
+	if (!parent)
+	    alert("parent is null !!");
+	l = parent.getElementsByTagName("*");
+	for (var i = 0; i < l.length; i++)
+	    if (l[i].id == id)
+		return l[i];
+	return null;
+    }
+
     function getElementsByClassName(node, classname)
     {
 	if (node.getElementsByClassName) { // use native implementation if available
@@ -1232,12 +1262,16 @@
 	} else {
 	    return (function getElementsByClass(searchClass,node) {
 		    if ( node == null )
-			node = document;
-		    var classElements = [],
-		    els = node.getElementsByTagName("*"),
-		    elsLen = els.length,
-		    pattern = new RegExp("(^|\\s)"+searchClass+"(\\s|$)"), i, j;
-		    
+			node = idoc;
+		    var pattern = new RegExp("(^|\\s)"+searchClass+"(\\s|$)"), i, j;
+
+		    // does parent itself match ?
+		    if (pattern.test(node.className))
+			return [node];
+			
+		    var classElements = [];
+		    var els = node.getElementsByTagName("*");
+		    var elsLen = els.length;
 		    for (i = 0, j = 0; i < elsLen; i++) {
 			if ( pattern.test(els[i].className) ) {
 			    classElements[j] = els[i];
@@ -1375,7 +1409,7 @@
     function add_menu_item(nsmenu, text, indent, f, child)
     {
       var item = idoc.createElement('div');
-      item.className = 'jsarmor_item';
+      item.className = 'menu_item';
       if (child)
 	  item.appendChild(child);
       if (indent)				// CSSFIXME find a better way
@@ -1383,7 +1417,7 @@
       item.innerHTML += text;
       if (f)
       {
-	  item.className += " highlight";
+	  item.className += " active";
 	  item.onclick = f;
       }
       // make text non selectable
@@ -1397,7 +1431,7 @@
 	var handler = function() { set_mode(tmode); };
 	var item = add_menu_item(nsmenu, title, 0, handler, new_icon_mode(tmode));
 	if (mode == tmode)
-	    item.className = " current_mode";
+	    item.className = " selected";
 	return item;
     }
 
@@ -1426,14 +1460,14 @@
 	s += "<td width=1%>" + to_html(col6) + "</td>";
 	s += "<td width=1%>" + to_html(col7) + "</td>";
 	tr.innerHTML = s;
-	tr.childNodes[3].className = 'host_part';
-	tr.childNodes[4].className = 'domain_part';
+	tr.childNodes[3].className = 'host';
+	tr.childNodes[4].className = 'domain';
 	if (helper_host)
-	    tr.childNodes[4].className += ' helper_host';
+	    tr.childNodes[4].className += ' helper';
 	tr.childNodes[7].className = 'script_count';
 	if (f)
 	{
-	    tr.className = 'highlight';
+	    tr.className = 'active';
 	    tr.onclick = f;
 	}
 	// make text non selectable
@@ -1550,7 +1584,7 @@
     function init_global_icon(icon, host)
     {
 	icon.title = "Allowed Globally";
-	icon.className = 'global_icon';
+	icon.className = 'img_global';
 	if (host_allowed_globally(host))
 	    icon.className += ' visible';	
     }
@@ -1559,7 +1593,7 @@
     {
       block_inline_scripts = !block_inline_scripts;
       this.checkbox.checked = block_inline_scripts;
-      get_widget(nsmenu, "handle_nstags").style.display = (block_inline_scripts ? 'block' : 'none');
+      get_widget(nsmenu, "handle_noscript_tags").style.display = (block_inline_scripts ? 'block' : 'none');
       set_bool_setting('inline', block_inline_scripts);
       need_reload = true;
     }
@@ -1806,11 +1840,11 @@
     function new_menu(title)
     {
 	var menu = idoc.createElement('div');
-	menu.className = 'jsarmor_menu';
+	menu.className = 'main_menu';
 	if (title != "")
 	{
 	    var item = add_menu_item(menu, title);
-	    item.className = 'jsarmor_title';
+	    item.className = 'title';
 	}	
 	return menu;
     }
@@ -1820,7 +1854,7 @@
 
     function create_menu()
     {
-	nsmenu = new_widget("jsarmor_menu");
+	nsmenu = new_widget("main_menu");
 	nsmenu.style.display = 'none';
 	
 	nsmenu.onmouseout = function(e)
@@ -1832,7 +1866,7 @@
 	      reload_page();
 	};
 
-	var title = get_widget(nsmenu, "jsarmor_title");
+	var title = get_widget(nsmenu, "title");
 	title.title = version;
 
 	var scope_item = get_widget(nsmenu, "scope");
@@ -1840,14 +1874,14 @@
 
 	if (mode == 'block_all')
 	{	
-	    var w = get_widget(nsmenu, "block_inline");
+	    var w = get_widget(nsmenu, "block_inline_scripts");
 	    w.style = "display:block;";	    
 	    setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);
 
-	    var w = get_widget(nsmenu, "inline_script_size");
+	    var w = get_widget(nsmenu, "inline_scripts_size");
 	    w.innerText = " [" + get_size_kb(total_inline_size) + "k]";
 
-	    var w = get_widget(nsmenu, "handle_nstags");
+	    var w = get_widget(nsmenu, "handle_noscript_tags");
 	    setup_checkbox_item(w, handle_noscript_tags, toggle_handle_noscript_tags);
 	    if (block_inline_scripts)
 		w.style = "display:block;";
@@ -1862,9 +1896,9 @@
 	for (var i = 0; i < modes.length; i++)
 	{
 	    // get item for this mode, wherever it is.
-	    var w = get_widget(nsmenu, "mode_" + modes[i]);
+	    var w = get_widget(nsmenu, modes[i]);
 	    if (modes[i] == mode)
-		w.className = "current_mode";
+		w.className = "selected";
 	    else
 		setup_mode_item_handler(w, modes[i]);
 
@@ -1888,8 +1922,10 @@
 
     function parent_menu()
     {
-	var td = get_widget(main_ui, "td_nsmenu");
-	td.appendChild(nsmenu);		
+	// var p = get_widget(main_ui, "menu_parent");
+	//main_ui.appendChild(nsmenu);
+	var button = get_widget(main_ui, "main_button");
+	main_ui.insertBefore(nsmenu, button);
     }
 
     function show_hide_menu(show, toggle)
@@ -2051,14 +2087,12 @@
     var main_ui = null;
     function create_main_ui()
     {
-	main_ui = new_widget("jsarmor_table");
+	main_ui = new_widget("main");
 	
-	var b = get_widget(main_ui, "jsarmor_button");	
+	var b = get_widget(main_ui, "main_button");
+	//set_icon_mode(b, mode);
 	var tooltip = main_button_tooltip();	
 	b.title = tooltip;
-
-	var i = get_widget(main_ui, "mode_icon");
-	set_icon_mode(i, mode);
 
 	b.onmouseover = function()
 	{
@@ -2122,65 +2156,41 @@
 
     var builtin_style = 
 "/* jsarmor stylesheet */  \n\
-  \n\
 body			{ margin:0px; }  \n\
-  \n\
-/* the main table: contains everything (main button, menu ...)  */  \n\
-.jsarmor_table		{ position:fixed; width:auto; height:auto; background:transparent;   \n\
+#main			{ position:fixed; width:auto; height:auto; background:transparent;   \n\
 			  white-space:nowrap; z-index:99999999; direction:ltr; font-family:sans-serif;    \n\
-			  font-size:small;  margin-bottom:0px;   \n\
-			}  \n\
-.jsarmor_table > tbody > tr > td { text-align: right; padding: 0px 0px 0px 0px;}  \n\
-.jsarmor_table div	{ width: auto; }   \n\
+			  font-size:small;  margin-bottom:0px; }  \n\
   \n\
 /* main button */  \n\
-.jsarmor_button		{ border-width: 2px; padding: 1px 8px; margin: 0px 0px 0px 0px; float: none; }   \n\
+#main_button		{ direction:rtl; border-width: 2px; margin: 0; float: none; }   \n\
   \n\
 /*************************************************************************************************************/  \n\
   \n\
-/* main menu */  \n\
-.jsarmor_menu		{ color: #333; border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;  \n\
-			  background: #ccc;  padding: 1px 1px; text-align:left;  \n\
-			  box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);  \n\
-			}  \n\
-.jsarmor_menu div	{ padding:0px 1px 0px 1px; }   \n\
-.jsarmor_title		{ color:#ffffff; font-weight:bold; text-align:center; background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAYCAYAAAA7zJfaAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90BFRUGLEa8gbIAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAUElEQVQI102KOwqAQBDFsm+9/3Fs9RqChdgIVjYi6nxsLLYJCYSc+xTLgFhHhD8t0m5kAQo39Jojj0RuLzquQLUkUuG3qtJmJ9plOyua9uADjaopUrsHkrMAAAAASUVORK5CYII=) repeat-x; }   \n\
-  \n\
 /* host table */  \n\
-.jsarmor_ftable		{ width:100%; }   \n\
-.jsarmor_ftable > tbody > tr > td	{ padding: 0px 0px 1px 0px;}   \n\
+#jsarmor_ftable		{ width:100%; }   \n\
+#jsarmor_ftable > tr > td	{ padding: 0px 0px 1px 0px;}   \n\
   \n\
 /* menu items */  \n\
+/*  \n\
 .indent1		{ padding-left:12px }  \n\
 .indent2		{ padding-left:22px }  \n\
-.highlight:hover	{ background-color:#ddd; }  \n\
+*/  \n\
+.active:hover		{ background-color:#ddd; }  \n\
   \n\
-/* mode menu item */  \n\
-.current_mode		{ background-color:#fa4 }  \n\
   \n\
 /* hostnames display */  \n\
 .host_part		{ color:#888; text-align:right; }  \n\
-.helper_host		{ color:#000; }  \n\
+.helper			{ color:#000; }  \n\
 .script_count		{ text-align:right; }  \n\
 .inline_script_size	{ float:right; }  \n\
   \n\
 /* 'script allowed globally' icon */  \n\
-.global_icon		{ visibility:hidden; padding: 0px 3px; width:14px; height:14px; vertical-align:middle;  \n\
+.img_global		{ visibility:hidden; padding: 0px 3px; width:14px; height:14px; vertical-align:middle;  \n\
 			  background-size:contain;   \n\
 			  background:-o-skin('RSS'); }  \n\
-.global_icon.visible	{ visibility:visible; }  \n\
-td:hover > .global_icon	{ visibility:visible; }   \n\
+.img_global.visible	{ visibility:visible; }  \n\
+td:hover > .img_global	{ visibility:visible; }   \n\
   \n\
-/*************************************************************************************************************/  \n\
-/* Options menu */  \n\
-  \n\
-.options_menu		{ min-width:250px; }  \n\
-  \n\
-.separator	{ height: 1px; display: block; background-color: #555555; margin-left: auto; margin-right: auto; }  \n\
-  \n\
-/* import file (make form and button look like a menuitem) */  \n\
-.import_form	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }  \n\
-.import_btn	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }  \n\
   \n\
 /*************************************************************************************************************/  \n\
 /* generic stuff */  \n\
@@ -2197,8 +2207,8 @@ input[type=radio] + label		{ box-shadow:inset 0px 1px 0px 0px #ffffff; border-ra
 input[type=radio]:checked + label	{ background-color: #fa4; }   \n\
   \n\
 /* icons */  \n\
-img { width:22px; height:22px; vertical-align:middle; background-size:contain; }  \n\
-  \n\
+/*img { width:22px; height:22px; vertical-align:middle; background-size:contain; } */  \n\
+/*  \n\
 img.allowed		{ background:-o-skin('Transfer Success'); }  \n\
 img.blocked		{ background:-o-skin('Transfer Stopped'); }  \n\
 img.not_loaded		{ background:-o-skin('Transfer Size Mismatch'); }  \n\
@@ -2208,102 +2218,96 @@ img.block_all		{ background:-o-skin('Smiley Pacman'); }  \n\
 img.filtered		{ background:-o-skin('Smiley Cool'); }  \n\
 img.relaxed		{ background:-o-skin('Smiley Tongue'); }  \n\
 img.allow_all		{ background:-o-skin('Smiley Cry'); }  \n\
+*/  \n\
   \n\
-textarea		{ width:400px; height:300px; }  \n\
+.menu {  \n\
+	padding: 1px 1px; text-align:left;  \n\
+	box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);  \n\
+	border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;  \n\
+	display:table;  \n\
+	font-size:small;  \n\
+}  \n\
+.menu, #jsarmor_ftable { background: #ccc; }  \n\
+  \n\
+/* title */  \n\
+h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
+	  margin:0;  \n\
+	  background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAYCAYAAAA7zJfaAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90BFRUGLEa8gbIAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAUElEQVQI102KOwqAQBDFsm+9/3Fs9RqChdgIVjYi6nxsLLYJCYSc+xTLgFhHhD8t0m5kAQo39Jojj0RuLzquQLUkUuG3qtJmJ9plOyua9uADjaopUrsHkrMAAAAASUVORK5CYII=) repeat-x;}  \n\
+  \n\
+.menu ul			{ padding:0; margin:0 }  \n\
+.menu ul ul			{ margin-left:1em }  \n\
+.menu li			{ list-style:none }  \n\
+.menu > ul > li:hover		{ background:#ddd }  \n\
+.menu > ul > li:first-child	{ background:inherit }  \n\
+  \n\
+/* mode menu item */  \n\
+.selected, .selected:hover {  \n\
+	background-color: #fa4;  \n\
+	padding: 1px; /* for highlighting */  \n\
+}  \n\
+  \n\
+/*  \n\
+li.allowed::before, li.blocked::before, li.not_loaded::before, li.iframe::before, li.allowed_globally::before,  \n\
+li.block_all::before, li.filtered::before, li.relaxed::before, li.allow_all::before {transform:scale(1.1); display:inline-block; vertical-align:middle}  \n\
+  \n\
+li.allowed::before		{ content:-o-skin('Transfer Success'); }  \n\
+li.blocked::before		{ content:-o-skin('Transfer Stopped'); }  \n\
+li.not_loaded::before		{ content:-o-skin('Transfer Size Mismatch'); }  \n\
+li.iframe::before		{ content:-o-skin('Menu Info'); }  \n\
+li.allowed_globally::before	{ content:-o-skin('RSS'); }  \n\
+*/  \n\
+li.block_all::before		{ content:-o-skin('Smiley Pacman');}  \n\
+li.filtered::before		{ content:-o-skin('Smiley Cool'); }  \n\
+li.relaxed::before		{ content:-o-skin('Smiley Tongue'); }  \n\
+li.allow_all::before		{ content:-o-skin('Smiley Cry'); }  \n\
+  \n\
+  \n\
+/* #main_button img { background:-o-skin('Smiley Tongue'); } */  \n\
+  \n\
 ";
 
     var builtin_html = 
 '<!-- generated from jsarmor.ui, do not edit ! -->  \n\
-  \n\
-<table class="jsarmor_table">  \n\
-  <tbody>  \n\
-    <tr>  \n\
-      <td class="td_nsmenu">  \n\
-	<!-- menu goes here -->  \n\
-      </td>  \n\
-    </tr>  \n\
-    <tr>  \n\
-      <td>  \n\
-	<button class="jsarmor_button">  \n\
-	  <img class="filtered mode_icon">  \n\
-	</button>  \n\
-      </td>  \n\
-    </tr>  \n\
-  </tbody>  \n\
-</table>  \n\
-  \n\
-  \n\
-  \n\
-  \n\
-<!-- main menu -->  \n\
-<div class="jsarmor_menu">  \n\
-  <div class="jsarmor_title" title="jsarmor v2.0. Click to view global settings.">  \n\
-    JSArmor</div>  \n\
-  <div class="jsarmor_item scope">  \n\
-    Set for:      <input type="radio" name="radio_group">  \n\
-      <label>  \n\
-	Page</label>  \n\
-      <input type="radio" name="radio_group">  \n\
-	<label>  \n\
-	  Site</label>  \n\
-	<input type="radio" name="radio_group">  \n\
-	  <label>  \n\
-	    Domain</label>  \n\
-	  <input type="radio" name="radio_group">  \n\
-	    <label>  \n\
-	      Global</label>  \n\
+<!-- main ui -->  \n\
+<div id="main" class="menu_parent">  \n\
+  <div id="main_button">  \n\
+    <button>  \n\
+<img>  \n\
+</button>  \n\
   </div>  \n\
-  <div class="mode_block_all jsarmor_item highlight" title="Block all scripts.">  \n\
-    <img class="block_all">  \n\
-      Block All</div>  \n\
-  <div class="block_inline jsarmor_item indent1 highlight">  \n\
-    <input type="checkbox" checked="true">  \n\
-      Block Inline Scripts<div class="inline_script_size">  \n\
-	[0.1k]</div>  \n\
-  </div>  \n\
-  <div class="handle_nstags jsarmor_item indent1 highlight" title="Interpret noscript tags as if javascript was disabled in opera.">  \n\
-    <input type="checkbox" checked="true">  \n\
-      Pretend Javascript Disabled</div>  \n\
-  <div class="mode_filtered jsarmor_item highlight" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">  \n\
-    <img class="filtered">  \n\
-      Filtered</div>  \n\
-  <!-- host table could go here -->  \n\
-  <div class="mode_relaxed jsarmor_item highlight" title="Allow related and helper domains.">  \n\
-    <img class="relaxed">  \n\
-      Relaxed</div>  \n\
-  <div class="mode_allow_all jsarmor_item highlight" title="Allow everything ...">  \n\
-    <img class="allow_all">  \n\
-      Allow All</div>  \n\
-  <div class="details_item jsarmor_item highlight">  \n\
-    Details ...</div>  \n\
 </div>  \n\
-<!-- host table -->  \n\
-<table class="jsarmor_ftable">  \n\
-  <tbody>  \n\
-    <tr class="highlight">  \n\
-      <td width="1%">  \n\
-	&nbsp;&nbsp;</td>  \n\
-      <td width="1%">  \n\
-      </td>  \n\
-      <td width="1%">  \n\
-	<input type="checkbox" checked="true">  \n\
-      </td>  \n\
-      <td width="1%" class="host_part">  \n\
-	code.</td>  \n\
-      <td class="domain_part helper_host">  \n\
-	jquery.com</td>  \n\
-      <td width="1%">  \n\
-      </td>  \n\
-      <td width="1%">  \n\
-	<img title="Allowed Globally" class="global_icon visible">  \n\
-      </td>  \n\
-      <td width="1%" class="script_count">  \n\
-	[1]</td>  \n\
-    </tr>  \n\
-  </tbody>  \n\
-</table>  \n\
-<!----------------------------------- definitions ---------------------------------->  \n\
-<!--------------------------- low level building blocks ---------------------------->  \n\
+<!-- main menu -->  \n\
+<div id="main_menu" class="menu">  \n\
+    <h1 id="title">  \n\
+JSArmor</h1>  \n\
+  <ul>  \n\
+      <li id="scope">  \n\
+Set for:      <input type="radio" name="radio_group">  \n\
+<label>  \n\
+ Page </label>  \n\
+      <input type="radio" name="radio_group">  \n\
+<label>  \n\
+ Site </label>  \n\
+      <input type="radio" name="radio_group">  \n\
+<label>  \n\
+ Domain </label>  \n\
+      <input type="radio" name="radio_group">  \n\
+<label>  \n\
+ Global </label>  \n\
+  </li>  \n\
+      <li class="block_all" title="Block all scripts.">  \n\
+Block All</li>  \n\
+      <li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">  \n\
+Filtered</li>  \n\
+      <li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">  \n\
+Relaxed</li>  \n\
+      <li class="allow_all" title="Allow everything…">  \n\
+Allow All</li>  \n\
+      <li id="details_item">  \n\
+Details…</li>  \n\
+  </ul>  \n\
+</div>  \n\
+<!-------------------------------------- low level building blocks ---------------------------------------->  \n\
   \n\
 ';
 

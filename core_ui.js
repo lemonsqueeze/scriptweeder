@@ -64,7 +64,7 @@
 	idoc.body.className = "body";
     }
 
-    // find element in parent with that class_name
+    // find element in parent with that id or class_name
     function get_widget(parent, class_name)
     {
 	return _get_widget(parent, class_name, false, "get_widget");
@@ -84,7 +84,12 @@
 
     function _get_widget(parent, class_name, unique, fname)
     {
-    	var l = getElementsByClassName(parent, class_name);
+	var id = get_by_id(parent, class_name);
+	if (id)
+	    return id;
+	
+	// try className then ...
+	var l = getElementsByClassName(parent, class_name);
 	if (l.length == 1)
 	    return l[0];
 	if (!l.length)
@@ -109,6 +114,31 @@
 	return w;
     }
 
+    function get_root_node(n)
+    {
+	var p = null;
+	for (; n && p != n; n = n.parentNode)
+	    p = n;
+	return n;
+    }
+
+    // FIXME, optimize all this
+    function get_by_id(parent, id)
+    {
+	var root_node = get_root_node(parent);
+	if (root_node && element_tag_is(root_node, "html"))
+	    return idoc.getElementById(id);
+
+	// unparented, do it by hand ...
+	if (!parent)
+	    alert("parent is null !!");
+	l = parent.getElementsByTagName("*");
+	for (var i = 0; i < l.length; i++)
+	    if (l[i].id == id)
+		return l[i];
+	return null;
+    }
+
     function getElementsByClassName(node, classname)
     {
 	if (node.getElementsByClassName) { // use native implementation if available
@@ -116,12 +146,16 @@
 	} else {
 	    return (function getElementsByClass(searchClass,node) {
 		    if ( node == null )
-			node = document;
-		    var classElements = [],
-		    els = node.getElementsByTagName("*"),
-		    elsLen = els.length,
-		    pattern = new RegExp("(^|\\s)"+searchClass+"(\\s|$)"), i, j;
-		    
+			node = idoc;
+		    var pattern = new RegExp("(^|\\s)"+searchClass+"(\\s|$)"), i, j;
+
+		    // does parent itself match ?
+		    if (pattern.test(node.className))
+			return [node];
+			
+		    var classElements = [];
+		    var els = node.getElementsByTagName("*");
+		    var elsLen = els.length;
 		    for (i = 0, j = 0; i < elsLen; i++) {
 			if ( pattern.test(els[i].className) ) {
 			    classElements[j] = els[i];

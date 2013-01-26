@@ -55,7 +55,7 @@
     function add_menu_item(nsmenu, text, indent, f, child)
     {
       var item = idoc.createElement('div');
-      item.className = 'jsarmor_item';
+      item.className = 'menu_item';
       if (child)
 	  item.appendChild(child);
       if (indent)				// CSSFIXME find a better way
@@ -63,7 +63,7 @@
       item.innerHTML += text;
       if (f)
       {
-	  item.className += " highlight";
+	  item.className += " active";
 	  item.onclick = f;
       }
       // make text non selectable
@@ -77,7 +77,7 @@
 	var handler = function() { set_mode(tmode); };
 	var item = add_menu_item(nsmenu, title, 0, handler, new_icon_mode(tmode));
 	if (mode == tmode)
-	    item.className = " current_mode";
+	    item.className = " selected";
 	return item;
     }
 
@@ -106,14 +106,14 @@
 	s += "<td width=1%>" + to_html(col6) + "</td>";
 	s += "<td width=1%>" + to_html(col7) + "</td>";
 	tr.innerHTML = s;
-	tr.childNodes[3].className = 'host_part';
-	tr.childNodes[4].className = 'domain_part';
+	tr.childNodes[3].className = 'host';
+	tr.childNodes[4].className = 'domain';
 	if (helper_host)
-	    tr.childNodes[4].className += ' helper_host';
+	    tr.childNodes[4].className += ' helper';
 	tr.childNodes[7].className = 'script_count';
 	if (f)
 	{
-	    tr.className = 'highlight';
+	    tr.className = 'active';
 	    tr.onclick = f;
 	}
 	// make text non selectable
@@ -230,7 +230,7 @@
     function init_global_icon(icon, host)
     {
 	icon.title = "Allowed Globally";
-	icon.className = 'global_icon';
+	icon.className = 'img_global';
 	if (host_allowed_globally(host))
 	    icon.className += ' visible';	
     }
@@ -239,7 +239,7 @@
     {
       block_inline_scripts = !block_inline_scripts;
       this.checkbox.checked = block_inline_scripts;
-      get_widget(nsmenu, "handle_nstags").style.display = (block_inline_scripts ? 'block' : 'none');
+      get_widget(nsmenu, "handle_noscript_tags").style.display = (block_inline_scripts ? 'block' : 'none');
       set_bool_setting('inline', block_inline_scripts);
       need_reload = true;
     }
@@ -486,11 +486,11 @@
     function new_menu(title)
     {
 	var menu = idoc.createElement('div');
-	menu.className = 'jsarmor_menu';
+	menu.className = 'main_menu';
 	if (title != "")
 	{
 	    var item = add_menu_item(menu, title);
-	    item.className = 'jsarmor_title';
+	    item.className = 'title';
 	}	
 	return menu;
     }
@@ -500,7 +500,7 @@
 
     function create_menu()
     {
-	nsmenu = new_widget("jsarmor_menu");
+	nsmenu = new_widget("main_menu");
 	nsmenu.style.display = 'none';
 	
 	nsmenu.onmouseout = function(e)
@@ -512,7 +512,7 @@
 	      reload_page();
 	};
 
-	var title = get_widget(nsmenu, "jsarmor_title");
+	var title = get_widget(nsmenu, "title");
 	title.title = version;
 
 	var scope_item = get_widget(nsmenu, "scope");
@@ -520,14 +520,14 @@
 
 	if (mode == 'block_all')
 	{	
-	    var w = get_widget(nsmenu, "block_inline");
+	    var w = get_widget(nsmenu, "block_inline_scripts");
 	    w.style = "display:block;";	    
 	    setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);
 
-	    var w = get_widget(nsmenu, "inline_script_size");
+	    var w = get_widget(nsmenu, "inline_scripts_size");
 	    w.innerText = " [" + get_size_kb(total_inline_size) + "k]";
 
-	    var w = get_widget(nsmenu, "handle_nstags");
+	    var w = get_widget(nsmenu, "handle_noscript_tags");
 	    setup_checkbox_item(w, handle_noscript_tags, toggle_handle_noscript_tags);
 	    if (block_inline_scripts)
 		w.style = "display:block;";
@@ -542,9 +542,9 @@
 	for (var i = 0; i < modes.length; i++)
 	{
 	    // get item for this mode, wherever it is.
-	    var w = get_widget(nsmenu, "mode_" + modes[i]);
+	    var w = get_widget(nsmenu, modes[i]);
 	    if (modes[i] == mode)
-		w.className = "current_mode";
+		w.className = "selected";
 	    else
 		setup_mode_item_handler(w, modes[i]);
 
@@ -568,8 +568,10 @@
 
     function parent_menu()
     {
-	var td = get_widget(main_ui, "td_nsmenu");
-	td.appendChild(nsmenu);		
+	// var p = get_widget(main_ui, "menu_parent");
+	//main_ui.appendChild(nsmenu);
+	var button = get_widget(main_ui, "main_button");
+	main_ui.insertBefore(nsmenu, button);
     }
 
     function show_hide_menu(show, toggle)
@@ -731,14 +733,12 @@
     var main_ui = null;
     function create_main_ui()
     {
-	main_ui = new_widget("jsarmor_table");
+	main_ui = new_widget("main");
 	
-	var b = get_widget(main_ui, "jsarmor_button");	
+	var b = get_widget(main_ui, "main_button");
+	//set_icon_mode(b, mode);
 	var tooltip = main_button_tooltip();	
 	b.title = tooltip;
-
-	var i = get_widget(main_ui, "mode_icon");
-	set_icon_mode(i, mode);
 
 	b.onmouseover = function()
 	{
