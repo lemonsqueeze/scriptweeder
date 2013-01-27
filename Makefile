@@ -43,7 +43,8 @@ jsarmor.html.js: jsarmor.html
 	@echo generating $@
 	@echo "    var builtin_html = " > $@
 	@echo -n "'" >> $@
-	@sed -e 's|$$|  \\n\\|' < $< >> $@ 
+# kill spaces, screws up the layout otherwise
+	cat $< | tr '\n' ' ' | sed -e 's|>[ \t]*<|><|g' >> $@
 	@echo "';" >> $@
 
 

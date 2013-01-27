@@ -2267,49 +2267,7 @@ li.allow_all::before		{ content:-o-skin('Smiley Cry'); }  \n\
 ";
 
     var builtin_html = 
-'<!-- generated from jsarmor.ui, do not edit ! -->  \n\
-<!-- main ui -->  \n\
-<div id="main" class="menu_parent">  \n\
-  <div id="main_button">  \n\
-    <button>  \n\
-<img>  \n\
-</button>  \n\
-  </div>  \n\
-</div>  \n\
-<!-- main menu -->  \n\
-<div id="main_menu" class="menu">  \n\
-    <h1 id="title">  \n\
-JSArmor</h1>  \n\
-  <ul>  \n\
-      <li id="scope">  \n\
-Set for:      <input type="radio" name="radio_group">  \n\
-<label>  \n\
- Page </label>  \n\
-      <input type="radio" name="radio_group">  \n\
-<label>  \n\
- Site </label>  \n\
-      <input type="radio" name="radio_group">  \n\
-<label>  \n\
- Domain </label>  \n\
-      <input type="radio" name="radio_group">  \n\
-<label>  \n\
- Global </label>  \n\
-  </li>  \n\
-      <li class="block_all" title="Block all scripts.">  \n\
-Block All</li>  \n\
-      <li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">  \n\
-Filtered</li>  \n\
-      <li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">  \n\
-Relaxed</li>  \n\
-      <li class="allow_all" title="Allow everything…">  \n\
-Allow All</li>  \n\
-      <li id="details_item">  \n\
-Details…</li>  \n\
-  </ul>  \n\
-</div>  \n\
-<!-------------------------------------- low level building blocks ---------------------------------------->  \n\
-  \n\
-';
+'<!-- generated from jsarmor.ui, do not edit ! --><!-- main ui --><div id="main" class="menu_parent"><div id="main_button"><button><img></button></div></div><!-- main menu --><div id="main_menu" class="menu"><h1 id="title"> JSArmor</h1><ul><li id="scope"> Set for:      <input type="radio" name="radio_group"><label>  Page </label><input type="radio" name="radio_group"><label>  Site </label><input type="radio" name="radio_group"><label>  Domain </label><input type="radio" name="radio_group"><label>  Global </label></li><li class="block_all" title="Block all scripts."> Block All</li><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)"> Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)"> Relaxed</li><li class="allow_all" title="Allow everything…"> Allow All</li><li id="details_item"> Details…</li></ul></div><!-------------------------------------- low level building blocks ---------------------------------------->  ';
 
     
 })(window.document, window.location, window.opera, window.opera.scriptStorage);	// last_line_tag
