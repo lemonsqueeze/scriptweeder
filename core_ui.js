@@ -47,18 +47,17 @@
 
     /**************************** External layout ***********************/
 
-    // ui template
-    var layout;
+    // cache of widget nodes so we don't have to use innerHTML everytime
+    var cached_widgets;
     
     // layout of interface used in jsarmor's iframe
     function init_layout()
     {
-	// use custom layout ?
-	var html = (enable_custom_layout ? global_setting('html') : '');
-	html = (html != '' ? html : builtin_html);
+	cached_widgets = new Object();
 	
-	layout = idoc.createElement('div');
-	layout.innerHTML = html;
+	// use custom layout ?
+	//var html = (enable_custom_layout ? global_setting('html') : '');
+	//html = (html != '' ? html : builtin_html);
 	
 	// special classes
 	idoc.body.className = "body";
@@ -70,17 +69,32 @@
 	return _get_widget(parent, class_name, false, "get_widget");
     }
 
-    function new_widget(class_name)
+    // create ui elements using html strings in widgets_layout
+    // FIXME worry about duplicate ids at some point ...
+    function new_widget(id)
     {
-	// get fragment from template layout.
-	var f = _get_widget(layout, class_name, true, "new_widget");
-	if (!f)
+	// do we have this guy in cache ? use that then
+	if (cached_widgets[id])
+	    return cached_widgets[id].cloneNode(true);
+
+	var layout = widgets_layout[id];
+	if (!layout)
+	{
+	    alert("jsarmor:\n\nnew_widget(" + id + "): the layout for this widget is missing!");
 	    return null;
-	
-	// crap, cloneNode() doesn't copy event handlers ...
-	var w = f.cloneNode(true);
-	return w;
-    }    
+	}		    
+
+	// otherwise create a new one...
+	var d = idoc.createElement('div');
+	d.innerHTML = layout;
+	if (!d.firstChild)
+	{
+	    alert("jsarmor:\n\nnew_widget(" + id + "): couldn't create this guy, check the html in widgets_layout.");
+	    return null;
+	}
+	cached_widgets[id] = d.firstChild;
+	return d.firstChild.cloneNode(true);
+    }
 
     function _get_widget(parent, class_name, unique, fname)
     {
@@ -94,7 +108,7 @@
 	    return l[0];
 	if (!l.length)
 	{
-	    alert("jsarmor:\n\n" + fname +"(" + class_name + "): couldn't find widget by that name");
+	    alert("jsarmor:\n\n" + fname +"(" + class_name + "):\n couldn't find widget by that name !");
 	    return null;
 	}	
 	if (unique)	// should be unique ?

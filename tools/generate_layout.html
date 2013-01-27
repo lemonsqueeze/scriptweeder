@@ -1,9 +1,13 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<!-- set xhtml doctype, we need an xml parser here -->
+ 
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <style>
-@font-face{font-family:"Ubuntu";font-style:normal;font-weight:bold;src:local("Ubuntu Bold"),local("Ubuntu-Bold"),url(https://themes.googleusercontent.com/static/fonts/ubuntu/v3/0ihfXUL2emPh0ROJezvraD8E0i7KZn-EPnyo3HZu7kw.woff) format("woff")}@font-face{font-family:"Ubuntu";font-style:normal;font-weight:normal;src:local("Ubuntu"),url(https://themes.googleusercontent.com/static/fonts/ubuntu/v3/_xyN3apAT_yRRDeqB3sPRg.woff) format("woff")}
-
+@font-face{font-family:"Ubuntu"}
 body{font-family:Ubuntu}
 </style>
 </head>
@@ -66,22 +70,17 @@ function saveit()
 // expand html macros
 function hmxp(hmxp_str)
 {
-    // these create xml parsers which won't work here ...
-    //   var doc = (new DOMParser()).parseFromString('<dummy>', 'text/xml');
-    //   doc.removeChild(doc.documentElement);
-    // or this:
-    //   var doc = document.implementation.createDocument("", "", null);
+    // these create xml parsers, but we can't use .innerHTML then ...
+    // var doc = (new DOMParser()).parseFromString('<dummy/>', 'text/xml');
+    // var doc = document.implementation.createDocument("", "", null);
+    // var main = doc.documentElement;
     
-    // so ...
+    // so use document since it's xhtml ...
+    // update: that trick doesn't work actually, we still get non xml output from innerHTML
     var doc = document;
-
-    // first, turn that into a DOM tree    
     var main = doc.createElement('div');
-    main.innerHTML = hmxp_str;
-    // we don't even need to parent it ...
-    //doc.appendChild(main);
-    //doc.body.appendChild(main);
     
+    main.innerHTML = hmxp_str;
     expand_macros();
     return main.innerHTML;
 

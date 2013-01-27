@@ -800,7 +800,7 @@
     }
 
 
-@include "jsarmor.css.js"
+@include "jsarmor_style.js"
 
-@include "jsarmor.html.js"
+@include "jsarmor_widgets.js"
 

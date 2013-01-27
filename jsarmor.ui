@@ -1,14 +1,14 @@
-<def comment>
 <!-- interface layout
      paste into generate_layout.html to get jsarmor.html
 
-     html tag "macros" are used here to allow for a little bit of structure.
-     They're nothing but custom tags with an associated content to replace
-     them with. Macros can use other macros, and can also take parameters:
-     tag attributes are substituted in the output so it can be used for
-     templating etc...
---></def>
+     xml "macros" are used here to allow for a little bit of structure.
+     They're nothing but custom tags with an associated definition stating
+     what content to replace them with. Macros can use other macros, and
+     can also take parameters: tag attributes are substituted in the output
+     so it can be used for templating etc...
+-->
 
+<widgets>
 
 <!-- main ui -->
 <div id="main" class="menu_parent">
@@ -31,9 +31,10 @@
   </ul>
 </div>
 
+</widgets>
 
-<!-------------------------------------- low level building blocks ---------------------------------------->
-
+              <!--         [ low level building blocks ]         -->
+ 
 <def menu_title label ><!--
   <h1 id="title">{label}</h1>
 --></def>
@@ -58,4 +59,5 @@
 <def radio_button label ><!--
   <input type="radio" name="radio_group"><label> {label} </label>
 --></def>
+
 
