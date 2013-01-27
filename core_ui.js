@@ -56,6 +56,12 @@
     function init_layout()
     {
 	cached_widgets = new Object();
+
+	// allow uppercase widget names, will be convenient later on...
+	var n = widgets_layout;
+	for (var i in widgets_layout)
+	    n[i.toUpperCase()] = widgets_layout[i];
+	widgets_layout = n;
 	
 	// use custom layout ?
 	//var html = (enable_custom_layout ? global_setting('html') : '');
@@ -76,8 +82,8 @@
     function new_widget(id)
     {
 	// do we have this guy in cache ? use that then
-	if (cached_widgets[id])
-	    return cached_widgets[id].cloneNode(true);
+	//if (cached_widgets[id])
+	// return cached_widgets[id].cloneNode(true);
 
 	var layout = widgets_layout[id];
 	if (!layout)
@@ -89,13 +95,64 @@
 	// otherwise create a new one...
 	var d = idoc.createElement('div');
 	d.innerHTML = layout;
-	if (!d.firstChild)
+
+	// this is a problem if we want to define a widget with several children
+	//if (id == "RADIO_BUTTON")
+	//var widget = d;
+	// else
+	    var widget = d.firstChild;
+	 
+	if (!widget)
 	{
 	    alert("jsarmor:\n\nnew_widget(" + id + "): couldn't create this guy, check the html in widgets_layout.");
 	    return null;
 	}
-	cached_widgets[id] = d.firstChild;
-	return d.firstChild.cloneNode(true);
+
+	init_widget_handlers(widget);
+	create_nested_widgets(widget);
+	
+	// cached_widgets[id] = d.firstChild;
+	//return widget.cloneNode(true);
+	return widget;
+    }
+
+    function is_widget(widget)
+    {
+	return widgets_layout[widget.tagName];
+    }
+
+    function create_nested_widgets(widget)
+    {
+	function widget_needed(n)
+	{  return (is_widget(n) && !n.hasAttribute('placeholder'));  }
+	
+	replace_nodes_if(widget_needed, widget, function(n)
+	  { return new_widget(n.tagName); });
+    }
+
+    //FIXME add the others
+    var is_handler_attribute = { 'onclick':1, 'onmouseover':1, 'onmouseout':1, 'onmousedown':1, 'onload':1};
+
+
+    // if we load some html like <div onclick="f"> it won't work because the handler
+    // will get evaluated in global context, which we do not own as userjs script.
+    // so we have a little plumbing to do here ...
+    function init_widget_handlers(widget)
+    {
+	function create_handler(expr)
+	{ return eval("function(){" + expr + "}");  }
+	
+	var l = widget.getElementsByTagName('*');
+	for (var i = 0; i < l.length; i++)
+	{
+	    var node = l[i];
+	    for (var j = 0; j < node.attributes.length; j++)
+	    {
+		var a = node.attributes[j];
+		if (is_handler_attribute[a.name])
+		    node[a.name] = create_handler(a.value);
+	    }
+	}
     }
 
     function _get_widget(parent, class_name, unique, fname)
@@ -121,7 +178,7 @@
 	return l[0];	// return first match.
     }
 
-
+/*
     function add_widget(widget_id, parent_id)
     {
 	var p = get_widget(parent_id);
@@ -129,13 +186,34 @@
 	p.appendChild(w);
 	return w;
     }
+ */
 
-    function get_root_node(n)
+    // FIXME we should know widget_name, we created this thing !
+    // FIXME add placeholder_id arg, this only works for unique placeholders ...
+    function parent_widget(widget, widget_name, tree) 
     {
-	var p = null;
-	for (; n && p != n; n = n.parentNode)
-	    p = n;
-	return n;
+	//if (!is_widget(widget))
+	//{ alert("jsarmor:\n\nparent_widget() called on non widget: " + widget.tagName); }
+	var l = tree.getElementsByTagName('*');
+	for (var i = 0; i < l.length; i++)
+	{
+	    var n = l[i];
+	    if (element_tag_is(n, widget_name) &&
+		n.hasAttribute('placeholder'))
+	    {	// kick placeholder out
+		n.parentNode.replaceChild(widget, n);
+		return;
+	    }
+	}
+	alert("jsarmor:\n\nparent_widget() couldn't find placeholder for " + widget_name);
+    }
+
+    /**************************** Node functions *******************************/
+
+    function element_tag_is(el, tag)
+    {
+	return (el.tagName &&
+		el.tagName.toLowerCase() == tag);
     }
 
     // FIXME, optimize all this
@@ -181,6 +259,52 @@
 		    return classElements;
 		})(classname, node);
 	}
+    }
+
+    function get_root_node(n)
+    {
+	var p = null;
+	for (; n && p != n; n = n.parentNode)
+	    p = n;
+	return n;
+    }
+
+    function replace_nodes_if(matches, root, new_node)
+    {
+	foreach_child(root, function(n)
+	  {
+	      if (matches(n))
+		  n.parentNode.replaceChild(new_node(n), n);
+	  });
+	
+	foreach_child(root, function(n)
+	  {
+	      replace_nodes_if(matches, n, new_node);
+	  });    
+    }
+
+    function foreach_child(n, f)
+    {
+	foreach(n.children, f);
+    }
+
+    function foreach_node(n, f)
+    {
+	f(n);
+	foreach_down_node(n, f);
+    }
+
+    function foreach_down_node(n, f)
+    {
+	foreach(n.getElementsByTagName('*'), f);
+    }
+
+    /**************************** List functions *******************************/
+
+    function foreach(l, f)
+    {
+	for (var i = 0; i < l.length; i++)
+	    f(l[i]);
     }
 
     

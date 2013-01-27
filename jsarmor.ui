@@ -12,8 +12,8 @@
 
 <!-- main ui -->
 <widget name="main">
-<div id="main" class="menu_parent">
-  <placeholder id="main_menu"/>
+<div id="main">
+  <main_menu placeholder></main_menu>
   <div id="main_button" >
     <button><img/></button>
   </div>
@@ -53,16 +53,22 @@
 
 <def scope><!--
   <li id="scope">Set for:
-    <radio_button label="Page">
-    <radio_button label="Site">
-    <radio_button label="Domain">
-    <radio_button label="Global">
+    <radio_button label="Page"></radio_button>
+    <radio_button label="Site"></radio_button>
+    <radio_button label="Domain"></radio_button>
+    <radio_button label="Global"></radio_button>
   </li>
 --></def>
 
 <def radio_button label ><!--
-  <input type="radio" name="radio_group"><label> {label} </label>
+  <input type="radio" name="radio_group"/>
+  <label onclick="radio_button_click()"> {label} </label>
 --></def>
+
+<widget name="radio_button___">
+  <input type="radio" name="radio_group"/>
+  <label onclick="radio_button_click()"> label </label>
+</widget>
 
 
 </widgets>

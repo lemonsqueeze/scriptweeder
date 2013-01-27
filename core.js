@@ -631,12 +631,6 @@
     {
 	return (str.slice(0, p.length) == p);
     }
-
-    function element_tag_is(el, tag)
-    {
-	return (el.tagName &&
-		el.tagName.toLowerCase() == tag);
-    }
     
     function get_domain(h)
     {

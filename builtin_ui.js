@@ -497,6 +497,11 @@
 	return menu;
     }
 
+function radio_button_click()
+{
+    alert("radio_button_click() !!!");
+}
+
     var nsmenu = null;			// the main menu
     var need_reload = false;
 
@@ -518,7 +523,7 @@
 	title.title = version;
 
 	var scope_item = get_widget(nsmenu, "scope");
-	setup_radio_buttons(scope_item, scope, change_scope)
+	//setup_radio_buttons(scope_item, scope, change_scope)
 
 	if (mode == 'block_all')
 	{	
@@ -570,10 +575,7 @@
 
     function parent_menu()
     {
-	// var p = get_widget(main_ui, "menu_parent");
-	//main_ui.appendChild(nsmenu);
-	var button = get_widget(main_ui, "main_button");
-	main_ui.insertBefore(nsmenu, button);
+	parent_widget(nsmenu, "main_menu", main_ui);
     }
 
     function show_hide_menu(show, toggle)
