@@ -2,10 +2,6 @@
 $xml=$ARGV[0];
 open(IN, "< $xml") || die("pack_widgets: couldn't open file $xml");
 
-my $id;
-my @current_widget;
-
-
 sub format_html_blob
 {
     my ($s) = @_;
@@ -22,6 +18,9 @@ sub format_html_blob
     return $s;
 }
 
+my $id = "";
+my @current_widget;
+
 sub dump_widget
 {
     my ($last) = @_;
@@ -31,22 +30,29 @@ sub dump_widget
     print "'";
     print "," if ($last eq "");
     print "\n";
+
     @current_widget = ();
+    $id = "";
 }
 
 sub dump_widgets
 {
     foreach my $s (<IN>)
     {
+	# remove comments
+	$s =~ s|<!--[^>]*-->||g;
+
 	if ($s =~ m|<widget name="([^"]*)"[^>]*>|)
-	{
-	    dump_widget("");  # previous widget
-	    $id = $1;
+	{   dump_widget("");
+	    $id = $1;   
 	}
+	
 	if ($s =~ m|<widgets *>|   ||
 	    $s =~ m|</widgets *>|  )
 	{ next; }
-	push(@current_widget, $s);
+
+	if ($id ne "")
+	{  push(@current_widget, $s); }
     }
     dump_widget("last");
 }

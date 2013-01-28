@@ -1,0 +1,118 @@
+#!/usr/bin/perl
+# expand xml macros
+
+# explain what is found
+my $debug = 0;
+
+my @lines = <STDIN>;
+
+
+my @content; # without macros
+my %macros;
+my $def = "";
+# first get macro definitions
+foreach my $s (@lines)
+{
+    if ($s =~ m|</def>|  )
+    { 
+	print "found def: $def\n" if ($debug);
+	$def = "";
+	next;
+    }
+    if ($def ne "")
+    {
+	$macros{$def} .= $s;
+	next;
+    }
+    if ($s =~ m|<def  *([\w]+)>|  )
+    {	 $def = $1;  }
+    if ($s =~ m|<def  *([\w]+) (.*)>|  )
+    {    $def = $1;  }
+
+    if ($def eq "")
+    {  push(@content, $s);  }
+}
+
+sub parse_args
+{
+    my ($s) = @_;
+    my %args;
+    while ($s =~ s| *([\w]+)="([^"]+)"||)
+    {
+	my ($name, $value) = ($1, $2);
+	#print "name: $name val: $value\n";
+	$args{$name} = $value;
+    }
+    return %args;
+}
+
+sub replace_macro
+{
+    my ($name, $arg_str) = @_;
+    %args = parse_args($arg_str);
+
+    my $s = $macros{$name};
+    foreach my $arg (keys(%args))
+    {
+	$s =~ s|\{$arg\}|$args{$arg}|gm;
+    }
+    return $s;
+}
+
+# and replace them
+my $did_something;
+do
+{
+    $did_something = 0;
+    my @tmp;
+    foreach my $s (@content)
+    {
+	if ($s =~ m|<([\w]+) (.*)/>|)
+	{
+	    my ($name, $args) = ($1, $2);
+	    if ($macros{$name} ne "")
+	    { 
+		$did_something = 1;
+		print "replacing $name\n" if ($debug);
+		$s = replace_macro($name, $args); 
+	    }
+	}    
+	if ($s =~ m|<([\w]+) */>|)
+	{
+	    my $name = $1;
+	    if ($macros{$name} ne "")
+	    { 
+		$did_something = 1;
+		print "replacing $name\n" if ($debug);
+		$s = $macros{$name}; 
+	    }
+	}
+
+	# check for open tags ...
+	if ($s =~ m|<([\w]+) (.*)>|)
+	{
+	    my ($name, $args) = ($1, $2);
+	    if ($macros{$name} ne "")
+	    {  die("open <$name> tag found. should be <$name/>, aborting\n");  }
+	}    
+	if ($s =~ m|<([\w]+) *>|)
+	{
+	    my $name = $1;
+	    if ($macros{$name} ne "")
+	    {  die("open <$name> tag found. should be <$name/>, aborting\n");  }
+	}
+
+	push(@tmp, $s);
+    }
+    
+    @content = @tmp;
+} while ($did_something);
+
+if ($debug)
+{  print "---------------------------------------------------------\n";  }
+
+# print output
+foreach my $s (@content)
+{
+    print $s;
+}

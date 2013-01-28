@@ -1,4 +1,0 @@
-#!/bin/sh
-
-sed -e 's|<img([^>]*)>|<img\1/>|g'  |
-sed -e 's|<input([^>]*)>|<img\1/>|g'  
