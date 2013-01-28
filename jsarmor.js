@@ -1084,7 +1084,7 @@
     // layout of interface used in jsarmor's iframe
     function init_layout()
     {
-	cached_widgets = new Object();
+	//cached_widgets = new Object();
 
 	// allow uppercase widget names, will be convenient later on...
 	var n = widgets_layout;
@@ -1144,6 +1144,7 @@
     // placeholder is optional (the new widget gets its its attributes)
     function new_wrapped_widget(name, placeholder)
     {
+	name = name.toLowerCase();
 	// do we have this guy in cache ? use that then
 	//if (cached_widgets[name])
 	// return cached_widgets[name].cloneNode(true);
@@ -1159,7 +1160,7 @@
 	var d = idoc.createElement('foo');
 	d.innerHTML = layout;
 	var wrap = d.firstChild;	// the <widget> element
-	if (!wrap || !wrap.firstChild)
+	if (!wrap)
 	{
 	    my_alert("new_widget(" + name + "):\n" +
 		     "couldn't create this guy, check the html in widgets_layout.");
@@ -1169,7 +1170,7 @@
 	if (wrap.children.length > 1)
 	    wrap.forest = true;
 
-	setup_widget_handlers(wrap);
+	setup_widget_event_handlers(wrap, name);	
 	create_nested_widgets(wrap, false);
 	init_widget(wrap, content, name, placeholder);
 	
@@ -1184,6 +1185,8 @@
     // if the page's scripts have such a handler and we didn't define one, now it'd get called !
     function init_widget(wrap, content, name, ph)
     {
+	// for empty widgets, pass attributes in wrap instead
+	content = (content ? content : wrap);
 	if (ph)
 	{
 	    for (var i = 0; i < ph.attributes.length; i++)
@@ -1225,6 +1228,12 @@
 
     function replace_wrapped_widget(to, from)
     {
+	if (!to.firstChild) // empty widget ...
+	{
+	    from.parentNode.removeChild(from);
+	    return;
+	}
+	    
 	if (!to.forest) // simple case: only one node
 	{
 	    from.parentNode.replaceChild(to.firstChild, from);
@@ -1243,16 +1252,49 @@
     }
 
     //FIXME add the others
-    var is_handler_attribute = { 'onclick':1, 'onmouseover':1, 'onmouseout':1, 'onmousedown':1, 'onload':1};
+    var is_handler_attribute = { 'oninit':1, 'onclick':1, 'onmouseover':1, 'onmouseout':1, 'onmousedown':1, 'onload':1};
 
 
     // if we load some html like <div onclick="f"> it won't work because the handler
     // will get evaluated in global context, which we do not own as userjs script.
     // so we have a little plumbing to do here ...
-    function setup_widget_handlers(widget)
+    // handler values can be left empty: <div onclick> means <div onclick="widgetname_onclick()">
+    function setup_widget_event_handlers(widget, name)
     {
 	function create_handler(expr)
-	{ return eval("function(){" + expr + "}");  }
+	{ return eval("function(){" + expr + "}");  }	
+	
+	var l = widget.getElementsByTagName('*');
+	for (var i = 0; i < l.length; i++)
+	{
+	    var node = l[i];
+	    for (var j = 0; j < node.attributes.length; j++)
+	    {
+		var a = node.attributes[j];
+		if (is_handler_attribute[a.name])
+		{
+                    // call oninit handlers.
+		    // FIXME: this is probably not the best order to do things
+		    if (a.name == 'init')
+		    {
+			(node[a.name])(node);
+			continue;
+		    }
+		    if (a.value != "")
+			node[a.name] = create_handler(a.value);
+		    else
+			node[a.name] = eval(name + "_" + a.name);
+		    console.log(name + ": handler " + a.name + " = ...");
+		}
+	    }
+	}
+    }
+
+    /*
+    function call_oninit_handlers(widget)
+    {
+	function create_handler(expr)
+foo	{ return eval("function(){" + expr + "}");  }
 	
 	var l = widget.getElementsByTagName('*');
 	for (var i = 0; i < l.length; i++)
@@ -1266,6 +1308,7 @@
 	    }
 	}
     }
+     */
 
 /*
     function add_widget(widget_id, parent_id)
@@ -2076,7 +2119,12 @@
     
     function radio_button_init(widget)
     {
-	alert("radio_button_init() !!!\nlabel: " + widget.label);
+	//alert("radio_button_init() !!!\nlabel: " + widget.label);
+    }
+
+    function radio_group_init(widget)
+    {
+	//alert("radio_button_init() !!!\nsetting: " + widget.setting);
     }
 
     var nsmenu = null;			// the main menu
@@ -2311,11 +2359,42 @@
 	return tooltip;
     }
 
+
+function main_button_init(div)
+{
+    var tooltip = main_button_tooltip();
+    div.title = tooltip;
+}
+
+function main_button_onmouseover()
+{
+    // console.log("button mouseover");
+    show_hide_menu(true);    // menu can disappear if we switch these two, strange
+    check_changed_settings();
+}
+
+function main_button_onclick()
+{
+    // cycle through the modes
+    if (mode == 'block_all')      set_mode('filtered');
+    else if (mode == 'filtered')  set_mode('relaxed');
+    else if (mode == 'relaxed')  set_mode('allow_all');
+    else if (mode == 'allow_all') set_mode('block_all');
+}
+
+function main_button_onmouseout()
+{
+    if (need_reload)
+	reload_page();
+}
+
+    
     var main_ui = null;
     function create_main_ui()
     {
 	main_ui = new_widget("main");
-	
+
+/*	
 	var b = find_element(main_ui, "main_button");
 	//set_icon_mode(b, mode);
 	var tooltip = main_button_tooltip();	
@@ -2339,7 +2418,8 @@
 	{
 	  if (need_reload)
 	      reload_page();	      
-	};	
+	};
+ */
     }
 
     function parent_main_ui()
@@ -2495,9 +2575,11 @@ li.allow_all::before		{ content:-o-skin('Smiley Cry'); }  \n\
 
     /* layout for each widget (generated from jsarmor.xml). */
     var widgets_layout = {
-      'main' : '<widget name="main"><div id="main"><main_menu lazy=""></main_menu><div id="main_button"><button><img/></button></div></div></widget>',
-      'main_menu' : '<widget name="main_menu"><div id="main_menu" class="menu"><h1 id="title">JSArmor</h1><ul><li id="scope">Set for:<radio_button label="Page"></radio_button><radio_button label="Site"></radio_button><radio_button label="Domain"></radio_button><radio_button label="Global"></radio_button></li><li class="block_all" title="Block all scripts.">Block All</li><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Relaxed</li><li class="allow_all" title="Allow everything…">Allow All</li><li id="details_item">Details…</li></ul></div></widget>',
-      'radio_button' : '<widget name="radio_button" init=""><input type="radio" name="radio_group"/><label onclick="radio_button_click()">label</label></widget>'
+      'main' : '<widget name="main"><div id="main"><main_menu lazy></main_menu><main_button/></div></widget>',
+      'main_button' : '<widget name="main_button" init><div id="main_button" onmouseover onclick onmouseout><button><img/></button></div></widget>',
+      'main_menu' : '<widget name="main_menu"><div id="main_menu" class="menu" ><h1 id="title">JSArmor</h1><ul><radio_group setting=scope ></radio_group><li id="scope">Set for:<radio_button label="Page"></radio_button><radio_button label="Site"></radio_button><radio_button label="Domain"></radio_button><radio_button label="Global"></radio_button></li><li class="block_all" title="Block all scripts.">Block All</li><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Relaxed</li><li class="allow_all" title="Allow everything…">Allow All</li><li id="details_item">Details…</li></ul></div></widget>',
+      'radio_group' : '<widget name="radio_group" init></widget>',
+      'radio_button' : '<widget name="radio_button" init><input type="radio" name="radio_group"/><label onclick="radio_button_click()">label</label></widget>'
     };
 
 

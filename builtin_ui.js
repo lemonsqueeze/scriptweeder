@@ -504,7 +504,12 @@ function(){   // fake line, keep_editor_happy
     
     function radio_button_init(widget)
     {
-	alert("radio_button_init() !!!\nlabel: " + widget.label);
+	//alert("radio_button_init() !!!\nlabel: " + widget.label);
+    }
+
+    function radio_group_init(widget)
+    {
+	//alert("radio_button_init() !!!\nsetting: " + widget.setting);
     }
 
     var nsmenu = null;			// the main menu
@@ -739,35 +744,40 @@ function(){   // fake line, keep_editor_happy
 	return tooltip;
     }
 
+
+    function main_button_init(div)
+    {
+	var tooltip = main_button_tooltip();
+	div.title = tooltip;
+    }
+    
+    function main_button_onmouseover()
+    {
+	// console.log("button mouseover");
+	show_hide_menu(true);    // menu can disappear if we switch these two, strange
+	check_changed_settings();
+    }
+    
+    function main_button_onclick()
+    {
+	// cycle through the modes
+	if (mode == 'block_all')      set_mode('filtered');
+	else if (mode == 'filtered')  set_mode('relaxed');
+	else if (mode == 'relaxed')  set_mode('allow_all');
+	else if (mode == 'allow_all') set_mode('block_all');
+    }
+    
+    function main_button_onmouseout()
+    {
+	if (need_reload)
+	    reload_page();
+    }
+    
+    
     var main_ui = null;
     function create_main_ui()
     {
 	main_ui = new_widget("main");
-	
-	var b = find_element(main_ui, "main_button");
-	//set_icon_mode(b, mode);
-	var tooltip = main_button_tooltip();	
-	b.title = tooltip;
-
-	b.onmouseover = function()
-	{
-	  // console.log("button mouseover");
-	  show_hide_menu(true);    // menu can disappear if we switch these two, strange
-	  check_changed_settings();
-	};
-        b.onclick = function(event)
-	{
-	  // cycle through the modes
-	  if (mode == 'block_all')      set_mode('filtered');
-	  else if (mode == 'filtered')  set_mode('relaxed');
-	  else if (mode == 'relaxed')  set_mode('allow_all');
-	  else if (mode == 'allow_all') set_mode('block_all');
-	};
-	b.onmouseout = function(e)
-	{
-	  if (need_reload)
-	      reload_page();	      
-	};	
     }
 
     function parent_main_ui()

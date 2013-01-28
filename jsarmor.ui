@@ -14,24 +14,28 @@
 <widget name="main">
 <div id="main">
   <main_menu lazy></main_menu>
-  <div id="main_button" >
+  <main_button/>
+</div>
+</widget>
+
+<widget name="main_button" init>
+  <div id="main_button" onmouseover onclick onmouseout>
     <button><img/></button>
   </div>
-</div>
 </widget>
 
 
 <!-- main menu -->
 <widget name="main_menu">
   <div id="main_menu" class="menu" >
-    <menu_title label="JSArmor">
+    <menu_title label="JSArmor"/>
       <ul>
-	<scope>
-	  <mode_menu_item mode="block_all" label="Block All" title="Block all scripts." />
-	  <mode_menu_item mode="filtered" label="Filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
-	  <mode_menu_item mode="relaxed" label="Relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
-	  <mode_menu_item mode="allow_all" label="Allow All" title="Allow everything…" />
-	  <menu_item id="details_item" label="Details…"/>
+	<scope/>
+	<mode_menu_item mode="block_all" label="Block All" title="Block all scripts." />
+	<mode_menu_item mode="filtered" label="Filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
+	<mode_menu_item mode="relaxed" label="Relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
+	<mode_menu_item mode="allow_all" label="Allow All" title="Allow everything…" />
+	<menu_item id="details_item" label="Details…"/>
       </ul>
   </div>
 </widget>
@@ -39,31 +43,35 @@
 
 <!--         [ low level building blocks ]         -->
  
-<def menu_title label ><!--
+<def menu_title label >
   <h1 id="title">{label}</h1>
---></def>
+</def>
 
-<def menu_item id label ><!--
+<def menu_item id label >
   <li id="{id}">{label}</li>
---></def>
+</def>
 
-<def mode_menu_item mode label title ><!--
+<def mode_menu_item mode label title >
   <li class="{mode}" title="{title}">{label}</li>
---></def>
+</def>
 
-<def scope><!--
+<def scope>
+  <radio_group setting=scope ></radio_group>
   <li id="scope">Set for:
     <radio_button label="Page"></radio_button>
     <radio_button label="Site"></radio_button>
     <radio_button label="Domain"></radio_button>
     <radio_button label="Global"></radio_button>
   </li>
---></def>
+</def>
 
-<def radio_button___ label ><!--
+<def radio_button___ label >
   <input type="radio" name="radio_group"/>
   <label onclick="radio_button_click()"> {label} </label>
---></def>
+</def>
+
+<widget name="radio_group" init>
+</widget>
 
 <widget name="radio_button" init>
   <input type="radio" name="radio_group"/>

@@ -55,7 +55,7 @@ function(){   // fake line, keep_editor_happy
     // layout of interface used in jsarmor's iframe
     function init_layout()
     {
-	cached_widgets = new Object();
+	//cached_widgets = new Object();
 
 	// allow uppercase widget names, will be convenient later on...
 	var n = widgets_layout;
@@ -115,6 +115,7 @@ function(){   // fake line, keep_editor_happy
     // placeholder is optional (the new widget gets its its attributes)
     function new_wrapped_widget(name, placeholder)
     {
+	name = name.toLowerCase();
 	// do we have this guy in cache ? use that then
 	//if (cached_widgets[name])
 	// return cached_widgets[name].cloneNode(true);
@@ -130,7 +131,7 @@ function(){   // fake line, keep_editor_happy
 	var d = idoc.createElement('foo');
 	d.innerHTML = layout;
 	var wrap = d.firstChild;	// the <widget> element
-	if (!wrap || !wrap.firstChild)
+	if (!wrap)
 	{
 	    my_alert("new_widget(" + name + "):\n" +
 		     "couldn't create this guy, check the html in widgets_layout.");
@@ -140,7 +141,7 @@ function(){   // fake line, keep_editor_happy
 	if (wrap.children.length > 1)
 	    wrap.forest = true;
 
-	setup_widget_handlers(wrap);
+	setup_widget_event_handlers(wrap, name);	
 	create_nested_widgets(wrap, false);
 	init_widget(wrap, content, name, placeholder);
 	
@@ -155,6 +156,8 @@ function(){   // fake line, keep_editor_happy
     // if the page's scripts have such a handler and we didn't define one, now it'd get called !
     function init_widget(wrap, content, name, ph)
     {
+	// for empty widgets, pass attributes in wrap instead
+	content = (content ? content : wrap);
 	if (ph)
 	{
 	    for (var i = 0; i < ph.attributes.length; i++)
@@ -196,6 +199,12 @@ function(){   // fake line, keep_editor_happy
 
     function replace_wrapped_widget(to, from)
     {
+	if (!to.firstChild) // empty widget ...
+	{
+	    from.parentNode.removeChild(from);
+	    return;
+	}
+	    
 	if (!to.forest) // simple case: only one node
 	{
 	    from.parentNode.replaceChild(to.firstChild, from);
@@ -214,16 +223,49 @@ function(){   // fake line, keep_editor_happy
     }
 
     //FIXME add the others
-    var is_handler_attribute = { 'onclick':1, 'onmouseover':1, 'onmouseout':1, 'onmousedown':1, 'onload':1};
+    var is_handler_attribute = { 'oninit':1, 'onclick':1, 'onmouseover':1, 'onmouseout':1, 'onmousedown':1, 'onload':1};
 
 
     // if we load some html like <div onclick="f"> it won't work because the handler
     // will get evaluated in global context, which we do not own as userjs script.
     // so we have a little plumbing to do here ...
-    function setup_widget_handlers(widget)
+    // handler values can be left empty: <div onclick> means <div onclick="widgetname_onclick()">
+    function setup_widget_event_handlers(widget, name)
     {
 	function create_handler(expr)
-	{ return eval("function(){" + expr + "}");  }
+	{ return eval("function(){" + expr + "}");  }	
+	
+	var l = widget.getElementsByTagName('*');
+	for (var i = 0; i < l.length; i++)
+	{
+	    var node = l[i];
+	    for (var j = 0; j < node.attributes.length; j++)
+	    {
+		var a = node.attributes[j];
+		if (is_handler_attribute[a.name])
+		{
+                    // call oninit handlers.
+		    // FIXME: this is probably not the best order to do things
+		    if (a.name == 'init')
+		    {
+			(node[a.name])(node);
+			continue;
+		    }
+		    if (a.value != "")
+			node[a.name] = create_handler(a.value);
+		    else
+			node[a.name] = eval(name + "_" + a.name);
+		    console.log(name + ": handler " + a.name + " = ...");
+		}
+	    }
+	}
+    }
+
+    /*
+    function call_oninit_handlers(widget)
+    {
+	function create_handler(expr)
+foo	{ return eval("function(){" + expr + "}");  }
 	
 	var l = widget.getElementsByTagName('*');
 	for (var i = 0; i < l.length; i++)
@@ -237,6 +279,7 @@ function(){   // fake line, keep_editor_happy
 	    }
 	}
     }
+     */
 
 /*
     function add_widget(widget_id, parent_id)
