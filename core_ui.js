@@ -71,14 +71,16 @@ function(){   // fake line, keep_editor_happy
 	idoc.body.className = "body";
     }
 
-    // create normal single node widgets.
+    // create ui elements from html strings in widgets_layout. this one is for normal
+    // (single node) widgets. nested widgets are created as well unless they have the
+    // "lazy" attribute.
     function new_widget(name)
     {
-	var w = new_wrapped_widget(name);
-	if (w.children.length > 1)
+	var wrap = new_wrapped_widget(name);
+	if (wrap.children.length > 1)
 	    my_alert("new_widget(" + name + "):\n" +
 		     "this isn't a single node widget, call new_wrapped_widget() instead !");
-	return w.firstChild;
+	return wrap.firstChild;
     }
 
     // widgets with the "lazy" attribute are not created until this is called.
@@ -105,12 +107,13 @@ function(){   // fake line, keep_editor_happy
     
     
     /**************************** Internal widget functions ***********************/
-    
-    // create ui elements using html strings in widgets_layout
-    // widget is wrapped in a parent <div> in case it's actually a forest.
-    // (.forest is set on the div in this case)
+
     // FIXME check for duplicate ids ?
-    function new_wrapped_widget(name)
+    
+    // same as new_widget() but returns the <widget> wrapper. this is necessary if
+    // the widget is actually a forest... (.forest is set on the div in this case)
+    // placeholder is optional (the new widget gets its its attributes)
+    function new_wrapped_widget(name, placeholder)
     {
 	// do we have this guy in cache ? use that then
 	//if (cached_widgets[name])
@@ -124,27 +127,51 @@ function(){   // fake line, keep_editor_happy
 	}		    
 
 	// otherwise create a new one...
-	var w = idoc.createElement('div');
-	w.innerHTML = layout;
-	if (w.children.length > 1)
-	    w.forest = true;
-	
-	if (!w)
+	var d = idoc.createElement('foo');
+	d.innerHTML = layout;
+	var wrap = d.firstChild;	// the <widget> element
+	if (!wrap || !wrap.firstChild)
 	{
 	    my_alert("new_widget(" + name + "):\n" +
 		     "couldn't create this guy, check the html in widgets_layout.");
 	    return null;
 	}
+	var content = wrap.firstChild;	
+	if (wrap.children.length > 1)
+	    wrap.forest = true;
 
-	init_widget_handlers(w);
-	create_nested_widgets(w, false);
+	setup_widget_handlers(wrap);
+	create_nested_widgets(wrap, false);
+	init_widget(wrap, content, name, placeholder);
 	
 	// cached_widgets[id] = d.firstChild;
 	//return widget.cloneNode(true);
-	return w;
+	return wrap;
     }
 
-    function is_widget(widget)
+    // copy attributes from placeholder, and call init handler if needed:
+    // if widget "foo" has the 'init' attribute, then foo_init(widget) is called.
+    // we could call function foo_init() automatically if it exists, but that would open a nice hole:
+    // if the page's scripts have such a handler and we didn't define one, now it'd get called !
+    function init_widget(wrap, content, name, ph)
+    {
+	if (ph)
+	{
+	    for (var i = 0; i < ph.attributes.length; i++)
+	    {
+		var a = ph.attributes[i];
+		content[a.name] = a.value;
+	    }
+	}
+
+	if (wrap.hasAttribute('init'))
+	{
+	    var fname = name.toLowerCase() + "_init";	    
+	    (eval(fname))(content);
+	}
+    }
+    
+    function is_widget_placeholder(widget)
     {
 	return (widgets_layout[widget.tagName] != null);
     }
@@ -156,11 +183,11 @@ function(){   // fake line, keep_editor_happy
 	var from = [], to = [];
 	foreach_node(widget, function(n)
         {
-	    if (!is_widget(n) ||
+	    if (!is_widget_placeholder(n) ||
 		(!ignore_lazy && n.hasAttribute('lazy')))
 		return;
 	    from.push(n);
-	    to.push(new_wrapped_widget(n.tagName));
+	    to.push(new_wrapped_widget(n.tagName, n));
 	});
 
 	for (var i = 0; i < to.length; i++)
@@ -169,7 +196,7 @@ function(){   // fake line, keep_editor_happy
 
     function replace_wrapped_widget(to, from)
     {
-	if (!to.forest) // simple case
+	if (!to.forest) // simple case: only one node
 	{
 	    from.parentNode.replaceChild(to.firstChild, from);
 	    return;
@@ -193,7 +220,7 @@ function(){   // fake line, keep_editor_happy
     // if we load some html like <div onclick="f"> it won't work because the handler
     // will get evaluated in global context, which we do not own as userjs script.
     // so we have a little plumbing to do here ...
-    function init_widget_handlers(widget)
+    function setup_widget_handlers(widget)
     {
 	function create_handler(expr)
 	{ return eval("function(){" + expr + "}");  }

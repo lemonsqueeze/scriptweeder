@@ -1100,14 +1100,16 @@
 	idoc.body.className = "body";
     }
 
-    // create normal single node widgets.
+    // create ui elements from html strings in widgets_layout. this one is for normal
+    // (single node) widgets. nested widgets are created as well unless they have the
+    // "lazy" attribute.
     function new_widget(name)
     {
-	var w = new_wrapped_widget(name);
-	if (w.children.length > 1)
+	var wrap = new_wrapped_widget(name);
+	if (wrap.children.length > 1)
 	    my_alert("new_widget(" + name + "):\n" +
 		     "this isn't a single node widget, call new_wrapped_widget() instead !");
-	return w.firstChild;
+	return wrap.firstChild;
     }
 
     // widgets with the "lazy" attribute are not created until this is called.
@@ -1134,12 +1136,13 @@
     
     
     /**************************** Internal widget functions ***********************/
-    
-    // create ui elements using html strings in widgets_layout
-    // widget is wrapped in a parent <div> in case it's actually a forest.
-    // (.forest is set on the div in this case)
+
     // FIXME check for duplicate ids ?
-    function new_wrapped_widget(name)
+    
+    // same as new_widget() but returns the <widget> wrapper. this is necessary if
+    // the widget is actually a forest... (.forest is set on the div in this case)
+    // placeholder is optional (the new widget gets its its attributes)
+    function new_wrapped_widget(name, placeholder)
     {
 	// do we have this guy in cache ? use that then
 	//if (cached_widgets[name])
@@ -1153,27 +1156,51 @@
 	}		    
 
 	// otherwise create a new one...
-	var w = idoc.createElement('div');
-	w.innerHTML = layout;
-	if (w.children.length > 1)
-	    w.forest = true;
-	
-	if (!w)
+	var d = idoc.createElement('foo');
+	d.innerHTML = layout;
+	var wrap = d.firstChild;	// the <widget> element
+	if (!wrap || !wrap.firstChild)
 	{
 	    my_alert("new_widget(" + name + "):\n" +
 		     "couldn't create this guy, check the html in widgets_layout.");
 	    return null;
 	}
+	var content = wrap.firstChild;	
+	if (wrap.children.length > 1)
+	    wrap.forest = true;
 
-	init_widget_handlers(w);
-	create_nested_widgets(w, false);
+	setup_widget_handlers(wrap);
+	create_nested_widgets(wrap, false);
+	init_widget(wrap, content, name, placeholder);
 	
 	// cached_widgets[id] = d.firstChild;
 	//return widget.cloneNode(true);
-	return w;
+	return wrap;
     }
 
-    function is_widget(widget)
+    // copy attributes from placeholder, and call init handler if needed:
+    // if widget "foo" has the 'init' attribute, then foo_init(widget) is called.
+    // we could call function foo_init() automatically if it exists, but that would open a nice hole:
+    // if the page's scripts have such a handler and we didn't define one, now it'd get called !
+    function init_widget(wrap, content, name, ph)
+    {
+	if (ph)
+	{
+	    for (var i = 0; i < ph.attributes.length; i++)
+	    {
+		var a = ph.attributes[i];
+		content[a.name] = a.value;
+	    }
+	}
+
+	if (wrap.hasAttribute('init'))
+	{
+	    var fname = name.toLowerCase() + "_init";	    
+	    (eval(fname))(content);
+	}
+    }
+    
+    function is_widget_placeholder(widget)
     {
 	return (widgets_layout[widget.tagName] != null);
     }
@@ -1185,11 +1212,11 @@
 	var from = [], to = [];
 	foreach_node(widget, function(n)
         {
-	    if (!is_widget(n) ||
+	    if (!is_widget_placeholder(n) ||
 		(!ignore_lazy && n.hasAttribute('lazy')))
 		return;
 	    from.push(n);
-	    to.push(new_wrapped_widget(n.tagName));
+	    to.push(new_wrapped_widget(n.tagName, n));
 	});
 
 	for (var i = 0; i < to.length; i++)
@@ -1198,7 +1225,7 @@
 
     function replace_wrapped_widget(to, from)
     {
-	if (!to.forest) // simple case
+	if (!to.forest) // simple case: only one node
 	{
 	    from.parentNode.replaceChild(to.firstChild, from);
 	    return;
@@ -1222,7 +1249,7 @@
     // if we load some html like <div onclick="f"> it won't work because the handler
     // will get evaluated in global context, which we do not own as userjs script.
     // so we have a little plumbing to do here ...
-    function init_widget_handlers(widget)
+    function setup_widget_handlers(widget)
     {
 	function create_handler(expr)
 	{ return eval("function(){" + expr + "}");  }
@@ -1529,9 +1556,9 @@
 	return k;
     }
     
-    function my_alarm(msg)
+    function my_alert(msg)
     {
-	alarm("jsarmor:\n\n" + msg);
+	alert("jsarmor:\n\n" + msg);
     }
 
     // or use Object.keys(obj) if browser supports it.
@@ -2042,10 +2069,15 @@
 	return menu;
     }
 
-function radio_button_click()
-{
-    alert("radio_button_click() !!!");
-}
+    function radio_button_click()
+    {
+	alert("radio_button_click() !!!");
+    }
+    
+    function radio_button_init(widget)
+    {
+	alert("radio_button_init() !!!\nlabel: " + widget.label);
+    }
 
     var nsmenu = null;			// the main menu
     var need_reload = false;
@@ -2463,9 +2495,9 @@ li.allow_all::before		{ content:-o-skin('Smiley Cry'); }  \n\
 
     /* layout for each widget (generated from jsarmor.xml). */
     var widgets_layout = {
-      'main' : '<div id="main"><main_menu lazy=""></main_menu><div id="main_button"><button><img/></button></div></div>',
-      'main_menu' : '<div id="main_menu" class="menu"><h1 id="title">JSArmor</h1><ul><li id="scope">Set for:<radio_button label="Page"></radio_button><radio_button label="Site"></radio_button><radio_button label="Domain"></radio_button><radio_button label="Global"></radio_button></li><li class="block_all" title="Block all scripts.">Block All</li><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Relaxed</li><li class="allow_all" title="Allow everything…">Allow All</li><li id="details_item">Details…</li></ul></div>',
-      'radio_button' : '<input type="radio" name="radio_group"/><label onclick="radio_button_click()">label</label>'
+      'main' : '<widget name="main"><div id="main"><main_menu lazy=""></main_menu><div id="main_button"><button><img/></button></div></div></widget>',
+      'main_menu' : '<widget name="main_menu"><div id="main_menu" class="menu"><h1 id="title">JSArmor</h1><ul><li id="scope">Set for:<radio_button label="Page"></radio_button><radio_button label="Site"></radio_button><radio_button label="Domain"></radio_button><radio_button label="Global"></radio_button></li><li class="block_all" title="Block all scripts.">Block All</li><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Relaxed</li><li class="allow_all" title="Allow everything…">Allow All</li><li id="details_item">Details…</li></ul></div></widget>',
+      'radio_button' : '<widget name="radio_button" init=""><input type="radio" name="radio_group"/><label onclick="radio_button_click()">label</label></widget>'
     };
 
 

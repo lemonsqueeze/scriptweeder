@@ -38,18 +38,15 @@ sub dump_widgets
 {
     foreach my $s (<IN>)
     {
-	if ($s =~ m|<widget name="([^"]*)">|)
+	if ($s =~ m|<widget name="([^"]*)"[^>]*>|)
 	{
 	    dump_widget("");  # previous widget
 	    $id = $1;
-	    next;
 	}
-	if ($s =~ m|<widgets>|   ||
-	    $s =~ m|</widgets>|   ||
-	    $s =~ m|</widget>|)
+	if ($s =~ m|<widgets *>|   ||
+	    $s =~ m|</widgets *>|  )
 	{ next; }
 	push(@current_widget, $s);
-	#print $s;
     }
     dump_widget("last");
 }

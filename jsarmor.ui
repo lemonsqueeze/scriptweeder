@@ -65,7 +65,7 @@
   <label onclick="radio_button_click()"> {label} </label>
 --></def>
 
-<widget name="radio_button">
+<widget name="radio_button" init>
   <input type="radio" name="radio_group"/>
   <label onclick="radio_button_click()"> label </label>
 </widget>

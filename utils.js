@@ -210,9 +210,9 @@ function(){   // fake line, keep_editor_happy
 	return k;
     }
     
-    function my_alarm(msg)
+    function my_alert(msg)
     {
-	alarm("jsarmor:\n\n" + msg);
+	alert("jsarmor:\n\n" + msg);
     }
 
     // or use Object.keys(obj) if browser supports it.

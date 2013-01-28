@@ -497,10 +497,15 @@ function(){   // fake line, keep_editor_happy
 	return menu;
     }
 
-function radio_button_click()
-{
-    alert("radio_button_click() !!!");
-}
+    function radio_button_click()
+    {
+	alert("radio_button_click() !!!");
+    }
+    
+    function radio_button_init(widget)
+    {
+	alert("radio_button_init() !!!\nlabel: " + widget.label);
+    }
 
     var nsmenu = null;			// the main menu
     var need_reload = false;
