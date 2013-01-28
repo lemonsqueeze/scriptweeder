@@ -2280,7 +2280,7 @@ li.allow_all::before		{ content:-o-skin('Smiley Cry'); }  \n\
   \n\
 ";
 
-    /* layout for each widget (generated from jsarmor_widgets.xml). */
+    /* layout for each widget (generated from jsarmor.xml). */
     var widgets_layout = {
       'main' : '<div id="main" class="menu_parent"><div id="main_button"><button><img/></button></div></div>',
       'main_menu' : '<div id="main_menu" class="menu"><h1 id="title">JSArmor</h1><ul><li id="scope">Set for:<input type="radio" name="radio_group"/><label>Page</label><input type="radio" name="radio_group"/><label>Site</label><input type="radio" name="radio_group"/><label>Domain</label><input type="radio" name="radio_group"/><label>Global</label></li><li class="block_all" title="Block all scripts.">Block All</li><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Relaxed</li><li class="allow_all" title="Allow everything…">Allow All</li><li id="details_item">Details…</li></ul></div>'

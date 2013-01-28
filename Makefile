@@ -45,8 +45,9 @@ jsarmor.xml.bad: $(GEN_LAYOUT)
 
 jsarmor.xml: jsarmor.xml.bad
 	@echo generating $@
-# fixup non xml html tags
+# remove comments and fixup non xml html tags
 	@cat $< | \
+	sed -e 's|<!--[^>]*-->||mg' | \
 	sed -e 's|<img\([^>]*\)>|<img\1/>|g'     | \
 	sed -e 's|<input\([^>]*\)>|<input\1/>|g'   \
 	> $@
@@ -55,6 +56,5 @@ jsarmor.xml: jsarmor.xml.bad
 # 3) and turn that into js object with the html for each widget !
 jsarmor_widgets.js: jsarmor.xml
 	@echo generating $@
-	@xsltproc tools/split_widgets.xsl $<  > jsarmor_widgets.xml
-	@tools/pack_widgets jsarmor_widgets.xml  > $@
+	@tools/pack_widgets $<  > $@
 

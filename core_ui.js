@@ -1,3 +1,5 @@
+(   // keep_editor_happy
+
     /********************************* Core ui *********************************/
 
     // whether to show jsarmor ui inside frames / iframes
@@ -70,7 +72,7 @@
     }
 
     // create ui elements using html strings in widgets_layout
-    // FIXME worry about duplicate ids at some point ...
+    // FIXME check for duplicate ids ?
     function new_widget(id)
     {
 	// do we have this guy in cache ? use that then
@@ -250,3 +252,4 @@
 	document.body.appendChild(iframe);
     }
 
+)   // keep_editor_happy

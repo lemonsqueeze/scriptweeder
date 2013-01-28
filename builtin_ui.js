@@ -1,3 +1,5 @@
+(   // keep_editor_happy
+
     /********************************* Builtin ui *********************************/
 
     var cornerposition = 4;
@@ -804,3 +806,4 @@
 
 @include "jsarmor_widgets.js"
 
+)   // keep_editor_happy

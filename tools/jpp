@@ -6,6 +6,8 @@ sub doit
     my ($in) = @_;
     foreach my $s (<$in>)
     {
+	if ($s =~ m|// keep_editor_happy|)
+	{ next; }
 	if ($s =~ m|^\@include \"(.*)\"|)
 	{
 	    my $file = $1;

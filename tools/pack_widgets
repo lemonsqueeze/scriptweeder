@@ -38,12 +38,16 @@ sub dump_widgets
 {
     foreach my $s (<IN>)
     {
-	if ($s =~ m|<widget id="([^"]*)"/>|)
+	if ($s =~ m|<widget name="([^"]*)">|)
 	{
 	    dump_widget("");  # previous widget
 	    $id = $1;
 	    next;
 	}
+	if ($s =~ m|<widgets>|   ||
+	    $s =~ m|</widgets>|   ||
+	    $s =~ m|</widget>|)
+	{ next; }
 	push(@current_widget, $s);
 	#print $s;
     }
