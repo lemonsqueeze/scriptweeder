@@ -289,7 +289,7 @@
     function print_setting(host, settings)
     {
 	var s = "";
-	var prefix = (host == '' ? "" : host + ":")
+	var prefix = (host == '' ? "" : host + ":");
 	for (k in settings)
 	{
 	    var val = settings[k];
@@ -411,15 +411,6 @@
 	
 	reader.readAsBinaryString(f);
 	//reader.readAsText(f);
-    }
-
-    // or use Object.keys(obj) if browser supports it.
-    function get_keys(obj)
-    {
-	var keys = [];
-	for(var key in obj)
-	    keys.push(key);
-	return keys;
     }
 
     function reset_settings()
@@ -617,7 +608,7 @@
 	u = strip_http(u);
 	var a = u.match(/^([^/]*)\/([^/?&:]*)(.*)$/);
 	if (!a)
-	    alert("jsarmor.js: split_url(): shouldn't happen");
+	    my_alert("split_url(): shouldn't happen");
 	return a.slice(1);
     }
     
@@ -625,11 +616,6 @@
     {
 	var a = split_url(u);
 	return a[0] + '/' + a[1]; // dir + file
-    }
-
-    function is_prefix(p, str)
-    {
-	return (str.slice(0, p.length) == p);
     }
     
     function get_domain(h)
@@ -776,74 +762,8 @@
       if (mode == 'filtered')  return filtered_mode_allowed_host(host);
       if (mode == 'relaxed')   return relaxed_mode_allowed_host(host); 
       if (mode == 'allow_all') return true;
-      alert('jsarmor.js: mode="' + mode + '", this should not happen!');
+      my_alert('mode="' + mode + '", this should not happen!');
     }
-
-    /****************************** Misc utils ********************************/
-
-    function list_contains(list, str)
-    {
-      return (list && list.indexOf(' ' + str) != -1);
-    }
-
-    function list_to_string(list)
-    {
-	var d = '';
-	var comma = '';
-	var a=list.split(' ');
-	for (var i = 0; i < a.length; i++)
-	{ 
-	    if (a[i] != '.')
-	    {
-		d = d + comma + "'" + a[i] + "'";
-		comma = ', ';
-	    }
-	}
-	return '[' + d + ']';
-    }
-
-    function raw_list_to_string(list)
-    {
-	var d = '';
-	var comma = '';
-	var a = list.split(' ');
-	for (var i = 0; i < a.length; i++)
-	{ 
-	    if (a[i] != '.')
-	    {
-		d = d + comma + a[i];
-		comma = '\n';
-	    }
-	}
-	return d;
-    }
-
-    // suitable for textarea input
-    function raw_string_to_list(str)
-    {
-	var a = str.split('\r\n'); // eeew
-	var l = '. ';
-	var sep = '';
-	for (var i = 0; i < a.length; i++)
-	{
-	    if (a[i] != '')
-	    {  // no blank lines
-		l = l + sep + a[i];
-		sep = ' ';
-	    }
-	}
-	return l;
-    }    
-
-    function get_size_kb(x)
-    {
-	var k = new String(x / 1000);
-	var d = k.indexOf('.');
-	if (d)
-	    return k.slice(0, d + 2);
-	return k;
-    }
-    
     
     /**************************** Scripts store *******************************/
     
@@ -924,7 +844,7 @@
 	var domain_node = get_domain_node(domain, false);
 	if (!domain_node)
 	{
-	    alert("jsarmor.js: get_domain_node() failed! should not happen.");
+	    my_alert("get_domain_node() failed! should not happen.");
 	    return null;
 	}
 	var host_node = get_host_node(host, domain_node, false);
@@ -932,7 +852,7 @@
 	for (var i = scripts.length - 1; i >= 0; i--)
 	    if (scripts[i].url == url)
 		return scripts[i];
-	alert("jsarmor.js: find_script(): should not happen.");
+	my_alert("find_script(): should not happen.");
 	return null;
     }
 
@@ -1016,7 +936,7 @@
     {
         if (!element_tag_is(e.element, 'script'))
 	{
-	  alert("jsarmor.js: BeforeExternalScript: non <script>: " + e.element.tagName);
+	  my_alert("BeforeExternalScript: non <script>: " + e.element.tagName);
 	  return;
         }
 	
@@ -1108,6 +1028,7 @@
 	    h(e);
     }
 
+
     /********************************* Core ui *********************************/
 
     // whether to show jsarmor ui inside frames / iframes
@@ -1155,10 +1076,10 @@
 	idoc.head.appendChild(link);
     }
 
-    /**************************** External layout ***********************/
+    /****************************** Widget API *************************/
 
     // cache of widget nodes so we don't have to use innerHTML everytime
-    var cached_widgets;
+    //var cached_widgets;
     
     // layout of interface used in jsarmor's iframe
     function init_layout()
@@ -1179,63 +1100,119 @@
 	idoc.body.className = "body";
     }
 
-    // find element in parent with that id or class_name
-    function get_widget(parent, class_name)
+    // create normal single node widgets.
+    function new_widget(name)
     {
-	return _get_widget(parent, class_name, false, "get_widget");
+	var w = new_wrapped_widget(name);
+	if (w.children.length > 1)
+	    my_alert("new_widget(" + name + "):\n" +
+		     "this isn't a single node widget, call new_wrapped_widget() instead !");
+	return w.firstChild;
     }
 
+    // widgets with the "lazy" attribute are not created until this is called.
+    function wakeup_lazy_widgets(tree)
+    {
+	create_nested_widgets(tree, true);
+    }
+
+    // FIXME we should know widget_name, we created these things !
+    // FIXME add placeholder_id arg, this only works for unique placeholders ...
+    function parent_widget(widget, widget_name, tree) 
+    {
+	var l = tree.getElementsByTagName(widget_name);
+	for (var i = 0; i < l.length; i++)
+	{
+	    var n = l[i];
+	    if (!n.hasAttribute('lazy'))
+		continue;
+	    replace_widget(widget, n);
+	    return;
+	}
+	my_alert("parent_widget() couldn't find placeholder for " + widget_name);
+    }
+    
+    
+    /**************************** Internal widget functions ***********************/
+    
     // create ui elements using html strings in widgets_layout
+    // widget is wrapped in a parent <div> in case it's actually a forest.
+    // (.forest is set on the div in this case)
     // FIXME check for duplicate ids ?
-    function new_widget(id)
+    function new_wrapped_widget(name)
     {
 	// do we have this guy in cache ? use that then
-	//if (cached_widgets[id])
-	// return cached_widgets[id].cloneNode(true);
+	//if (cached_widgets[name])
+	// return cached_widgets[name].cloneNode(true);
 
-	var layout = widgets_layout[id];
+	var layout = widgets_layout[name];
 	if (!layout)
 	{
-	    alert("jsarmor:\n\nnew_widget(" + id + "): the layout for this widget is missing!");
+	    my_alert("new_widget(" + name + "): the layout for this widget is missing!");
 	    return null;
 	}		    
 
 	// otherwise create a new one...
-	var d = idoc.createElement('div');
-	d.innerHTML = layout;
-
-	// this is a problem if we want to define a widget with several children
-	//if (id == "RADIO_BUTTON")
-	//var widget = d;
-	// else
-	    var widget = d.firstChild;
-	 
-	if (!widget)
+	var w = idoc.createElement('div');
+	w.innerHTML = layout;
+	if (w.children.length > 1)
+	    w.forest = true;
+	
+	if (!w)
 	{
-	    alert("jsarmor:\n\nnew_widget(" + id + "): couldn't create this guy, check the html in widgets_layout.");
+	    my_alert("new_widget(" + name + "):\n" +
+		     "couldn't create this guy, check the html in widgets_layout.");
 	    return null;
 	}
 
-	init_widget_handlers(widget);
-	create_nested_widgets(widget);
+	init_widget_handlers(w);
+	create_nested_widgets(w, false);
 	
 	// cached_widgets[id] = d.firstChild;
 	//return widget.cloneNode(true);
-	return widget;
+	return w;
     }
 
     function is_widget(widget)
     {
-	return widgets_layout[widget.tagName];
+	return (widgets_layout[widget.tagName] != null);
     }
 
-    function create_nested_widgets(widget)
+    function create_nested_widgets(widget, ignore_lazy)
     {
-	function widget_needed(n)
-	{  return (is_widget(n) && !n.hasAttribute('placeholder'));  }
-	
-	replace_nodes_if(widget_needed, widget, function(n)
-	  { return new_widget(n.tagName); });
+	// NodeLists are live so we can't walk and change the tree at the same time.
+	// so get all the nodes to replace first, then do it.
+	var from = [], to = [];
+	foreach_node(widget, function(n)
+        {
+	    if (!is_widget(n) ||
+		(!ignore_lazy && n.hasAttribute('lazy')))
+		return;
+	    from.push(n);
+	    to.push(new_wrapped_widget(n.tagName));
+	});
+
+	for (var i = 0; i < to.length; i++)
+	    replace_wrapped_widget(to[i], from[i]);
+    }
+
+    function replace_wrapped_widget(to, from)
+    {
+	if (!to.forest) // simple case
+	{
+	    from.parentNode.replaceChild(to.firstChild, from);
+	    return;
+	}
+
+	while (to.children.length)
+	    from.parentNode.insertBefore(to.firstChild, from);
+	from.parentNode.removeChild(from);
+    }
+
+    // replace placeholder with actual widget    
+    function replace_widget(to, from)
+    {
+	replace_wrapped_widget(to.parentNode, from);
     }
 
     //FIXME add the others
@@ -1263,29 +1240,6 @@
 	}
     }
 
-    function _get_widget(parent, class_name, unique, fname)
-    {
-	var id = get_by_id(parent, class_name);
-	if (id)
-	    return id;
-	
-	// try className then ...
-	var l = getElementsByClassName(parent, class_name);
-	if (l.length == 1)
-	    return l[0];
-	if (!l.length)
-	{
-	    alert("jsarmor:\n\n" + fname +"(" + class_name + "):\n couldn't find widget by that name !");
-	    return null;
-	}	
-	if (unique)	// should be unique ?
-	{
-	    alert("jsarmor:\n\n" + fname +"(" + class_name + "): multiple matches !");
-	    return null;
-	}
-	return l[0];	// return first match.
-    }
-
 /*
     function add_widget(widget_id, parent_id)
     {
@@ -1296,126 +1250,6 @@
     }
  */
 
-    // FIXME we should know widget_name, we created this thing !
-    // FIXME add placeholder_id arg, this only works for unique placeholders ...
-    function parent_widget(widget, widget_name, tree) 
-    {
-	//if (!is_widget(widget))
-	//{ alert("jsarmor:\n\nparent_widget() called on non widget: " + widget.tagName); }
-	var l = tree.getElementsByTagName('*');
-	for (var i = 0; i < l.length; i++)
-	{
-	    var n = l[i];
-	    if (element_tag_is(n, widget_name) &&
-		n.hasAttribute('placeholder'))
-	    {	// kick placeholder out
-		n.parentNode.replaceChild(widget, n);
-		return;
-	    }
-	}
-	alert("jsarmor:\n\nparent_widget() couldn't find placeholder for " + widget_name);
-    }
-
-    /**************************** Node functions *******************************/
-
-    function element_tag_is(el, tag)
-    {
-	return (el.tagName &&
-		el.tagName.toLowerCase() == tag);
-    }
-
-    // FIXME, optimize all this
-    function get_by_id(parent, id)
-    {
-	var root_node = get_root_node(parent);
-	if (root_node && element_tag_is(root_node, "html"))
-	    return idoc.getElementById(id);
-
-	// unparented, do it by hand ...
-	if (!parent)
-	    alert("parent is null !!");
-	l = parent.getElementsByTagName("*");
-	for (var i = 0; i < l.length; i++)
-	    if (l[i].id == id)
-		return l[i];
-	return null;
-    }
-
-    function getElementsByClassName(node, classname)
-    {
-	if (node.getElementsByClassName) { // use native implementation if available
-	    return node.getElementsByClassName(classname);
-	} else {
-	    return (function getElementsByClass(searchClass,node) {
-		    if ( node == null )
-			node = idoc;
-		    var pattern = new RegExp("(^|\\s)"+searchClass+"(\\s|$)"), i, j;
-
-		    // does parent itself match ?
-		    if (pattern.test(node.className))
-			return [node];
-			
-		    var classElements = [];
-		    var els = node.getElementsByTagName("*");
-		    var elsLen = els.length;
-		    for (i = 0, j = 0; i < elsLen; i++) {
-			if ( pattern.test(els[i].className) ) {
-			    classElements[j] = els[i];
-			    j++;
-			}
-		    }
-		    return classElements;
-		})(classname, node);
-	}
-    }
-
-    function get_root_node(n)
-    {
-	var p = null;
-	for (; n && p != n; n = n.parentNode)
-	    p = n;
-	return n;
-    }
-
-    function replace_nodes_if(matches, root, new_node)
-    {
-	foreach_child(root, function(n)
-	  {
-	      if (matches(n))
-		  n.parentNode.replaceChild(new_node(n), n);
-	  });
-	
-	foreach_child(root, function(n)
-	  {
-	      replace_nodes_if(matches, n, new_node);
-	  });    
-    }
-
-    function foreach_child(n, f)
-    {
-	foreach(n.children, f);
-    }
-
-    function foreach_node(n, f)
-    {
-	f(n);
-	foreach_down_node(n, f);
-    }
-
-    function foreach_down_node(n, f)
-    {
-	foreach(n.getElementsByTagName('*'), f);
-    }
-
-    /**************************** List functions *******************************/
-
-    function foreach(l, f)
-    {
-	for (var i = 0; i < l.length; i++)
-	    f(l[i]);
-    }
-
-    
     /**************************** Injected iframe logic ***********************/
 
     // interface style used in jsarmor's iframe
@@ -1483,6 +1317,233 @@
 	iframe.onload = populate_iframe;
 	document.body.appendChild(iframe);
     }
+
+
+    /**************************** Node functions *******************************/
+
+    function element_tag_is(el, tag)
+    {
+	return (el.tagName &&
+		el.tagName.toLowerCase() == tag);
+    }
+
+    // FIXME, optimize all this
+    function get_by_id(parent, id)
+    {
+	var root_node = get_root_node(parent);
+	if (root_node && element_tag_is(root_node, "html"))
+	    return idoc.getElementById(id);
+
+	// unparented, do it by hand ...
+	if (!parent)
+	    alert("parent is null !!");
+	l = parent.getElementsByTagName("*");
+	for (var i = 0; i < l.length; i++)
+	    if (l[i].id == id)
+		return l[i];
+	return null;
+    }
+    
+    // find element in parent with that id or class_name
+    function find_element(parent, class_name)
+    {
+	return _find_element(parent, class_name, false, "find_element");
+    }
+
+    function _find_element(parent, class_name, unique, fname)
+    {
+	var id = get_by_id(parent, class_name);
+	if (id)
+	    return id;
+	
+	// try className then ...
+	var l = getElementsByClassName(parent, class_name);
+	if (l.length == 1)
+	    return l[0];
+	if (!l.length)
+	{
+	    my_alert(fname +"(" + class_name + "):\n couldn't find element by that name !");
+	    return null;
+	}
+	if (unique)	// should be unique ?
+	{
+	    my_alert(fname +"(" + class_name + "): multiple matches !");
+	    return null;
+	}
+	return l[0];	// return first match.
+    }
+
+    
+    function getElementsByClassName(node, classname)
+    {
+	if (node.getElementsByClassName) { // use native implementation if available
+	    return node.getElementsByClassName(classname);
+	} else {
+	    return (function getElementsByClass(searchClass,node) {
+		    if ( node == null )
+			node = idoc;
+		    var pattern = new RegExp("(^|\\s)"+searchClass+"(\\s|$)"), i, j;
+
+		    // does parent itself match ?
+		    if (pattern.test(node.className))
+			return [node];
+			
+		    var classElements = [];
+		    var els = node.getElementsByTagName("*");
+		    var elsLen = els.length;
+		    for (i = 0, j = 0; i < elsLen; i++) {
+			if ( pattern.test(els[i].className) ) {
+			    classElements[j] = els[i];
+			    j++;
+			}
+		    }
+		    return classElements;
+		})(classname, node);
+	}
+    }
+
+    function get_root_node(n)
+    {
+	var p = null;
+	for (; n && p != n; n = n.parentNode)
+	    p = n;
+	return n;
+    }
+
+    function replace_nodes_if(matches, root, new_node)
+    {
+	foreach_child(root, function(n)
+	  {
+	      if (matches(n))
+		  n.parentNode.replaceChild(new_node(n), n);
+	  });
+	
+	foreach_child(root, function(n)
+	  {
+	      replace_nodes_if(matches, n, new_node);
+	  });    
+    }
+
+    function foreach_child(n, f)
+    {
+	foreach(n.children, f);
+    }
+
+    function foreach_node(n, f)
+    {
+	f(n);
+	foreach_down_node(n, f);
+    }
+
+    function foreach_down_node(n, f)
+    {
+	foreach(n.getElementsByTagName('*'), f);
+    }
+
+    /**************************** List utils *******************************/
+
+    function foreach(l, f)
+    {
+	try
+	{
+	    for (var i = 0; i < l.length; i++)
+		f(l[i]);
+	}
+	catch(e)
+	{
+	    if (e != "stop_foreach")
+		throw(e);
+	}
+    }
+
+    function list_contains(list, str)
+    {
+      return (list && list.indexOf(' ' + str) != -1);
+    }
+
+    function list_to_string(list)
+    {
+	var d = '';
+	var comma = '';
+	var a=list.split(' ');
+	for (var i = 0; i < a.length; i++)
+	{ 
+	    if (a[i] != '.')
+	    {
+		d = d + comma + "'" + a[i] + "'";
+		comma = ', ';
+	    }
+	}
+	return '[' + d + ']';
+    }
+
+    function raw_list_to_string(list)
+    {
+	var d = '';
+	var comma = '';
+	var a = list.split(' ');
+	for (var i = 0; i < a.length; i++)
+	{ 
+	    if (a[i] != '.')
+	    {
+		d = d + comma + a[i];
+		comma = '\n';
+	    }
+	}
+	return d;
+    }
+
+    // suitable for textarea input
+    function raw_string_to_list(str)
+    {
+	var a = str.split('\r\n'); // eeew
+	var l = '. ';
+	var sep = '';
+	for (var i = 0; i < a.length; i++)
+	{
+	    if (a[i] != '')
+	    {  // no blank lines
+		l = l + sep + a[i];
+		sep = ' ';
+	    }
+	}
+	return l;
+    }    
+
+    
+    /**************************** String functions *******************************/
+    
+    function is_prefix(p, str)
+    {
+	return (str.slice(0, p.length) == p);
+    }
+    
+    /**************************** Misc utils *******************************/
+
+    function get_size_kb(x)
+    {
+	var k = new String(x / 1000);
+	var d = k.indexOf('.');
+	if (d)
+	    return k.slice(0, d + 2);
+	return k;
+    }
+    
+    function my_alarm(msg)
+    {
+	alarm("jsarmor:\n\n" + msg);
+    }
+
+    // or use Object.keys(obj) if browser supports it.
+    function get_keys(obj)
+    {
+	var keys = [];
+	for(var key in obj)
+	    keys.push(key);
+	return keys;
+    }
+    
+
 
     /********************************* Builtin ui *********************************/
 
@@ -1725,7 +1786,7 @@
     {
       block_inline_scripts = !block_inline_scripts;
       this.checkbox.checked = block_inline_scripts;
-      get_widget(nsmenu, "handle_noscript_tags").style.display = (block_inline_scripts ? 'block' : 'none');
+      find_element(nsmenu, "handle_noscript_tags").style.display = (block_inline_scripts ? 'block' : 'none');
       set_bool_setting('inline', block_inline_scripts);
       need_reload = true;
     }
@@ -2003,22 +2064,22 @@ function radio_button_click()
 	      reload_page();
 	};
 
-	var title = get_widget(nsmenu, "title");
+	var title = find_element(nsmenu, "title");
 	title.title = version;
 
-	var scope_item = get_widget(nsmenu, "scope");
+	var scope_item = find_element(nsmenu, "scope");
 	//setup_radio_buttons(scope_item, scope, change_scope)
 
 	if (mode == 'block_all')
 	{	
-	    var w = get_widget(nsmenu, "block_inline_scripts");
+	    var w = find_element(nsmenu, "block_inline_scripts");
 	    w.style = "display:block;";	    
 	    setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);
 
-	    var w = get_widget(nsmenu, "inline_scripts_size");
+	    var w = find_element(nsmenu, "inline_scripts_size");
 	    w.innerText = " [" + get_size_kb(total_inline_size) + "k]";
 
-	    var w = get_widget(nsmenu, "handle_noscript_tags");
+	    var w = find_element(nsmenu, "handle_noscript_tags");
 	    setup_checkbox_item(w, handle_noscript_tags, toggle_handle_noscript_tags);
 	    if (block_inline_scripts)
 		w.style = "display:block;";
@@ -2033,7 +2094,7 @@ function radio_button_click()
 	for (var i = 0; i < modes.length; i++)
 	{
 	    // get item for this mode, wherever it is.
-	    var w = get_widget(nsmenu, modes[i]);
+	    var w = find_element(nsmenu, modes[i]);
 	    if (modes[i] == mode)
 		w.className = "selected";
 	    else
@@ -2046,7 +2107,7 @@ function radio_button_click()
 	    add_host_table_after(w);
 	}
 	
-	var w = get_widget(nsmenu, "details_item");
+	var w = find_element(nsmenu, "details_item");
 	w.onclick = show_details;
 
 	// FIXME put it back
@@ -2223,7 +2284,7 @@ function radio_button_click()
     {
 	main_ui = new_widget("main");
 	
-	var b = get_widget(main_ui, "main_button");
+	var b = find_element(main_ui, "main_button");
 	//set_icon_mode(b, mode);
 	var tooltip = main_button_tooltip();	
 	b.title = tooltip;
@@ -2402,9 +2463,9 @@ li.allow_all::before		{ content:-o-skin('Smiley Cry'); }  \n\
 
     /* layout for each widget (generated from jsarmor.xml). */
     var widgets_layout = {
-      'main' : '<div id="main"><main_menu placeholder=""></main_menu><div id="main_button"><button><img/></button></div></div>',
-      'main_menu' : '<div id="main_menu" class="menu"><h1 id="title">JSArmor</h1><ul><li id="scope">Set for:<input type="radio" name="radio_group"/><label onclick="radio_button_click()">Page</label><input type="radio" name="radio_group"/><label onclick="radio_button_click()">Site</label><input type="radio" name="radio_group"/><label onclick="radio_button_click()">Domain</label><input type="radio" name="radio_group"/><label onclick="radio_button_click()">Global</label></li><li class="block_all" title="Block all scripts.">Block All</li><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Relaxed</li><li class="allow_all" title="Allow everything…">Allow All</li><li id="details_item">Details…</li></ul></div>',
-      'radio_button___' : '<input type="radio" name="radio_group"/><label onclick="radio_button_click()">label</label>'
+      'main' : '<div id="main"><main_menu lazy=""></main_menu><div id="main_button"><button><img/></button></div></div>',
+      'main_menu' : '<div id="main_menu" class="menu"><h1 id="title">JSArmor</h1><ul><li id="scope">Set for:<radio_button label="Page"></radio_button><radio_button label="Site"></radio_button><radio_button label="Domain"></radio_button><radio_button label="Global"></radio_button></li><li class="block_all" title="Block all scripts.">Block All</li><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Relaxed</li><li class="allow_all" title="Allow everything…">Allow All</li><li id="details_item">Details…</li></ul></div>',
+      'radio_button' : '<input type="radio" name="radio_group"/><label onclick="radio_button_click()">label</label>'
     };
 
 

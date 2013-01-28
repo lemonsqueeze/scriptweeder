@@ -1,6 +1,6 @@
 
 NAME	= jsarmor.js
-SRC	= core.js core_ui.js builtin_ui.js
+SRC	= core.js utils.js core_ui.js builtin_ui.js
 GEN_SRC	= jsarmor_style.js jsarmor_widgets.js
 TMPFILES= jsarmor.xml.bad jsarmor.xml jsarmor_widgets.xml tools/quick_ui.html
 ALLSRC	= $(SRC) $(GEN_SRC)

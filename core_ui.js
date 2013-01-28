@@ -1,4 +1,4 @@
-(   // keep_editor_happy
+function(){   // fake line, keep_editor_happy
 
     /********************************* Core ui *********************************/
 
@@ -47,10 +47,10 @@
 	idoc.head.appendChild(link);
     }
 
-    /**************************** External layout ***********************/
+    /****************************** Widget API *************************/
 
     // cache of widget nodes so we don't have to use innerHTML everytime
-    var cached_widgets;
+    //var cached_widgets;
     
     // layout of interface used in jsarmor's iframe
     function init_layout()
@@ -71,63 +71,119 @@
 	idoc.body.className = "body";
     }
 
-    // find element in parent with that id or class_name
-    function get_widget(parent, class_name)
+    // create normal single node widgets.
+    function new_widget(name)
     {
-	return _get_widget(parent, class_name, false, "get_widget");
+	var w = new_wrapped_widget(name);
+	if (w.children.length > 1)
+	    my_alert("new_widget(" + name + "):\n" +
+		     "this isn't a single node widget, call new_wrapped_widget() instead !");
+	return w.firstChild;
     }
 
+    // widgets with the "lazy" attribute are not created until this is called.
+    function wakeup_lazy_widgets(tree)
+    {
+	create_nested_widgets(tree, true);
+    }
+
+    // FIXME we should know widget_name, we created these things !
+    // FIXME add placeholder_id arg, this only works for unique placeholders ...
+    function parent_widget(widget, widget_name, tree) 
+    {
+	var l = tree.getElementsByTagName(widget_name);
+	for (var i = 0; i < l.length; i++)
+	{
+	    var n = l[i];
+	    if (!n.hasAttribute('lazy'))
+		continue;
+	    replace_widget(widget, n);
+	    return;
+	}
+	my_alert("parent_widget() couldn't find placeholder for " + widget_name);
+    }
+    
+    
+    /**************************** Internal widget functions ***********************/
+    
     // create ui elements using html strings in widgets_layout
+    // widget is wrapped in a parent <div> in case it's actually a forest.
+    // (.forest is set on the div in this case)
     // FIXME check for duplicate ids ?
-    function new_widget(id)
+    function new_wrapped_widget(name)
     {
 	// do we have this guy in cache ? use that then
-	//if (cached_widgets[id])
-	// return cached_widgets[id].cloneNode(true);
+	//if (cached_widgets[name])
+	// return cached_widgets[name].cloneNode(true);
 
-	var layout = widgets_layout[id];
+	var layout = widgets_layout[name];
 	if (!layout)
 	{
-	    alert("jsarmor:\n\nnew_widget(" + id + "): the layout for this widget is missing!");
+	    my_alert("new_widget(" + name + "): the layout for this widget is missing!");
 	    return null;
 	}		    
 
 	// otherwise create a new one...
-	var d = idoc.createElement('div');
-	d.innerHTML = layout;
-
-	// this is a problem if we want to define a widget with several children
-	//if (id == "RADIO_BUTTON")
-	//var widget = d;
-	// else
-	    var widget = d.firstChild;
-	 
-	if (!widget)
+	var w = idoc.createElement('div');
+	w.innerHTML = layout;
+	if (w.children.length > 1)
+	    w.forest = true;
+	
+	if (!w)
 	{
-	    alert("jsarmor:\n\nnew_widget(" + id + "): couldn't create this guy, check the html in widgets_layout.");
+	    my_alert("new_widget(" + name + "):\n" +
+		     "couldn't create this guy, check the html in widgets_layout.");
 	    return null;
 	}
 
-	init_widget_handlers(widget);
-	create_nested_widgets(widget);
+	init_widget_handlers(w);
+	create_nested_widgets(w, false);
 	
 	// cached_widgets[id] = d.firstChild;
 	//return widget.cloneNode(true);
-	return widget;
+	return w;
     }
 
     function is_widget(widget)
     {
-	return widgets_layout[widget.tagName];
+	return (widgets_layout[widget.tagName] != null);
     }
 
-    function create_nested_widgets(widget)
+    function create_nested_widgets(widget, ignore_lazy)
     {
-	function widget_needed(n)
-	{  return (is_widget(n) && !n.hasAttribute('placeholder'));  }
-	
-	replace_nodes_if(widget_needed, widget, function(n)
-	  { return new_widget(n.tagName); });
+	// NodeLists are live so we can't walk and change the tree at the same time.
+	// so get all the nodes to replace first, then do it.
+	var from = [], to = [];
+	foreach_node(widget, function(n)
+        {
+	    if (!is_widget(n) ||
+		(!ignore_lazy && n.hasAttribute('lazy')))
+		return;
+	    from.push(n);
+	    to.push(new_wrapped_widget(n.tagName));
+	});
+
+	for (var i = 0; i < to.length; i++)
+	    replace_wrapped_widget(to[i], from[i]);
+    }
+
+    function replace_wrapped_widget(to, from)
+    {
+	if (!to.forest) // simple case
+	{
+	    from.parentNode.replaceChild(to.firstChild, from);
+	    return;
+	}
+
+	while (to.children.length)
+	    from.parentNode.insertBefore(to.firstChild, from);
+	from.parentNode.removeChild(from);
+    }
+
+    // replace placeholder with actual widget    
+    function replace_widget(to, from)
+    {
+	replace_wrapped_widget(to.parentNode, from);
     }
 
     //FIXME add the others
@@ -155,29 +211,6 @@
 	}
     }
 
-    function _get_widget(parent, class_name, unique, fname)
-    {
-	var id = get_by_id(parent, class_name);
-	if (id)
-	    return id;
-	
-	// try className then ...
-	var l = getElementsByClassName(parent, class_name);
-	if (l.length == 1)
-	    return l[0];
-	if (!l.length)
-	{
-	    alert("jsarmor:\n\n" + fname +"(" + class_name + "):\n couldn't find widget by that name !");
-	    return null;
-	}	
-	if (unique)	// should be unique ?
-	{
-	    alert("jsarmor:\n\n" + fname +"(" + class_name + "): multiple matches !");
-	    return null;
-	}
-	return l[0];	// return first match.
-    }
-
 /*
     function add_widget(widget_id, parent_id)
     {
@@ -188,126 +221,6 @@
     }
  */
 
-    // FIXME we should know widget_name, we created this thing !
-    // FIXME add placeholder_id arg, this only works for unique placeholders ...
-    function parent_widget(widget, widget_name, tree) 
-    {
-	//if (!is_widget(widget))
-	//{ alert("jsarmor:\n\nparent_widget() called on non widget: " + widget.tagName); }
-	var l = tree.getElementsByTagName('*');
-	for (var i = 0; i < l.length; i++)
-	{
-	    var n = l[i];
-	    if (element_tag_is(n, widget_name) &&
-		n.hasAttribute('placeholder'))
-	    {	// kick placeholder out
-		n.parentNode.replaceChild(widget, n);
-		return;
-	    }
-	}
-	alert("jsarmor:\n\nparent_widget() couldn't find placeholder for " + widget_name);
-    }
-
-    /**************************** Node functions *******************************/
-
-    function element_tag_is(el, tag)
-    {
-	return (el.tagName &&
-		el.tagName.toLowerCase() == tag);
-    }
-
-    // FIXME, optimize all this
-    function get_by_id(parent, id)
-    {
-	var root_node = get_root_node(parent);
-	if (root_node && element_tag_is(root_node, "html"))
-	    return idoc.getElementById(id);
-
-	// unparented, do it by hand ...
-	if (!parent)
-	    alert("parent is null !!");
-	l = parent.getElementsByTagName("*");
-	for (var i = 0; i < l.length; i++)
-	    if (l[i].id == id)
-		return l[i];
-	return null;
-    }
-
-    function getElementsByClassName(node, classname)
-    {
-	if (node.getElementsByClassName) { // use native implementation if available
-	    return node.getElementsByClassName(classname);
-	} else {
-	    return (function getElementsByClass(searchClass,node) {
-		    if ( node == null )
-			node = idoc;
-		    var pattern = new RegExp("(^|\\s)"+searchClass+"(\\s|$)"), i, j;
-
-		    // does parent itself match ?
-		    if (pattern.test(node.className))
-			return [node];
-			
-		    var classElements = [];
-		    var els = node.getElementsByTagName("*");
-		    var elsLen = els.length;
-		    for (i = 0, j = 0; i < elsLen; i++) {
-			if ( pattern.test(els[i].className) ) {
-			    classElements[j] = els[i];
-			    j++;
-			}
-		    }
-		    return classElements;
-		})(classname, node);
-	}
-    }
-
-    function get_root_node(n)
-    {
-	var p = null;
-	for (; n && p != n; n = n.parentNode)
-	    p = n;
-	return n;
-    }
-
-    function replace_nodes_if(matches, root, new_node)
-    {
-	foreach_child(root, function(n)
-	  {
-	      if (matches(n))
-		  n.parentNode.replaceChild(new_node(n), n);
-	  });
-	
-	foreach_child(root, function(n)
-	  {
-	      replace_nodes_if(matches, n, new_node);
-	  });    
-    }
-
-    function foreach_child(n, f)
-    {
-	foreach(n.children, f);
-    }
-
-    function foreach_node(n, f)
-    {
-	f(n);
-	foreach_down_node(n, f);
-    }
-
-    function foreach_down_node(n, f)
-    {
-	foreach(n.getElementsByTagName('*'), f);
-    }
-
-    /**************************** List functions *******************************/
-
-    function foreach(l, f)
-    {
-	for (var i = 0; i < l.length; i++)
-	    f(l[i]);
-    }
-
-    
     /**************************** Injected iframe logic ***********************/
 
     // interface style used in jsarmor's iframe
@@ -376,4 +289,4 @@
 	document.body.appendChild(iframe);
     }
 
-)   // keep_editor_happy
+}   // keep_editor_happy

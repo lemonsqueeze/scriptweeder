@@ -289,7 +289,7 @@
     function print_setting(host, settings)
     {
 	var s = "";
-	var prefix = (host == '' ? "" : host + ":")
+	var prefix = (host == '' ? "" : host + ":");
 	for (k in settings)
 	{
 	    var val = settings[k];
@@ -411,15 +411,6 @@
 	
 	reader.readAsBinaryString(f);
 	//reader.readAsText(f);
-    }
-
-    // or use Object.keys(obj) if browser supports it.
-    function get_keys(obj)
-    {
-	var keys = [];
-	for(var key in obj)
-	    keys.push(key);
-	return keys;
     }
 
     function reset_settings()
@@ -617,7 +608,7 @@
 	u = strip_http(u);
 	var a = u.match(/^([^/]*)\/([^/?&:]*)(.*)$/);
 	if (!a)
-	    alert("jsarmor.js: split_url(): shouldn't happen");
+	    my_alert("split_url(): shouldn't happen");
 	return a.slice(1);
     }
     
@@ -625,11 +616,6 @@
     {
 	var a = split_url(u);
 	return a[0] + '/' + a[1]; // dir + file
-    }
-
-    function is_prefix(p, str)
-    {
-	return (str.slice(0, p.length) == p);
     }
     
     function get_domain(h)
@@ -776,74 +762,8 @@
       if (mode == 'filtered')  return filtered_mode_allowed_host(host);
       if (mode == 'relaxed')   return relaxed_mode_allowed_host(host); 
       if (mode == 'allow_all') return true;
-      alert('jsarmor.js: mode="' + mode + '", this should not happen!');
+      my_alert('mode="' + mode + '", this should not happen!');
     }
-
-    /****************************** Misc utils ********************************/
-
-    function list_contains(list, str)
-    {
-      return (list && list.indexOf(' ' + str) != -1);
-    }
-
-    function list_to_string(list)
-    {
-	var d = '';
-	var comma = '';
-	var a=list.split(' ');
-	for (var i = 0; i < a.length; i++)
-	{ 
-	    if (a[i] != '.')
-	    {
-		d = d + comma + "'" + a[i] + "'";
-		comma = ', ';
-	    }
-	}
-	return '[' + d + ']';
-    }
-
-    function raw_list_to_string(list)
-    {
-	var d = '';
-	var comma = '';
-	var a = list.split(' ');
-	for (var i = 0; i < a.length; i++)
-	{ 
-	    if (a[i] != '.')
-	    {
-		d = d + comma + a[i];
-		comma = '\n';
-	    }
-	}
-	return d;
-    }
-
-    // suitable for textarea input
-    function raw_string_to_list(str)
-    {
-	var a = str.split('\r\n'); // eeew
-	var l = '. ';
-	var sep = '';
-	for (var i = 0; i < a.length; i++)
-	{
-	    if (a[i] != '')
-	    {  // no blank lines
-		l = l + sep + a[i];
-		sep = ' ';
-	    }
-	}
-	return l;
-    }    
-
-    function get_size_kb(x)
-    {
-	var k = new String(x / 1000);
-	var d = k.indexOf('.');
-	if (d)
-	    return k.slice(0, d + 2);
-	return k;
-    }
-    
     
     /**************************** Scripts store *******************************/
     
@@ -924,7 +844,7 @@
 	var domain_node = get_domain_node(domain, false);
 	if (!domain_node)
 	{
-	    alert("jsarmor.js: get_domain_node() failed! should not happen.");
+	    my_alert("get_domain_node() failed! should not happen.");
 	    return null;
 	}
 	var host_node = get_host_node(host, domain_node, false);
@@ -932,7 +852,7 @@
 	for (var i = scripts.length - 1; i >= 0; i--)
 	    if (scripts[i].url == url)
 		return scripts[i];
-	alert("jsarmor.js: find_script(): should not happen.");
+	my_alert("find_script(): should not happen.");
 	return null;
     }
 
@@ -1016,7 +936,7 @@
     {
         if (!element_tag_is(e.element, 'script'))
 	{
-	  alert("jsarmor.js: BeforeExternalScript: non <script>: " + e.element.tagName);
+	  my_alert("BeforeExternalScript: non <script>: " + e.element.tagName);
 	  return;
         }
 	
@@ -1109,6 +1029,7 @@
     }
 
 @include "core_ui.js"
+@include "utils.js"
 @include "builtin_ui.js"
     
 })(window.document, window.location, window.opera, window.opera.scriptStorage);	// last_line_tag

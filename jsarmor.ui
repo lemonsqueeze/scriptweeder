@@ -13,7 +13,7 @@
 <!-- main ui -->
 <widget name="main">
 <div id="main">
-  <main_menu placeholder></main_menu>
+  <main_menu lazy></main_menu>
   <div id="main_button" >
     <button><img/></button>
   </div>
@@ -60,12 +60,12 @@
   </li>
 --></def>
 
-<def radio_button label ><!--
+<def radio_button___ label ><!--
   <input type="radio" name="radio_group"/>
   <label onclick="radio_button_click()"> {label} </label>
 --></def>
 
-<widget name="radio_button___">
+<widget name="radio_button">
   <input type="radio" name="radio_group"/>
   <label onclick="radio_button_click()"> label </label>
 </widget>

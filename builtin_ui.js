@@ -1,4 +1,4 @@
-(   // keep_editor_happy
+function(){   // fake line, keep_editor_happy
 
     /********************************* Builtin ui *********************************/
 
@@ -241,7 +241,7 @@
     {
       block_inline_scripts = !block_inline_scripts;
       this.checkbox.checked = block_inline_scripts;
-      get_widget(nsmenu, "handle_noscript_tags").style.display = (block_inline_scripts ? 'block' : 'none');
+      find_element(nsmenu, "handle_noscript_tags").style.display = (block_inline_scripts ? 'block' : 'none');
       set_bool_setting('inline', block_inline_scripts);
       need_reload = true;
     }
@@ -519,22 +519,22 @@ function radio_button_click()
 	      reload_page();
 	};
 
-	var title = get_widget(nsmenu, "title");
+	var title = find_element(nsmenu, "title");
 	title.title = version;
 
-	var scope_item = get_widget(nsmenu, "scope");
+	var scope_item = find_element(nsmenu, "scope");
 	//setup_radio_buttons(scope_item, scope, change_scope)
 
 	if (mode == 'block_all')
 	{	
-	    var w = get_widget(nsmenu, "block_inline_scripts");
+	    var w = find_element(nsmenu, "block_inline_scripts");
 	    w.style = "display:block;";	    
 	    setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);
 
-	    var w = get_widget(nsmenu, "inline_scripts_size");
+	    var w = find_element(nsmenu, "inline_scripts_size");
 	    w.innerText = " [" + get_size_kb(total_inline_size) + "k]";
 
-	    var w = get_widget(nsmenu, "handle_noscript_tags");
+	    var w = find_element(nsmenu, "handle_noscript_tags");
 	    setup_checkbox_item(w, handle_noscript_tags, toggle_handle_noscript_tags);
 	    if (block_inline_scripts)
 		w.style = "display:block;";
@@ -549,7 +549,7 @@ function radio_button_click()
 	for (var i = 0; i < modes.length; i++)
 	{
 	    // get item for this mode, wherever it is.
-	    var w = get_widget(nsmenu, modes[i]);
+	    var w = find_element(nsmenu, modes[i]);
 	    if (modes[i] == mode)
 		w.className = "selected";
 	    else
@@ -562,7 +562,7 @@ function radio_button_click()
 	    add_host_table_after(w);
 	}
 	
-	var w = get_widget(nsmenu, "details_item");
+	var w = find_element(nsmenu, "details_item");
 	w.onclick = show_details;
 
 	// FIXME put it back
@@ -739,7 +739,7 @@ function radio_button_click()
     {
 	main_ui = new_widget("main");
 	
-	var b = get_widget(main_ui, "main_button");
+	var b = find_element(main_ui, "main_button");
 	//set_icon_mode(b, mode);
 	var tooltip = main_button_tooltip();	
 	b.title = tooltip;
@@ -808,4 +808,4 @@ function radio_button_click()
 
 @include "jsarmor_widgets.js"
 
-)   // keep_editor_happy
+}   // keep_editor_happy
