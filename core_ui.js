@@ -141,7 +141,8 @@ function(){   // fake line, keep_editor_happy
 	if (wrap.children.length > 1)
 	    wrap.forest = true;
 
-	setup_widget_event_handlers(wrap, name);	
+	setup_widget_event_handlers(wrap, name);
+	call_oninit_handlers(wrap);
 	create_nested_widgets(wrap, false);
 	init_widget(wrap, content, name, placeholder);
 	
@@ -173,6 +174,15 @@ function(){   // fake line, keep_editor_happy
 	    (eval(fname))(content);
 	}
     }
+
+    function call_oninit_handlers(widget)
+    {
+	foreach_node(widget, function(node)
+	{
+	    if (node.oninit)
+		(node.oninit)(node);
+	});
+    }    
     
     function is_widget_placeholder(widget)
     {
@@ -233,7 +243,10 @@ function(){   // fake line, keep_editor_happy
     function setup_widget_event_handlers(widget, name)
     {
 	function create_handler(expr)
-	{ return eval("function(){" + expr + "}");  }	
+	{
+	    return eval(expr);  // direct function call
+	    // return eval("function(){" + expr + "}");
+	}	
 	
 	var l = widget.getElementsByTagName('*');
 	for (var i = 0; i < l.length; i++)
@@ -244,42 +257,20 @@ function(){   // fake line, keep_editor_happy
 		var a = node.attributes[j];
 		if (is_handler_attribute[a.name])
 		{
-                    // call oninit handlers.
-		    // FIXME: this is probably not the best order to do things
-		    if (a.name == 'init')
-		    {
-			(node[a.name])(node);
-			continue;
-		    }
 		    if (a.value != "")
 			node[a.name] = create_handler(a.value);
 		    else
 			node[a.name] = eval(name + "_" + a.name);
 		    console.log(name + ": handler " + a.name + " = ...");
+		    
+                    // call oninit handlers.
+		    // FIXME: this is probably not the best order to do things in
+		    //if (a.name == 'oninit')
+		    //(node.oninit)();
 		}
 	    }
 	}
     }
-
-    /*
-    function call_oninit_handlers(widget)
-    {
-	function create_handler(expr)
-foo	{ return eval("function(){" + expr + "}");  }
-	
-	var l = widget.getElementsByTagName('*');
-	for (var i = 0; i < l.length; i++)
-	{
-	    var node = l[i];
-	    for (var j = 0; j < node.attributes.length; j++)
-	    {
-		var a = node.attributes[j];
-		if (is_handler_attribute[a.name])
-		    node[a.name] = create_handler(a.value);
-	    }
-	}
-    }
-     */
 
 /*
     function add_widget(widget_id, parent_id)

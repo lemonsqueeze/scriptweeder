@@ -35,7 +35,8 @@ foreach my $s (@lines)
 
 sub parse_args
 {
-    my ($s) = @_;
+    my ($s, $name) = @_;
+    my $orig = $s;
     my %args;
     while ($s =~ s| *([\w]+)="([^"]+)"||)
     {
@@ -43,13 +44,15 @@ sub parse_args
 	#print "name: $name val: $value\n";
 	$args{$name} = $value;
     }
+    if (!$s =~ m|^[ \t]*\$|)
+    { die("<$name $orig> : '$s' bad attribute (missing '\"' maybe ?)"); }
     return %args;
 }
 
 sub replace_macro
 {
     my ($name, $arg_str) = @_;
-    %args = parse_args($arg_str);
+    %args = parse_args($arg_str, $name);
 
     my $s = $macros{$name};
     foreach my $arg (keys(%args))
@@ -64,7 +67,7 @@ my $did_something;
 do
 {
     $did_something = 0;
-    my @tmp;
+    my @tmp = ();
     foreach my $s (@content)
     {
 	if ($s =~ m|<([\w]+) (.*)/>|)
@@ -105,7 +108,8 @@ do
 	push(@tmp, $s);
     }
     
-    @content = @tmp;
+    #@content = @tmp;
+    @content = split("\n", join("\n", @tmp));
 } while ($did_something);
 
 if ($debug)
@@ -114,5 +118,5 @@ if ($debug)
 # print output
 foreach my $s (@content)
 {
-    print $s;
+    print "$s\n";
 }

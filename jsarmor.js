@@ -1170,7 +1170,8 @@
 	if (wrap.children.length > 1)
 	    wrap.forest = true;
 
-	setup_widget_event_handlers(wrap, name);	
+	setup_widget_event_handlers(wrap, name);
+	call_oninit_handlers(wrap);
 	create_nested_widgets(wrap, false);
 	init_widget(wrap, content, name, placeholder);
 	
@@ -1202,6 +1203,15 @@
 	    (eval(fname))(content);
 	}
     }
+
+    function call_oninit_handlers(widget)
+    {
+	foreach_node(widget, function(node)
+	{
+	    if (node.oninit)
+		(node.oninit)(node);
+	});
+    }    
     
     function is_widget_placeholder(widget)
     {
@@ -1262,7 +1272,10 @@
     function setup_widget_event_handlers(widget, name)
     {
 	function create_handler(expr)
-	{ return eval("function(){" + expr + "}");  }	
+	{
+	    return eval(expr);  // direct function call
+	    // return eval("function(){" + expr + "}");
+	}	
 	
 	var l = widget.getElementsByTagName('*');
 	for (var i = 0; i < l.length; i++)
@@ -1273,42 +1286,20 @@
 		var a = node.attributes[j];
 		if (is_handler_attribute[a.name])
 		{
-                    // call oninit handlers.
-		    // FIXME: this is probably not the best order to do things
-		    if (a.name == 'init')
-		    {
-			(node[a.name])(node);
-			continue;
-		    }
 		    if (a.value != "")
 			node[a.name] = create_handler(a.value);
 		    else
 			node[a.name] = eval(name + "_" + a.name);
 		    console.log(name + ": handler " + a.name + " = ...");
+		    
+                    // call oninit handlers.
+		    // FIXME: this is probably not the best order to do things in
+		    //if (a.name == 'oninit')
+		    //(node.oninit)();
 		}
 	    }
 	}
     }
-
-    /*
-    function call_oninit_handlers(widget)
-    {
-	function create_handler(expr)
-foo	{ return eval("function(){" + expr + "}");  }
-	
-	var l = widget.getElementsByTagName('*');
-	for (var i = 0; i < l.length; i++)
-	{
-	    var node = l[i];
-	    for (var j = 0; j < node.attributes.length; j++)
-	    {
-		var a = node.attributes[j];
-		if (is_handler_attribute[a.name])
-		    node[a.name] = create_handler(a.value);
-	    }
-	}
-    }
-     */
 
 /*
     function add_widget(widget_id, parent_id)
@@ -1756,10 +1747,16 @@ foo	{ return eval("function(){" + expr + "}");  }
 	widget.onclick = f;
     }
 
+    function init_scope_buttons(widget)
+    {	
+	setup_radio_buttons(widget, scope, change_scope);
+    }
+
+    
     function setup_radio_buttons(widget, current, f)
     {
 	var l = widget.getElementsByTagName('input');
-	
+
 	for (var i = 0; i < l.length; i++)
 	{
 	    var radio = l[i];
@@ -2112,42 +2109,29 @@ foo	{ return eval("function(){" + expr + "}");  }
 	return menu;
     }
 
-    function radio_button_click()
-    {
-	alert("radio_button_click() !!!");
-    }
-    
-    function radio_button_init(widget)
-    {
-	//alert("radio_button_init() !!!\nlabel: " + widget.label);
-    }
-
-    function radio_group_init(widget)
-    {
-	//alert("radio_button_init() !!!\nsetting: " + widget.setting);
-    }
-
     var nsmenu = null;			// the main menu
     var need_reload = false;
 
+    function main_menu_onmouseout(e)
+    {
+	if (!mouseout_leaving_menu(e, nsmenu))
+	    return;
+	show_hide_menu(false);
+	if (need_reload)
+	    reload_page();
+    }
+
+    function menu_title_init()
+    {
+	this.title = version;
+    }
+    
     function create_menu()
     {
 	nsmenu = new_widget("main_menu");
 	nsmenu.style.display = 'none';
 	
-	nsmenu.onmouseout = function(e)
-	{
-	  if (!mouseout_leaving_menu(e, nsmenu))
-	      return;
-	  show_hide_menu(false);
-	  if (need_reload)
-	      reload_page();
-	};
-
-	var title = find_element(nsmenu, "title");
-	title.title = version;
-
-	var scope_item = find_element(nsmenu, "scope");
+	//var scope_item = find_element(nsmenu, "scope");
 	//setup_radio_buttons(scope_item, scope, change_scope)
 
 	if (mode == 'block_all')
@@ -2176,7 +2160,7 @@ foo	{ return eval("function(){" + expr + "}");  }
 	    // get item for this mode, wherever it is.
 	    var w = find_element(nsmenu, modes[i]);
 	    if (modes[i] == mode)
-		w.className = "selected";
+		w.className += " selected";
 	    else
 		setup_mode_item_handler(w, modes[i]);
 
@@ -2234,7 +2218,45 @@ foo	{ return eval("function(){" + expr + "}");  }
 
     function add_host_table_after(item)
     {
+	var t = new_widget("host_table");
+	item.parentNode.insertBefore(t, item.nextSibling);
+
+	sort_domains();
 	
+	var found_not_loaded = false;
+	var item = null;
+	foreach_host_node(function(hn, dn)
+	{
+	    var d = dn.name;
+	    var h = hn.name;
+	    var checkbox = new_checkbox(allowed_host(h));
+	    var host_part = h.slice(0, h.length - d.length);
+	    var not_loaded = icon_not_loaded(hn, checkbox.checked);
+	    var count = "[" + hn.scripts.length + "]";
+	    var helper = hn.helper_host;
+	    var global_icon = idoc.createElement('img');   // globally allowed icon
+	    var iframes = iframe_icon(hn);
+
+	    var tr = new_widget("host_table_row");
+	    t.appendChild(tr);
+	    
+	    if (not_loaded)
+		tr.childNodes[1].className += " not_loaded";
+	    tr.childNodes[2].firstChild.checked = allowed_host(h);
+	    tr.childNodes[3].innerText = host_part;
+	    tr.childNodes[4].innerText = d;
+	    if (helper)
+		tr.childNodes[4].className += " helper";
+	    if (iframes)
+		tr.childNodes[5].className += " iframe";
+	    if (host_allowed_globally(h))
+		tr.childNodes[6].className = "allowed_globally";
+	    tr.childNodes[7].innerText = count;
+	    
+	});
+	
+//	if (item && !found_not_loaded) // indent
+//	    item.childNodes[0].innerHTML = "&nbsp;&nbsp;";	
     }
 	
     function add_ftable(nsmenu)
@@ -2360,66 +2382,41 @@ foo	{ return eval("function(){" + expr + "}");  }
     }
 
 
-function main_button_init(div)
-{
-    var tooltip = main_button_tooltip();
-    div.title = tooltip;
-}
-
-function main_button_onmouseover()
-{
-    // console.log("button mouseover");
-    show_hide_menu(true);    // menu can disappear if we switch these two, strange
-    check_changed_settings();
-}
-
-function main_button_onclick()
-{
-    // cycle through the modes
-    if (mode == 'block_all')      set_mode('filtered');
-    else if (mode == 'filtered')  set_mode('relaxed');
-    else if (mode == 'relaxed')  set_mode('allow_all');
-    else if (mode == 'allow_all') set_mode('block_all');
-}
-
-function main_button_onmouseout()
-{
-    if (need_reload)
-	reload_page();
-}
-
+    function main_button_init(div)
+    {
+	var tooltip = main_button_tooltip();
+	div.title = tooltip;
+	var img = find_element(div, "main_button_image");
+	set_icon_mode(img, mode);
+    }
+    
+    function main_button_onmouseover()
+    {
+	// console.log("button mouseover");
+	show_hide_menu(true);    // menu can disappear if we switch these two, strange
+	check_changed_settings();
+    }
+    
+    function main_button_onclick()
+    {
+	// cycle through the modes
+	if (mode == 'block_all')      set_mode('filtered');
+	else if (mode == 'filtered')  set_mode('relaxed');
+	else if (mode == 'relaxed')  set_mode('allow_all');
+	else if (mode == 'allow_all') set_mode('block_all');
+    }
+    
+    function main_button_onmouseout()
+    {
+	if (need_reload)
+	    reload_page();
+    }
+    
     
     var main_ui = null;
     function create_main_ui()
     {
 	main_ui = new_widget("main");
-
-/*	
-	var b = find_element(main_ui, "main_button");
-	//set_icon_mode(b, mode);
-	var tooltip = main_button_tooltip();	
-	b.title = tooltip;
-
-	b.onmouseover = function()
-	{
-	  // console.log("button mouseover");
-	  show_hide_menu(true);    // menu can disappear if we switch these two, strange
-	  check_changed_settings();
-	};
-        b.onclick = function(event)
-	{
-	  // cycle through the modes
-	  if (mode == 'block_all')      set_mode('filtered');
-	  else if (mode == 'filtered')  set_mode('relaxed');
-	  else if (mode == 'relaxed')  set_mode('allow_all');
-	  else if (mode == 'allow_all') set_mode('block_all');
-	};
-	b.onmouseout = function(e)
-	{
-	  if (need_reload)
-	      reload_page();	      
-	};
- */
     }
 
     function parent_main_ui()
@@ -2514,8 +2511,8 @@ input[type=radio] + label		{ box-shadow:inset 0px 1px 0px 0px #ffffff; border-ra
 input[type=radio]:checked + label	{ background-color: #fa4; }   \n\
   \n\
 /* icons */  \n\
-/*img { width:22px; height:22px; vertical-align:middle; background-size:contain; } */  \n\
-/*  \n\
+#main_button img { width:22px; height:22px; vertical-align:middle; background-size:contain; }   \n\
+  \n\
 img.allowed		{ background:-o-skin('Transfer Success'); }  \n\
 img.blocked		{ background:-o-skin('Transfer Stopped'); }  \n\
 img.not_loaded		{ background:-o-skin('Transfer Size Mismatch'); }  \n\
@@ -2525,7 +2522,6 @@ img.block_all		{ background:-o-skin('Smiley Pacman'); }  \n\
 img.filtered		{ background:-o-skin('Smiley Cool'); }  \n\
 img.relaxed		{ background:-o-skin('Smiley Tongue'); }  \n\
 img.allow_all		{ background:-o-skin('Smiley Cry'); }  \n\
-*/  \n\
   \n\
 .menu {  \n\
 	padding: 1px 1px; text-align:left;  \n\
@@ -2548,7 +2544,7 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
 .menu > ul > li:first-child	{ background:inherit }  \n\
   \n\
 /* mode menu item */  \n\
-.selected, .selected:hover {  \n\
+.selected, .menu .selected:hover {  \n\
 	background-color: #fa4;  \n\
 	padding: 1px; /* for highlighting */  \n\
 }  \n\
@@ -2556,13 +2552,15 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
 /*  \n\
 li.allowed::before, li.blocked::before, li.not_loaded::before, li.iframe::before, li.allowed_globally::before,  \n\
 li.block_all::before, li.filtered::before, li.relaxed::before, li.allow_all::before {transform:scale(1.1); display:inline-block; vertical-align:middle}  \n\
-  \n\
-li.allowed::before		{ content:-o-skin('Transfer Success'); }  \n\
-li.blocked::before		{ content:-o-skin('Transfer Stopped'); }  \n\
-li.not_loaded::before		{ content:-o-skin('Transfer Size Mismatch'); }  \n\
-li.iframe::before		{ content:-o-skin('Menu Info'); }  \n\
-li.allowed_globally::before	{ content:-o-skin('RSS'); }  \n\
 */  \n\
+  \n\
+td.allowed::before		{ content:-o-skin('Transfer Success'); }  \n\
+td.blocked::before		{ content:-o-skin('Transfer Stopped'); }  \n\
+td.not_loaded::before		{ content:-o-skin('Transfer Size Mismatch'); }  \n\
+td.iframe			{ content:-o-skin('Menu Info'); }  \n\
+td.allowed_globally		{ content:-o-skin('RSS'); }  \n\
+td.not_allowed_globally:hover	{ content:-o-skin('RSS'); }  \n\
+  \n\
 li.block_all::before		{ content:-o-skin('Smiley Pacman');}  \n\
 li.filtered::before		{ content:-o-skin('Smiley Cool'); }  \n\
 li.relaxed::before		{ content:-o-skin('Smiley Tongue'); }  \n\
@@ -2576,10 +2574,10 @@ li.allow_all::before		{ content:-o-skin('Smiley Cry'); }  \n\
     /* layout for each widget (generated from jsarmor.xml). */
     var widgets_layout = {
       'main' : '<widget name="main"><div id="main"><main_menu lazy></main_menu><main_button/></div></widget>',
-      'main_button' : '<widget name="main_button" init><div id="main_button" onmouseover onclick onmouseout><button><img/></button></div></widget>',
-      'main_menu' : '<widget name="main_menu"><div id="main_menu" class="menu" ><h1 id="title">JSArmor</h1><ul><radio_group setting=scope ></radio_group><li id="scope">Set for:<radio_button label="Page"></radio_button><radio_button label="Site"></radio_button><radio_button label="Domain"></radio_button><radio_button label="Global"></radio_button></li><li class="block_all" title="Block all scripts.">Block All</li><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Relaxed</li><li class="allow_all" title="Allow everything…">Allow All</li><li id="details_item">Details…</li></ul></div></widget>',
-      'radio_group' : '<widget name="radio_group" init></widget>',
-      'radio_button' : '<widget name="radio_button" init><input type="radio" name="radio_group"/><label onclick="radio_button_click()">label</label></widget>'
+      'main_button' : '<widget name="main_button" init><div id="main_button" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>',
+      'main_menu' : '<widget name="main_menu"><div id="main_menu" class="menu" onmouseout ><h1 id="title" oninit="menu_title_init">JSArmor</h1><ul><li id="scope" oninit="init_scope_buttons">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li><li class="block_all" title="Block all scripts.">Block All</li><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Relaxed</li><li class="allow_all" title="Allow everything…">Allow All</li><li id="details_item">Details…</li></ul></div></widget>',
+      'host_table' : '<widget name="host_table"><table id="jsarmor_ftable"></table></widget>',
+      'host_table_row' : '<widget name="host_table_row"><tr class="active"><td width="1%">&nbsp;&nbsp;</td><td width="1%"></td><td width="1%"><input type="checkbox" checked="true"></td><td width="1%" class="host_part">code.</td><td class="domain_part">jquery.com</td><td width="1%"></td><td width="1%" class="not_allowed_globally"></td><td width="1%" class="script_count">[1]</td></tr></widget>'
     };
 
 

@@ -20,17 +20,17 @@
 
 <widget name="main_button" init>
   <div id="main_button" onmouseover onclick onmouseout>
-    <button><img/></button>
+    <button><img id="main_button_image"/></button>
   </div>
 </widget>
 
 
 <!-- main menu -->
 <widget name="main_menu">
-  <div id="main_menu" class="menu" >
-    <menu_title label="JSArmor"/>
+  <div id="main_menu" class="menu" onmouseout >
+    <menu_title label="JSArmor" />
       <ul>
-	<scope/>
+	<scope_widget/>
 	<mode_menu_item mode="block_all" label="Block All" title="Block all scripts." />
 	<mode_menu_item mode="filtered" label="Filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
 	<mode_menu_item mode="relaxed" label="Relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
@@ -41,10 +41,30 @@
 </widget>
 
 
+<widget name="host_table">
+  <table id="jsarmor_ftable"></table>
+</widget>
+
+<widget name="host_table_row">
+  <tr class="active">
+    <td width="1%">&nbsp;&nbsp;</td>
+    <td width="1%"></td>
+    <td width="1%">
+      <input type="checkbox" checked="true">
+    </td>
+    <td width="1%" class="host_part">code.</td>
+    <td class="domain_part">jquery.com</td>
+    <td width="1%"></td>
+    <td width="1%" class="not_allowed_globally"></td>
+    <td width="1%" class="script_count">[1]</td>
+  </tr>
+</widget>
+
+
 <!--         [ low level building blocks ]         -->
  
 <def menu_title label >
-  <h1 id="title">{label}</h1>
+  <h1 id="title" oninit="menu_title_init">{label}</h1>
 </def>
 
 <def menu_item id label >
@@ -55,28 +75,20 @@
   <li class="{mode}" title="{title}">{label}</li>
 </def>
 
-<def scope>
-  <radio_group setting=scope ></radio_group>
-  <li id="scope">Set for:
-    <radio_button label="Page"></radio_button>
-    <radio_button label="Site"></radio_button>
-    <radio_button label="Domain"></radio_button>
-    <radio_button label="Global"></radio_button>
+<def scope_widget>
+  <li id="scope" oninit="init_scope_buttons">Set for:
+    <radio_button label="Page"/>
+    <radio_button label="Site"/>
+    <radio_button label="Domain"/>
+    <radio_button label="Global"/>
   </li>
 </def>
 
-<def radio_button___ label >
-  <input type="radio" name="radio_group"/>
-  <label onclick="radio_button_click()"> {label} </label>
+<def radio_button label >
+  <input type="radio" name="radio"/>
+  <label> {label} </label>
 </def>
 
-<widget name="radio_group" init>
-</widget>
-
-<widget name="radio_button" init>
-  <input type="radio" name="radio_group"/>
-  <label onclick="radio_button_click()"> label </label>
-</widget>
 
 
 </widgets>

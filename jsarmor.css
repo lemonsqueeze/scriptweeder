@@ -50,8 +50,8 @@ input[type=radio] + label		{ box-shadow:inset 0px 1px 0px 0px #ffffff; border-ra
 input[type=radio]:checked + label	{ background-color: #fa4; } 
 
 /* icons */
-/*img { width:22px; height:22px; vertical-align:middle; background-size:contain; } */
-/*
+#main_button img { width:22px; height:22px; vertical-align:middle; background-size:contain; } 
+
 img.allowed		{ background:-o-skin('Transfer Success'); }
 img.blocked		{ background:-o-skin('Transfer Stopped'); }
 img.not_loaded		{ background:-o-skin('Transfer Size Mismatch'); }
@@ -61,7 +61,6 @@ img.block_all		{ background:-o-skin('Smiley Pacman'); }
 img.filtered		{ background:-o-skin('Smiley Cool'); }
 img.relaxed		{ background:-o-skin('Smiley Tongue'); }
 img.allow_all		{ background:-o-skin('Smiley Cry'); }
-*/
 
 .menu {
 	padding: 1px 1px; text-align:left;
@@ -84,7 +83,7 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;
 .menu > ul > li:first-child	{ background:inherit }
 
 /* mode menu item */
-.selected, .selected:hover {
+.selected, .menu .selected:hover {
 	background-color: #fa4;
 	padding: 1px; /* for highlighting */
 }
@@ -92,13 +91,15 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;
 /*
 li.allowed::before, li.blocked::before, li.not_loaded::before, li.iframe::before, li.allowed_globally::before,
 li.block_all::before, li.filtered::before, li.relaxed::before, li.allow_all::before {transform:scale(1.1); display:inline-block; vertical-align:middle}
-
-li.allowed::before		{ content:-o-skin('Transfer Success'); }
-li.blocked::before		{ content:-o-skin('Transfer Stopped'); }
-li.not_loaded::before		{ content:-o-skin('Transfer Size Mismatch'); }
-li.iframe::before		{ content:-o-skin('Menu Info'); }
-li.allowed_globally::before	{ content:-o-skin('RSS'); }
 */
+
+td.allowed::before		{ content:-o-skin('Transfer Success'); }
+td.blocked::before		{ content:-o-skin('Transfer Stopped'); }
+td.not_loaded::before		{ content:-o-skin('Transfer Size Mismatch'); }
+td.iframe			{ content:-o-skin('Menu Info'); }
+td.allowed_globally		{ content:-o-skin('RSS'); }
+td.not_allowed_globally:hover	{ content:-o-skin('RSS'); }
+
 li.block_all::before		{ content:-o-skin('Smiley Pacman');}
 li.filtered::before		{ content:-o-skin('Smiley Cool'); }
 li.relaxed::before		{ content:-o-skin('Smiley Tongue'); }

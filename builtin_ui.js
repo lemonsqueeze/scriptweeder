@@ -141,10 +141,16 @@ function(){   // fake line, keep_editor_happy
 	widget.onclick = f;
     }
 
+    function init_scope_buttons(widget)
+    {	
+	setup_radio_buttons(widget, scope, change_scope);
+    }
+
+    
     function setup_radio_buttons(widget, current, f)
     {
 	var l = widget.getElementsByTagName('input');
-	
+
 	for (var i = 0; i < l.length; i++)
 	{
 	    var radio = l[i];
@@ -497,42 +503,29 @@ function(){   // fake line, keep_editor_happy
 	return menu;
     }
 
-    function radio_button_click()
-    {
-	alert("radio_button_click() !!!");
-    }
-    
-    function radio_button_init(widget)
-    {
-	//alert("radio_button_init() !!!\nlabel: " + widget.label);
-    }
-
-    function radio_group_init(widget)
-    {
-	//alert("radio_button_init() !!!\nsetting: " + widget.setting);
-    }
-
     var nsmenu = null;			// the main menu
     var need_reload = false;
 
+    function main_menu_onmouseout(e)
+    {
+	if (!mouseout_leaving_menu(e, nsmenu))
+	    return;
+	show_hide_menu(false);
+	if (need_reload)
+	    reload_page();
+    }
+
+    function menu_title_init()
+    {
+	this.title = version;
+    }
+    
     function create_menu()
     {
 	nsmenu = new_widget("main_menu");
 	nsmenu.style.display = 'none';
 	
-	nsmenu.onmouseout = function(e)
-	{
-	  if (!mouseout_leaving_menu(e, nsmenu))
-	      return;
-	  show_hide_menu(false);
-	  if (need_reload)
-	      reload_page();
-	};
-
-	var title = find_element(nsmenu, "title");
-	title.title = version;
-
-	var scope_item = find_element(nsmenu, "scope");
+	//var scope_item = find_element(nsmenu, "scope");
 	//setup_radio_buttons(scope_item, scope, change_scope)
 
 	if (mode == 'block_all')
@@ -561,7 +554,7 @@ function(){   // fake line, keep_editor_happy
 	    // get item for this mode, wherever it is.
 	    var w = find_element(nsmenu, modes[i]);
 	    if (modes[i] == mode)
-		w.className = "selected";
+		w.className += " selected";
 	    else
 		setup_mode_item_handler(w, modes[i]);
 
@@ -619,7 +612,45 @@ function(){   // fake line, keep_editor_happy
 
     function add_host_table_after(item)
     {
+	var t = new_widget("host_table");
+	item.parentNode.insertBefore(t, item.nextSibling);
+
+	sort_domains();
 	
+	var found_not_loaded = false;
+	var item = null;
+	foreach_host_node(function(hn, dn)
+	{
+	    var d = dn.name;
+	    var h = hn.name;
+	    var checkbox = new_checkbox(allowed_host(h));
+	    var host_part = h.slice(0, h.length - d.length);
+	    var not_loaded = icon_not_loaded(hn, checkbox.checked);
+	    var count = "[" + hn.scripts.length + "]";
+	    var helper = hn.helper_host;
+	    var global_icon = idoc.createElement('img');   // globally allowed icon
+	    var iframes = iframe_icon(hn);
+
+	    var tr = new_widget("host_table_row");
+	    t.appendChild(tr);
+	    
+	    if (not_loaded)
+		tr.childNodes[1].className += " not_loaded";
+	    tr.childNodes[2].firstChild.checked = allowed_host(h);
+	    tr.childNodes[3].innerText = host_part;
+	    tr.childNodes[4].innerText = d;
+	    if (helper)
+		tr.childNodes[4].className += " helper";
+	    if (iframes)
+		tr.childNodes[5].className += " iframe";
+	    if (host_allowed_globally(h))
+		tr.childNodes[6].className = "allowed_globally";
+	    tr.childNodes[7].innerText = count;
+	    
+	});
+	
+//	if (item && !found_not_loaded) // indent
+//	    item.childNodes[0].innerHTML = "&nbsp;&nbsp;";	
     }
 	
     function add_ftable(nsmenu)
@@ -749,6 +780,8 @@ function(){   // fake line, keep_editor_happy
     {
 	var tooltip = main_button_tooltip();
 	div.title = tooltip;
+	var img = find_element(div, "main_button_image");
+	set_icon_mode(img, mode);
     }
     
     function main_button_onmouseover()
