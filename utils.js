@@ -18,6 +18,8 @@ function(){   // fake line, keep_editor_happy
 	// unparented, do it by hand ...
 	if (!parent)
 	    alert("parent is null !!");
+	if (parent.id == id)
+	    return parent;
 	l = parent.getElementsByTagName("*");
 	for (var i = 0; i < l.length; i++)
 	    if (l[i].id == id)

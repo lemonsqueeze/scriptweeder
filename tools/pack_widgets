@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 $xml=$ARGV[0];
 open(IN, "< $xml") || die("pack_widgets: couldn't open file $xml");
+my @lines = <IN>;
 
 sub format_html_blob
 {
@@ -35,18 +36,22 @@ sub dump_widget
     $id = "";
 }
 
-sub dump_widgets
+sub dump_widget_layouts
 {
-    foreach my $s (<IN>)
+    foreach my $s (@lines)
     {
 	# remove comments
 	$s =~ s|<!--[^>]*-->||g;
 
-	if ($s =~ m|<widget name="([^"]*)"[^>]*>|)
-	{   dump_widget("");
-	    $id = $1;   
+	if ($s =~ m|<widget name="([^"]*)"([^>]*)>|)
+	{
+	    my ($new_id, $args) = ($1, $2);
+	    dump_widget("");
+	    $id = $new_id;   
 	}
-	
+	elsif ($s =~ m|<widget .*>|) # sanity check
+	{  die($s . "\nlooks like name=\"widget name\" attribute is missing"); }
+
 	if ($s =~ m|<widgets *>|   ||
 	    $s =~ m|</widgets *>|  )
 	{ next; }
@@ -59,5 +64,44 @@ sub dump_widgets
 
 print("    /* layout for each widget (generated from $xml). */\n");
 print("    var widgets_layout = {\n");
-dump_widgets();
+dump_widget_layouts();
 print("    };\n\n");
+
+
+sub widget_new_functions
+{
+    foreach my $s (@lines)
+    {
+	# remove comments
+	$s =~ s|<!--[^>]*-->||g;
+
+	if ($s =~ m|<widget name="([^"]*)"([^>]*)>|)
+	{
+	    my ($id, $args_str) = ($1, $2);
+	    my @args = split(" ", $args_str);
+	    @args = grep(!/init/, @args);
+
+	    if (@args == 0)
+	    {
+		next; # these are rather useless
+		print "    function new_$id()\n";
+		print "    {\n";
+		print "        return new_widget(\"$id\");\n";
+		print "    }\n\n";
+	    }
+	    print "    function new_$id(" . join(", ", @args) . ")\n";
+	    print "    {\n";
+	    print "        return new_widget(\"$id\", function(n)\n";
+	    print "        {\n";
+	    foreach my $arg (@args)
+	    {
+	    print "            n.$arg = $arg;\n";
+	    }
+	    print "        });\n";
+	    print "    }\n\n";
+	}
+    }
+}
+
+print("    /* functions for creating widgets */\n");
+widget_new_functions();

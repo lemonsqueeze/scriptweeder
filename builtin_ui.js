@@ -147,7 +147,7 @@ function(){   // fake line, keep_editor_happy
 	widget.onclick = f;
     }
 
-    function init_scope_buttons(widget)
+    function scope_widget_init(widget)
     {	
 	setup_radio_buttons(widget, scope, change_scope);
     }
@@ -496,13 +496,10 @@ function(){   // fake line, keep_editor_happy
     
     /****************************** Main menu *********************************/
 
-    function new_menu(title)
+    function menu_init(menu)
     {
-	var menu = new_widget("menu");
-	
 	var w = find_element(menu, "menu_title");
-	w.innerText = title;
-	return menu;
+	w.innerText = menu.title;
     }
 
     function menu_onmouseout(e)
@@ -556,32 +553,45 @@ function(){   // fake line, keep_editor_happy
     function create_menu()
     {
 	nsmenu = new_widget("main_menu");
-	nsmenu.style.display = 'none';
+    }
 
-	var w = find_element(nsmenu, "menu_title");
-	w.innerText = "JSArmor";
-	w.title = version;
-	
-	wakeup_lazy_widgets(w);	    	
-	//var scope_item = find_element(nsmenu, "scope");
-	//setup_radio_buttons(scope_item, scope, change_scope)
-
-	if (mode == 'block_all')
-	{
-	    var w = find_element(nsmenu, "block_all_settings");
-	    wakeup_lazy_widgets(w);	    
-	    var w = find_element(nsmenu, "block_inline_scripts");	    
-	    setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);	    
+    function block_all_settings_init(widget)
+    {
+	var w = find_element(widget, "block_inline_scripts");
+	setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);	    
 	    
-	    var w = find_element(nsmenu, "right_item");
-	    w.innerText = " [" + get_size_kb(total_inline_size) + "k]";
+	var w = find_element(widget, "right_item");
+	w.innerText = " [" + get_size_kb(total_inline_size) + "k]";
 
-	    if (!block_inline_scripts)
-	    {
-		var w = find_element(nsmenu, "handle_noscript_tags");
-		w.style = "display:none;";
-	    }
+	if (!block_inline_scripts)
+	{
+	    var w = find_element(widget, "handle_noscript_tags");
+	    w.style = "display:none;";
 	}
+    }
+
+    function mode_menu_item_oninit()
+    {
+	var for_mode = this.className;
+	if (for_mode == mode)
+	    this.className += " selected";
+	else
+	    this.onclick = function() { set_mode(for_mode); }
+	
+	// now add host table	    
+	if (mode == 'block_all' ||
+	    for_mode != mode)	// is it current mode ?
+	    return;
+	add_host_table_after(this);
+    }
+    
+    function main_menu_init(menu)
+    {
+	menu.title = "JSArmor";
+	menu_init(menu);
+	
+	if (mode == 'block_all')
+	    wakeup_lazy_widgets(menu);
 	
 	function setup_mode_item_handler(w, mode)
 	{
@@ -591,21 +601,10 @@ function(){   // fake line, keep_editor_happy
 	// take care of mode menu items.
 	for (var i = 0; i < modes.length; i++)
 	{
-	    // get item for this mode, wherever it is.
-	    var w = find_element(nsmenu, modes[i]);
-	    if (modes[i] == mode)
-		w.className += " selected";
-	    else
-		setup_mode_item_handler(w, modes[i]);
 
-	    // now add host table	    
-	    if (mode == 'block_all' ||
-		modes[i] != mode)	// is it current mode ?
-		continue;
-	    add_host_table_after(w);
 	}
 	
-	var w = find_element(nsmenu, "details_item");
+	var w = find_element(menu, "details_item");
 	w.onclick = show_details;
 
 	// FIXME put it back

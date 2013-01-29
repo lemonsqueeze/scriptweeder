@@ -26,13 +26,13 @@
 
 
 <!-- main menu -->
-<widget name="main_menu">
+<widget name="main_menu" init>
   <div id="main_menu" class="menu" onmouseout >
     <menu_title/>
     <ul>
-      <scope_widget/>
+      <scope_widget></scope_widget>
       <mode_menu_item mode="block_all" label="Block All" title="Block all scripts." />
-      <block_all_settings lazy id="block_all_settings"></block_all_settings>
+      <block_all_settings lazy></block_all_settings>
       <mode_menu_item mode="filtered" label="Filtered" 
 	      title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
       <mode_menu_item mode="relaxed" label="Relaxed" 
@@ -43,8 +43,8 @@
   </div>
 </widget>
 
-<widget name="block_all_settings">
-  <block_inline_scripts id="block_inline_scripts"></block_inline_scripts>  
+<widget name="block_all_settings" init>
+  <block_inline_scripts></block_inline_scripts>  
   <checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags"
 		 title="Interpret noscript tags as if javascript was disabled in opera."
 		 state="`handle_noscript_tags"
@@ -52,14 +52,14 @@
 </widget>
 
 <widget name="block_inline_scripts" >
-  <li>
+  <li id="block_inline_scripts">
     <input type="checkbox"/>Block Inline Scripts
     <div class="right_item">[-2k]</div>
   </li>
 </widget>
 
 
-<widget name="checkbox_item" title innerText state callback init>
+<widget name="checkbox_item" title label state callback init>
   <li title="title">
     <input type="checkbox"/>
   </li>
@@ -90,7 +90,7 @@
 
 <!-- generic menu (details ...) -->
 
-<widget name="menu">
+<widget name="menu" title init>
   <div class="menu" onmouseout >
     <menu_title />
       <ul id="menu_content">
@@ -110,17 +110,17 @@
 </def>
 
 <def mode_menu_item mode label title >
-  <li class="$mode" title="$title">$label</li>
+  <li class="$mode" title="$title" oninit="mode_menu_item_oninit">$label</li>
 </def>
 
-<def scope_widget>
-  <li id="scope" oninit="init_scope_buttons">Set for:
+<widget name="scope_widget" init>
+  <li id="scope">Set for:
     <radio_button label="Page"/>
     <radio_button label="Site"/>
     <radio_button label="Domain"/>
     <radio_button label="Global"/>
   </li>
-</def>
+</widget>
 
 
 <def radio_button label >

@@ -1103,9 +1103,9 @@
     // create ui elements from html strings in widgets_layout. this one is for normal
     // (single node) widgets. nested widgets are created as well unless they have the
     // "lazy" attribute.
-    function new_widget(name)
+    function new_widget(name, args_func)
     {
-	var wrap = new_wrapped_widget(name);
+	var wrap = new_wrapped_widget(name, null, args_func);
 	if (wrap.children.length > 1)
 	    my_alert("new_widget(" + name + "):\n" +
 		     "this isn't a single node widget, call new_wrapped_widget() instead !");
@@ -1142,7 +1142,7 @@
     // same as new_widget() but returns the <widget> wrapper. this is necessary if
     // the widget is actually a forest... (.forest is set on the div in this case)
     // placeholder is optional (the new widget gets its its attributes)
-    function new_wrapped_widget(name, placeholder)
+    function new_wrapped_widget(name, placeholder, args_func)
     {
 	name = name.toLowerCase();
 	// do we have this guy in cache ? use that then
@@ -1166,29 +1166,30 @@
 		     "couldn't create this guy, check the html in widgets_layout.");
 	    return null;
 	}
-	var content = wrap.firstChild;	
 	if (wrap.children.length > 1)
 	    wrap.forest = true;
 
 	setup_widget_event_handlers(wrap, name);
 	call_oninit_handlers(wrap);
-	create_nested_widgets(wrap, false);
-	init_widget(wrap, content, name, placeholder);
+	create_nested_widgets(wrap, false);	
+	init_widget(wrap, wrap.firstChild, name, placeholder, args_func);
 	
 	// cached_widgets[id] = d.firstChild;
 	//return widget.cloneNode(true);
 	return wrap;
     }
 
-    // copy attributes from placeholder, and call init handler if needed:
+    // copy attributes from placeholder (or use args_func if available), and call init handler if needed:
     // if widget "foo" has the 'init' attribute, then foo_init(widget) is called.
     // we could call function foo_init() automatically if it exists, but that would open a nice hole:
     // if the page's scripts have such a handler and we didn't define one, now it'd get called !
-    function init_widget(wrap, content, name, ph)
+    function init_widget(wrap, content, name, ph, args_func)
     {
 	// for empty widgets, pass attributes in wrap instead
 	content = (content ? content : wrap);
-	if (ph)
+	if (args_func)
+	    args_func(content);
+	else if (ph)
 	{
 	    for (var i = 0; i < ph.attributes.length; i++)
 	    {
@@ -1411,6 +1412,8 @@
 	// unparented, do it by hand ...
 	if (!parent)
 	    alert("parent is null !!");
+	if (parent.id == id)
+	    return parent;
 	l = parent.getElementsByTagName("*");
 	for (var i = 0; i < l.length; i++)
 	    if (l[i].id == id)
@@ -1766,7 +1769,7 @@
 	widget.onclick = f;
     }
 
-    function init_scope_buttons(widget)
+    function scope_widget_init(widget)
     {	
 	setup_radio_buttons(widget, scope, change_scope);
     }
@@ -2115,13 +2118,10 @@
     
     /****************************** Main menu *********************************/
 
-    function new_menu(title)
+    function menu_init(menu)
     {
-	var menu = new_widget("menu");
-	
 	var w = find_element(menu, "menu_title");
-	w.innerText = title;
-	return menu;
+	w.innerText = menu.title;
     }
 
     function menu_onmouseout(e)
@@ -2175,32 +2175,45 @@
     function create_menu()
     {
 	nsmenu = new_widget("main_menu");
-	nsmenu.style.display = 'none';
+    }
 
-	var w = find_element(nsmenu, "menu_title");
-	w.innerText = "JSArmor";
-	w.title = version;
-	
-	wakeup_lazy_widgets(w);	    	
-	//var scope_item = find_element(nsmenu, "scope");
-	//setup_radio_buttons(scope_item, scope, change_scope)
-
-	if (mode == 'block_all')
-	{
-	    var w = find_element(nsmenu, "block_all_settings");
-	    wakeup_lazy_widgets(w);	    
-	    var w = find_element(nsmenu, "block_inline_scripts");	    
-	    setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);	    
+    function block_all_settings_init(widget)
+    {
+	var w = find_element(widget, "block_inline_scripts");
+	setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);	    
 	    
-	    var w = find_element(nsmenu, "right_item");
-	    w.innerText = " [" + get_size_kb(total_inline_size) + "k]";
+	var w = find_element(widget, "right_item");
+	w.innerText = " [" + get_size_kb(total_inline_size) + "k]";
 
-	    if (!block_inline_scripts)
-	    {
-		var w = find_element(nsmenu, "handle_noscript_tags");
-		w.style = "display:none;";
-	    }
+	if (!block_inline_scripts)
+	{
+	    var w = find_element(widget, "handle_noscript_tags");
+	    w.style = "display:none;";
 	}
+    }
+
+    function mode_menu_item_oninit()
+    {
+	var for_mode = this.className;
+	if (for_mode == mode)
+	    this.className += " selected";
+	else
+	    this.onclick = function() { set_mode(for_mode); }
+	
+	// now add host table	    
+	if (mode == 'block_all' ||
+	    for_mode != mode)	// is it current mode ?
+	    return;
+	add_host_table_after(this);
+    }
+    
+    function main_menu_init(menu)
+    {
+	menu.title = "JSArmor";
+	menu_init(menu);
+	
+	if (mode == 'block_all')
+	    wakeup_lazy_widgets(menu);
 	
 	function setup_mode_item_handler(w, mode)
 	{
@@ -2210,21 +2223,10 @@
 	// take care of mode menu items.
 	for (var i = 0; i < modes.length; i++)
 	{
-	    // get item for this mode, wherever it is.
-	    var w = find_element(nsmenu, modes[i]);
-	    if (modes[i] == mode)
-		w.className += " selected";
-	    else
-		setup_mode_item_handler(w, modes[i]);
 
-	    // now add host table	    
-	    if (mode == 'block_all' ||
-		modes[i] != mode)	// is it current mode ?
-		continue;
-	    add_host_table_after(w);
 	}
 	
-	var w = find_element(nsmenu, "details_item");
+	var w = find_element(menu, "details_item");
 	w.onclick = show_details;
 
 	// FIXME put it back
@@ -2634,14 +2636,35 @@ li.allow_all::before		{ content:-o-skin('Smiley Cry'); }  \n\
     var widgets_layout = {
       'main' : '<widget name="main"><div id="main"><main_button/></div></widget>',
       'main_button' : '<widget name="main_button" init><div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>',
-      'main_menu' : '<widget name="main_menu"><div id="main_menu" class="menu" onmouseout ><h1 id="menu_title" ></h1><ul><li id="scope" oninit="init_scope_buttons">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li><li class="block_all" title="Block all scripts.">Block All</li><block_all_settings lazy id="block_all_settings"></block_all_settings><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Relaxed</li><li class="allow_all" title="Allow everything…">Allow All</li><li id="details_item">Details…</li></ul></div></widget>',
-      'block_all_settings' : '<widget name="block_all_settings"><block_inline_scripts id="block_inline_scripts"></block_inline_scripts><checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags" 		 title="Interpret noscript tags as if javascript was disabled in opera." 		 state="`handle_noscript_tags" 		 callback="`toggle_handle_noscript_tags"/></checkbox_item></widget>',
-      'block_inline_scripts' : '<widget name="block_inline_scripts" ><li><input type="checkbox"/>Block Inline Scripts<div class="right_item">[-2k]</div></li></widget>',
-      'checkbox_item' : '<widget name="checkbox_item" title innerText state callback init><li title="title"><input type="checkbox"/></li></widget>',
+      'main_menu' : '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout ><h1 id="menu_title" ></h1><ul><scope_widget></scope_widget><li class="block_all" title="Block all scripts." oninit="mode_menu_item_oninit">Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit">Relaxed</li><li class="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit">Allow All</li><li id="details_item">Details…</li></ul></div></widget>',
+      'block_all_settings' : '<widget name="block_all_settings" init><block_inline_scripts></block_inline_scripts><checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags" 		 title="Interpret noscript tags as if javascript was disabled in opera." 		 state="`handle_noscript_tags" 		 callback="`toggle_handle_noscript_tags"/></checkbox_item></widget>',
+      'block_inline_scripts' : '<widget name="block_inline_scripts" ><li id="block_inline_scripts"><input type="checkbox"/>Block Inline Scripts<div class="right_item">[-2k]</div></li></widget>',
+      'checkbox_item' : '<widget name="checkbox_item" title label state callback init><li title="title"><input type="checkbox"/></li></widget>',
       'host_table' : '<widget name="host_table"><table id="jsarmor_ftable"></table></widget>',
       'host_table_row' : '<widget name="host_table_row"><tr class="active" onclick><td width="1%"></td><td width="1%"></td><td width="1%"><input type="checkbox" checked="true"></td><td width="1%" class="host_part">code.</td><td class="domain_part">jquery.com</td><td width="1%"></td><td width="1%" class="not_allowed_globally"></td><td width="1%" class="script_count">[1]</td></tr></widget>',
-      'menu' : '<widget name="menu"><div class="menu" onmouseout ><h1 id="menu_title" ></h1><ul id="menu_content"></ul></div></widget>'
+      'menu' : '<widget name="menu" title init><div class="menu" onmouseout ><h1 id="menu_title" ></h1><ul id="menu_content"></ul></div></widget>',
+      'scope_widget' : '<widget name="scope_widget" init><li id="scope">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li></widget>'
     };
+
+    /* functions for creating widgets */
+    function new_checkbox_item(title, label, state, callback)
+    {
+        return new_widget("checkbox_item", function(n)
+        {
+            n.title = title;
+            n.label = label;
+            n.state = state;
+            n.callback = callback;
+        });
+    }
+
+    function new_menu(title)
+    {
+        return new_widget("menu", function(n)
+        {
+            n.title = title;
+        });
+    }
 
 
     

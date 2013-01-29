@@ -74,9 +74,9 @@ function(){   // fake line, keep_editor_happy
     // create ui elements from html strings in widgets_layout. this one is for normal
     // (single node) widgets. nested widgets are created as well unless they have the
     // "lazy" attribute.
-    function new_widget(name)
+    function new_widget(name, args_func)
     {
-	var wrap = new_wrapped_widget(name);
+	var wrap = new_wrapped_widget(name, null, args_func);
 	if (wrap.children.length > 1)
 	    my_alert("new_widget(" + name + "):\n" +
 		     "this isn't a single node widget, call new_wrapped_widget() instead !");
@@ -113,7 +113,7 @@ function(){   // fake line, keep_editor_happy
     // same as new_widget() but returns the <widget> wrapper. this is necessary if
     // the widget is actually a forest... (.forest is set on the div in this case)
     // placeholder is optional (the new widget gets its its attributes)
-    function new_wrapped_widget(name, placeholder)
+    function new_wrapped_widget(name, placeholder, args_func)
     {
 	name = name.toLowerCase();
 	// do we have this guy in cache ? use that then
@@ -137,29 +137,30 @@ function(){   // fake line, keep_editor_happy
 		     "couldn't create this guy, check the html in widgets_layout.");
 	    return null;
 	}
-	var content = wrap.firstChild;	
 	if (wrap.children.length > 1)
 	    wrap.forest = true;
 
 	setup_widget_event_handlers(wrap, name);
 	call_oninit_handlers(wrap);
-	create_nested_widgets(wrap, false);
-	init_widget(wrap, content, name, placeholder);
+	create_nested_widgets(wrap, false);	
+	init_widget(wrap, wrap.firstChild, name, placeholder, args_func);
 	
 	// cached_widgets[id] = d.firstChild;
 	//return widget.cloneNode(true);
 	return wrap;
     }
 
-    // copy attributes from placeholder, and call init handler if needed:
+    // copy attributes from placeholder (or use args_func if available), and call init handler if needed:
     // if widget "foo" has the 'init' attribute, then foo_init(widget) is called.
     // we could call function foo_init() automatically if it exists, but that would open a nice hole:
     // if the page's scripts have such a handler and we didn't define one, now it'd get called !
-    function init_widget(wrap, content, name, ph)
+    function init_widget(wrap, content, name, ph, args_func)
     {
 	// for empty widgets, pass attributes in wrap instead
 	content = (content ? content : wrap);
-	if (ph)
+	if (args_func)
+	    args_func(content);
+	else if (ph)
 	{
 	    for (var i = 0; i < ph.attributes.length; i++)
 	    {
