@@ -361,9 +361,11 @@ function(){   // fake line, keep_editor_happy
 
     function options_menu()
     {
-	var menu = new_menu("Options");
+	var realmenu = new_menu("Options");
+	var menu = find_element(realmenu, "menu_content");	
 	menu.id = "options_menu";
 
+	/*
 	// FIXME: sane menu logic to handle different menus
 	var need_reload = false;
 	menu.onmouseout = function(e)
@@ -375,11 +377,13 @@ function(){   // fake line, keep_editor_happy
 	   if (need_reload)
 	       reload_page();
 	};
+	 */
 	
 	function remove_menu_and(f)
 	{ return function()
 	  {
-	    td.removeChild(menu);
+	      //td.removeChild(menu);
+	      switch_menu(null);
 	    f();
 	  };
 	}
@@ -398,9 +402,9 @@ function(){   // fake line, keep_editor_happy
 	    set_global_setting('iframe', iframe_logic);
 	    need_reload = true;
 	};
-	add_radio_button(item, " Block all ",   iframe_logic, 0, set_iframe_logic);
-	add_radio_button(item, " Ask parent ",  iframe_logic, 1, set_iframe_logic);
-	add_radio_button(item, " Normal page ", iframe_logic, 2, set_iframe_logic);
+	//add_radio_button(item, " Block all ",   iframe_logic, 0, set_iframe_logic);
+	//add_radio_button(item, " Ask parent ",  iframe_logic, 1, set_iframe_logic);
+	//add_radio_button(item, " Normal page ", iframe_logic, 2, set_iframe_logic);
 	
 	// show ui in iframes
 	var f = function(event)
@@ -432,18 +436,16 @@ function(){   // fake line, keep_editor_happy
 	var item = add_menu_item(menu, "Export Settings...", 0, export_settings);	
 	var item = add_menu_item(menu, "About");		
 
-	var td = idoc.getElementById('td_nsmenu');
-	td.appendChild(menu);
-
-	resize_iframe();
-        menu.style.display = 'inline-block';
+	switch_menu(realmenu);
     }    
     
     /***************************** Details menu *******************************/
     
     function show_details()
     {	
-	var menu = new_menu("Scripts");
+	var realmenu = new_menu("Scripts");
+	var menu = find_element(realmenu, "menu_content");
+	/*
 	menu.onmouseout = function(e)
 	{
 	   if (!mouseout_leaving_menu(e, menu))
@@ -451,6 +453,7 @@ function(){   // fake line, keep_editor_happy
 	   td.removeChild(menu);
 	   resize_iframe();	   
 	};
+	 */
 	
 	// FIXME show iframes urls somewhere
 	foreach_host_node(function(host_node)
@@ -481,25 +484,42 @@ function(){   // fake line, keep_editor_happy
 	  }	  
 	});
 	
-	var td = idoc.getElementById('td_nsmenu');
-	td.appendChild(menu);
+//	var td = idoc.getElementById('td_nsmenu');
+//	td.appendChild(menu);
 
-	item = add_menu_item(menu, "Options ...", 0, function()
-			     {
-			       td.removeChild(menu);
-			       options_menu();
-			     });
+	//item = add_menu_item(menu, "Options ...", 0, options_menu);
 	
-	show_hide_menu(false);
-        menu.style.display = 'inline-block';
+	//show_hide_menu(false);
+	switch_menu(realmenu);
     }
-   
+
+    
     /****************************** Main menu *********************************/
 
     function new_menu(title)
     {
+	var menu = new_widget("menu");
+	
+	var w = find_element(menu, "menu_title");
+	w.innerText = title;
+	return menu;
+    }
+
+    function menu_onmouseout(e)
+    {
+	if (!mouseout_leaving_menu(e, nsmenu))
+	    return;
+	show_hide_menu(false);
+	if (need_reload)
+	    reload_page();
+	switch_menu(null);
+    }    
+
+    
+    function _new_menu(title)
+    {
 	var menu = idoc.createElement('div');
-	menu.className = 'main_menu';
+	menu.className = 'menu';
 	if (title != "")
 	{
 	    var item = add_menu_item(menu, title);
@@ -520,16 +540,29 @@ function(){   // fake line, keep_editor_happy
 	    reload_page();
     }
 
-    function menu_title_init()
+    
+    function switch_menu(menu)
     {
-	this.title = version;
+	show_hide_menu(false);
+	nsmenu.parentNode.removeChild(nsmenu);
+	nsmenu = menu;
+	if (menu)
+	{
+	    parent_menu();
+	    show_hide_menu(true);
+	}
     }
     
     function create_menu()
     {
 	nsmenu = new_widget("main_menu");
 	nsmenu.style.display = 'none';
+
+	var w = find_element(nsmenu, "menu_title");
+	w.innerText = "JSArmor";
+	w.title = version;
 	
+	wakeup_lazy_widgets(w);	    	
 	//var scope_item = find_element(nsmenu, "scope");
 	//setup_radio_buttons(scope_item, scope, change_scope)
 
@@ -585,7 +618,9 @@ function(){   // fake line, keep_editor_happy
 
     function parent_menu()
     {
-	parent_widget(nsmenu, "main_menu", main_ui);
+	//parent_widget(nsmenu, "main_menu", main_ui);
+	var w = find_element(main_ui, "main_menu_sibling");
+	w.parentNode.insertBefore(nsmenu, w);
     }
 
     function show_hide_menu(show, toggle)
@@ -617,6 +652,40 @@ function(){   // fake line, keep_editor_happy
 	return true;
     }
 
+    function host_table_row_onclick(event)
+    {
+	var h = this.host;
+	var glob_icon_clicked = (event.target.className.indexOf("allowed_globally") != -1);
+
+	if (glob_icon_clicked)
+	{
+	    remove_host(h);
+	    if (host_allowed_globally(h))
+		global_remove_host(h);
+	    else
+		global_allow_host(h);
+	}
+	else
+	{
+	    if (allowed_host(h))
+		remove_host(h);
+	    else
+		allow_host(h);
+	    global_remove_host(h);	      
+	}	 
+
+	if (mode != 'filtered' && mode != 'relaxed')
+	    set_mode_no_update('filtered');
+
+	// blocking related/helper host in relaxed mode ? switch to filtered mode.
+	// (related/helper hosts are always allowed in relaxed mode)
+	if (mode == 'relaxed' && relaxed_mode_helper_host(h))
+	    relaxed_mode_to_filtered_mode(h);
+	  
+	need_reload = true;
+	repaint_ui_now();
+    };
+    
     function add_host_table_after(item)
     {
 	var t = new_widget("host_table");
@@ -625,7 +694,7 @@ function(){   // fake line, keep_editor_happy
 	sort_domains();
 	
 	var found_not_loaded = false;
-	var item = null;
+	var tr = null;
 	foreach_host_node(function(hn, dn)
 	{
 	    var d = dn.name;
@@ -638,7 +707,8 @@ function(){   // fake line, keep_editor_happy
 	    var global_icon = idoc.createElement('img');   // globally allowed icon
 	    var iframes = iframe_icon(hn);
 
-	    var tr = new_widget("host_table_row");
+	    tr = new_widget("host_table_row");
+	    tr.host = h;
 	    t.appendChild(tr);
 	    
 	    if (not_loaded)
@@ -653,51 +723,19 @@ function(){   // fake line, keep_editor_happy
 	    if (host_allowed_globally(h))
 		tr.childNodes[6].className = "allowed_globally";
 	    tr.childNodes[7].innerText = count;
-	    
+
+	    if (not_loaded)
+		found_not_loaded = true;	    
 	});
 	
-//	if (item && !found_not_loaded) // indent
-//	    item.childNodes[0].innerHTML = "&nbsp;&nbsp;";	
+	if (tr && !found_not_loaded) // indent
+	    tr.childNodes[0].innerHTML = "&nbsp;&nbsp;&nbsp;";	
     }
-	
+
+/*    
     function add_ftable(nsmenu)
     {
-	var f = function(event)
-	{
-	  var h = this.host;
-	  var icon_clicked = (event.target.tagName == 'IMG');
 
-	  if (icon_clicked)
-	  {
-	      remove_host(h);
-	      if (host_allowed_globally(h))
-		  global_remove_host(h);
-	      else
-		  global_allow_host(h);
-	  }
-	  else
-	  {
-	      if (allowed_host(h))
-		  remove_host(h);
-	      else
-		  allow_host(h);
-	      global_remove_host(h);	      
-	  }	 
-
-	  // update ui
-	  this.checkbox.checked = filtered_mode_allowed_host(h);
-	  init_global_icon(this.icon, h)
-
-	  if (mode != 'filtered' && mode != 'relaxed')
-	      set_mode('filtered');
-
-	  // blocking related/helper host in relaxed mode ? switch to filtered mode.
-	  // (related/helper hosts are always allowed in relaxed mode)
-	  if (mode == 'relaxed' && relaxed_mode_helper_host(h))
-	      relaxed_mode_to_filtered_mode(h);
-	  
-	  need_reload = true;
-	};
 
 	var table = idoc.createElement('table');
 	table.id = "jsarmor_ftable";
@@ -734,6 +772,7 @@ function(){   // fake line, keep_editor_happy
 	if (item && !found_not_loaded) // indent
 	    item.childNodes[0].innerHTML = "&nbsp;&nbsp;";
     }
+ */
 
 
     /**************************** Plugin API **********************************/

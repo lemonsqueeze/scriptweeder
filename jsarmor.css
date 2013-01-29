@@ -1,7 +1,7 @@
 /* jsarmor stylesheet */
 body			{ margin:0px; }
 #main			{ position:fixed; width:auto; height:auto; background:transparent; 
-			  white-space:nowrap; z-index:99999999; direction:ltr; 
+			  white-space:nowrap; z-index:99999999; direction:ltr; font-family:Ubuntu;
 			  font-size:small;  margin-bottom:0px; }
 
 /* main button */
@@ -13,13 +13,10 @@ body			{ margin:0px; }
 #jsarmor_ftable		{ width:100%; } 
 #jsarmor_ftable > tr > td	{ padding: 0px 0px 1px 0px;} 
 
-/* menu items */
-/*
+/* menu item stuff */
 .indent1		{ padding-left:12px }
 .indent2		{ padding-left:22px }
-*/
 .active:hover		{ background-color:#ddd; }
-
 
 /* hostnames display */
 .host_part		{ color:#888; text-align:right; }
@@ -50,7 +47,7 @@ input[type=radio] + label		{ box-shadow:inset 0px 1px 0px 0px #ffffff; border-ra
 input[type=radio]:checked + label	{ background-color: #fa4; } 
 
 /* icons */
-#main_button img { width:22px; height:22px; vertical-align:middle; background-size:contain; } 
+img { width:22px; height:22px; vertical-align:middle; background-size:contain; } 
 
 img.allowed		{ background:-o-skin('Transfer Success'); }
 img.blocked		{ background:-o-skin('Transfer Stopped'); }
@@ -96,7 +93,7 @@ li.block_all::before, li.filtered::before, li.relaxed::before, li.allow_all::bef
 
 td.allowed::before		{ content:-o-skin('Transfer Success'); }
 td.blocked::before		{ content:-o-skin('Transfer Stopped'); }
-td.not_loaded::before		{ content:-o-skin('Transfer Size Mismatch'); }
+td.not_loaded			{ content:-o-skin('Transfer Size Mismatch'); }
 td.iframe			{ content:-o-skin('Menu Info'); }
 td.allowed_globally		{ content:-o-skin('RSS'); }
 td.not_allowed_globally:hover	{ content:-o-skin('RSS'); }

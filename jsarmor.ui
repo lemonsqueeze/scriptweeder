@@ -13,13 +13,13 @@
 <!-- main ui -->
 <widget name="main">
 <div id="main">
-  <main_menu lazy></main_menu>
+  <!-- main menu goes here -->
   <main_button/>
 </div>
 </widget>
 
 <widget name="main_button" init>
-  <div id="main_button" onmouseover onclick onmouseout>
+  <div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout>
     <button><img id="main_button_image"/></button>
   </div>
 </widget>
@@ -28,17 +28,17 @@
 <!-- main menu -->
 <widget name="main_menu">
   <div id="main_menu" class="menu" onmouseout >
-    <menu_title label="JSArmor" />
-      <ul>
-	<scope_widget/>
-	<mode_menu_item mode="block_all" label="Block All" title="Block all scripts." />
-	<block_all_settings lazy id="block_all_settings"></block_all_settings>
-	<mode_menu_item mode="filtered" label="Filtered" 
-		title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
-	<mode_menu_item mode="relaxed" label="Relaxed" 
-		title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
-	<mode_menu_item mode="allow_all" label="Allow All" title="Allow everything…" />
-	<menu_item id="details_item" label="Details…"/>
+    <menu_title/>
+    <ul>
+      <scope_widget/>
+      <mode_menu_item mode="block_all" label="Block All" title="Block all scripts." />
+      <block_all_settings lazy id="block_all_settings"></block_all_settings>
+      <mode_menu_item mode="filtered" label="Filtered" 
+	      title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
+      <mode_menu_item mode="relaxed" label="Relaxed" 
+	      title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
+      <mode_menu_item mode="allow_all" label="Allow All" title="Allow everything…" />
+      <menu_item id="details_item" label="Details…"/>
       </ul>
   </div>
 </widget>
@@ -73,8 +73,8 @@
 </widget>
 
 <widget name="host_table_row">
-  <tr class="active">
-    <td width="1%">&nbsp;&nbsp;</td>
+  <tr class="active" onclick>
+    <td width="1%"></td>
     <td width="1%"></td>
     <td width="1%">
       <input type="checkbox" checked="true">
@@ -88,10 +88,21 @@
 </widget>
 
 
+<!-- generic menu (details ...) -->
+
+<widget name="menu">
+  <div class="menu" onmouseout >
+    <menu_title />
+      <ul id="menu_content">
+      </ul>
+  </div>
+</widget>
+
+
 <!--         [ low level building blocks ]         -->
  
-<def menu_title label >
-  <h1 id="title" oninit="menu_title_init">$label</h1>
+<def menu_title >
+  <h1 id="menu_title" ></h1>
 </def>
 
 <def menu_item id label >

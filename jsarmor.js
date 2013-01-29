@@ -1980,9 +1980,11 @@
 
     function options_menu()
     {
-	var menu = new_menu("Options");
+	var realmenu = new_menu("Options");
+	var menu = find_element(realmenu, "menu_content");	
 	menu.id = "options_menu";
 
+	/*
 	// FIXME: sane menu logic to handle different menus
 	var need_reload = false;
 	menu.onmouseout = function(e)
@@ -1994,11 +1996,13 @@
 	   if (need_reload)
 	       reload_page();
 	};
+	 */
 	
 	function remove_menu_and(f)
 	{ return function()
 	  {
-	    td.removeChild(menu);
+	      //td.removeChild(menu);
+	      switch_menu(null);
 	    f();
 	  };
 	}
@@ -2017,9 +2021,9 @@
 	    set_global_setting('iframe', iframe_logic);
 	    need_reload = true;
 	};
-	add_radio_button(item, " Block all ",   iframe_logic, 0, set_iframe_logic);
-	add_radio_button(item, " Ask parent ",  iframe_logic, 1, set_iframe_logic);
-	add_radio_button(item, " Normal page ", iframe_logic, 2, set_iframe_logic);
+	//add_radio_button(item, " Block all ",   iframe_logic, 0, set_iframe_logic);
+	//add_radio_button(item, " Ask parent ",  iframe_logic, 1, set_iframe_logic);
+	//add_radio_button(item, " Normal page ", iframe_logic, 2, set_iframe_logic);
 	
 	// show ui in iframes
 	var f = function(event)
@@ -2051,18 +2055,16 @@
 	var item = add_menu_item(menu, "Export Settings...", 0, export_settings);	
 	var item = add_menu_item(menu, "About");		
 
-	var td = idoc.getElementById('td_nsmenu');
-	td.appendChild(menu);
-
-	resize_iframe();
-        menu.style.display = 'inline-block';
+	switch_menu(realmenu);
     }    
     
     /***************************** Details menu *******************************/
     
     function show_details()
     {	
-	var menu = new_menu("Scripts");
+	var realmenu = new_menu("Scripts");
+	var menu = find_element(realmenu, "menu_content");
+	/*
 	menu.onmouseout = function(e)
 	{
 	   if (!mouseout_leaving_menu(e, menu))
@@ -2070,6 +2072,7 @@
 	   td.removeChild(menu);
 	   resize_iframe();	   
 	};
+	 */
 	
 	// FIXME show iframes urls somewhere
 	foreach_host_node(function(host_node)
@@ -2100,25 +2103,42 @@
 	  }	  
 	});
 	
-	var td = idoc.getElementById('td_nsmenu');
-	td.appendChild(menu);
+//	var td = idoc.getElementById('td_nsmenu');
+//	td.appendChild(menu);
 
-	item = add_menu_item(menu, "Options ...", 0, function()
-			     {
-			       td.removeChild(menu);
-			       options_menu();
-			     });
+	//item = add_menu_item(menu, "Options ...", 0, options_menu);
 	
-	show_hide_menu(false);
-        menu.style.display = 'inline-block';
+	//show_hide_menu(false);
+	switch_menu(realmenu);
     }
-   
+
+    
     /****************************** Main menu *********************************/
 
     function new_menu(title)
     {
+	var menu = new_widget("menu");
+	
+	var w = find_element(menu, "menu_title");
+	w.innerText = title;
+	return menu;
+    }
+
+    function menu_onmouseout(e)
+    {
+	if (!mouseout_leaving_menu(e, nsmenu))
+	    return;
+	show_hide_menu(false);
+	if (need_reload)
+	    reload_page();
+	switch_menu(null);
+    }    
+
+    
+    function _new_menu(title)
+    {
 	var menu = idoc.createElement('div');
-	menu.className = 'main_menu';
+	menu.className = 'menu';
 	if (title != "")
 	{
 	    var item = add_menu_item(menu, title);
@@ -2139,16 +2159,29 @@
 	    reload_page();
     }
 
-    function menu_title_init()
+    
+    function switch_menu(menu)
     {
-	this.title = version;
+	show_hide_menu(false);
+	nsmenu.parentNode.removeChild(nsmenu);
+	nsmenu = menu;
+	if (menu)
+	{
+	    parent_menu();
+	    show_hide_menu(true);
+	}
     }
     
     function create_menu()
     {
 	nsmenu = new_widget("main_menu");
 	nsmenu.style.display = 'none';
+
+	var w = find_element(nsmenu, "menu_title");
+	w.innerText = "JSArmor";
+	w.title = version;
 	
+	wakeup_lazy_widgets(w);	    	
 	//var scope_item = find_element(nsmenu, "scope");
 	//setup_radio_buttons(scope_item, scope, change_scope)
 
@@ -2168,21 +2201,7 @@
 		w.style = "display:none;";
 	    }
 	}
-	if (false)
-	{	
-	    var w = find_element(nsmenu, "block_inline_scripts");
-	    w.style = "display:block;";	    
-	    setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);
-
-	    var w = find_element(nsmenu, "inline_scripts_size");
-	    w.innerText = " [" + get_size_kb(total_inline_size) + "k]";
-
-	    var w = find_element(nsmenu, "handle_noscript_tags");
-	    setup_checkbox_item(w, handle_noscript_tags, toggle_handle_noscript_tags);
-	    if (block_inline_scripts)
-		w.style = "display:block;";
-	}
-
+	
 	function setup_mode_item_handler(w, mode)
 	{
 	    w.onclick = function() { set_mode(mode); };
@@ -2218,7 +2237,9 @@
 
     function parent_menu()
     {
-	parent_widget(nsmenu, "main_menu", main_ui);
+	//parent_widget(nsmenu, "main_menu", main_ui);
+	var w = find_element(main_ui, "main_menu_sibling");
+	w.parentNode.insertBefore(nsmenu, w);
     }
 
     function show_hide_menu(show, toggle)
@@ -2250,6 +2271,40 @@
 	return true;
     }
 
+    function host_table_row_onclick(event)
+    {
+	var h = this.host;
+	var glob_icon_clicked = (event.target.className.indexOf("allowed_globally") != -1);
+
+	if (glob_icon_clicked)
+	{
+	    remove_host(h);
+	    if (host_allowed_globally(h))
+		global_remove_host(h);
+	    else
+		global_allow_host(h);
+	}
+	else
+	{
+	    if (allowed_host(h))
+		remove_host(h);
+	    else
+		allow_host(h);
+	    global_remove_host(h);	      
+	}	 
+
+	if (mode != 'filtered' && mode != 'relaxed')
+	    set_mode_no_update('filtered');
+
+	// blocking related/helper host in relaxed mode ? switch to filtered mode.
+	// (related/helper hosts are always allowed in relaxed mode)
+	if (mode == 'relaxed' && relaxed_mode_helper_host(h))
+	    relaxed_mode_to_filtered_mode(h);
+	  
+	need_reload = true;
+	repaint_ui_now();
+    };
+    
     function add_host_table_after(item)
     {
 	var t = new_widget("host_table");
@@ -2258,7 +2313,7 @@
 	sort_domains();
 	
 	var found_not_loaded = false;
-	var item = null;
+	var tr = null;
 	foreach_host_node(function(hn, dn)
 	{
 	    var d = dn.name;
@@ -2271,7 +2326,8 @@
 	    var global_icon = idoc.createElement('img');   // globally allowed icon
 	    var iframes = iframe_icon(hn);
 
-	    var tr = new_widget("host_table_row");
+	    tr = new_widget("host_table_row");
+	    tr.host = h;
 	    t.appendChild(tr);
 	    
 	    if (not_loaded)
@@ -2286,51 +2342,19 @@
 	    if (host_allowed_globally(h))
 		tr.childNodes[6].className = "allowed_globally";
 	    tr.childNodes[7].innerText = count;
-	    
+
+	    if (not_loaded)
+		found_not_loaded = true;	    
 	});
 	
-//	if (item && !found_not_loaded) // indent
-//	    item.childNodes[0].innerHTML = "&nbsp;&nbsp;";	
+	if (tr && !found_not_loaded) // indent
+	    tr.childNodes[0].innerHTML = "&nbsp;&nbsp;&nbsp;";	
     }
-	
+
+/*    
     function add_ftable(nsmenu)
     {
-	var f = function(event)
-	{
-	  var h = this.host;
-	  var icon_clicked = (event.target.tagName == 'IMG');
 
-	  if (icon_clicked)
-	  {
-	      remove_host(h);
-	      if (host_allowed_globally(h))
-		  global_remove_host(h);
-	      else
-		  global_allow_host(h);
-	  }
-	  else
-	  {
-	      if (allowed_host(h))
-		  remove_host(h);
-	      else
-		  allow_host(h);
-	      global_remove_host(h);	      
-	  }	 
-
-	  // update ui
-	  this.checkbox.checked = filtered_mode_allowed_host(h);
-	  init_global_icon(this.icon, h)
-
-	  if (mode != 'filtered' && mode != 'relaxed')
-	      set_mode('filtered');
-
-	  // blocking related/helper host in relaxed mode ? switch to filtered mode.
-	  // (related/helper hosts are always allowed in relaxed mode)
-	  if (mode == 'relaxed' && relaxed_mode_helper_host(h))
-	      relaxed_mode_to_filtered_mode(h);
-	  
-	  need_reload = true;
-	};
 
 	var table = idoc.createElement('table');
 	table.id = "jsarmor_ftable";
@@ -2367,6 +2391,7 @@
 	if (item && !found_not_loaded) // indent
 	    item.childNodes[0].innerHTML = "&nbsp;&nbsp;";
     }
+ */
 
 
     /**************************** Plugin API **********************************/
@@ -2498,7 +2523,7 @@
 "/* jsarmor stylesheet */  \n\
 body			{ margin:0px; }  \n\
 #main			{ position:fixed; width:auto; height:auto; background:transparent;   \n\
-			  white-space:nowrap; z-index:99999999; direction:ltr;   \n\
+			  white-space:nowrap; z-index:99999999; direction:ltr; font-family:Ubuntu;  \n\
 			  font-size:small;  margin-bottom:0px; }  \n\
   \n\
 /* main button */  \n\
@@ -2510,13 +2535,10 @@ body			{ margin:0px; }  \n\
 #jsarmor_ftable		{ width:100%; }   \n\
 #jsarmor_ftable > tr > td	{ padding: 0px 0px 1px 0px;}   \n\
   \n\
-/* menu items */  \n\
-/*  \n\
+/* menu item stuff */  \n\
 .indent1		{ padding-left:12px }  \n\
 .indent2		{ padding-left:22px }  \n\
-*/  \n\
 .active:hover		{ background-color:#ddd; }  \n\
-  \n\
   \n\
 /* hostnames display */  \n\
 .host_part		{ color:#888; text-align:right; }  \n\
@@ -2547,7 +2569,7 @@ input[type=radio] + label		{ box-shadow:inset 0px 1px 0px 0px #ffffff; border-ra
 input[type=radio]:checked + label	{ background-color: #fa4; }   \n\
   \n\
 /* icons */  \n\
-#main_button img { width:22px; height:22px; vertical-align:middle; background-size:contain; }   \n\
+img { width:22px; height:22px; vertical-align:middle; background-size:contain; }   \n\
   \n\
 img.allowed		{ background:-o-skin('Transfer Success'); }  \n\
 img.blocked		{ background:-o-skin('Transfer Stopped'); }  \n\
@@ -2593,7 +2615,7 @@ li.block_all::before, li.filtered::before, li.relaxed::before, li.allow_all::bef
   \n\
 td.allowed::before		{ content:-o-skin('Transfer Success'); }  \n\
 td.blocked::before		{ content:-o-skin('Transfer Stopped'); }  \n\
-td.not_loaded::before		{ content:-o-skin('Transfer Size Mismatch'); }  \n\
+td.not_loaded			{ content:-o-skin('Transfer Size Mismatch'); }  \n\
 td.iframe			{ content:-o-skin('Menu Info'); }  \n\
 td.allowed_globally		{ content:-o-skin('RSS'); }  \n\
 td.not_allowed_globally:hover	{ content:-o-skin('RSS'); }  \n\
@@ -2610,14 +2632,15 @@ li.allow_all::before		{ content:-o-skin('Smiley Cry'); }  \n\
 
     /* layout for each widget (generated from jsarmor.xml). */
     var widgets_layout = {
-      'main' : '<widget name="main"><div id="main"><main_menu lazy></main_menu><main_button/></div></widget>',
-      'main_button' : '<widget name="main_button" init><div id="main_button" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>',
-      'main_menu' : '<widget name="main_menu"><div id="main_menu" class="menu" onmouseout ><h1 id="title" oninit="menu_title_init">JSArmor</h1><ul><li id="scope" oninit="init_scope_buttons">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li><li class="block_all" title="Block all scripts.">Block All</li><block_all_settings lazy id="block_all_settings"></block_all_settings><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Relaxed</li><li class="allow_all" title="Allow everything…">Allow All</li><li id="details_item">Details…</li></ul></div></widget>',
+      'main' : '<widget name="main"><div id="main"><main_button/></div></widget>',
+      'main_button' : '<widget name="main_button" init><div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>',
+      'main_menu' : '<widget name="main_menu"><div id="main_menu" class="menu" onmouseout ><h1 id="menu_title" ></h1><ul><li id="scope" oninit="init_scope_buttons">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li><li class="block_all" title="Block all scripts.">Block All</li><block_all_settings lazy id="block_all_settings"></block_all_settings><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Relaxed</li><li class="allow_all" title="Allow everything…">Allow All</li><li id="details_item">Details…</li></ul></div></widget>',
       'block_all_settings' : '<widget name="block_all_settings"><block_inline_scripts id="block_inline_scripts"></block_inline_scripts><checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags" 		 title="Interpret noscript tags as if javascript was disabled in opera." 		 state="`handle_noscript_tags" 		 callback="`toggle_handle_noscript_tags"/></checkbox_item></widget>',
       'block_inline_scripts' : '<widget name="block_inline_scripts" ><li><input type="checkbox"/>Block Inline Scripts<div class="right_item">[-2k]</div></li></widget>',
       'checkbox_item' : '<widget name="checkbox_item" title innerText state callback init><li title="title"><input type="checkbox"/></li></widget>',
       'host_table' : '<widget name="host_table"><table id="jsarmor_ftable"></table></widget>',
-      'host_table_row' : '<widget name="host_table_row"><tr class="active"><td width="1%">&nbsp;&nbsp;</td><td width="1%"></td><td width="1%"><input type="checkbox" checked="true"></td><td width="1%" class="host_part">code.</td><td class="domain_part">jquery.com</td><td width="1%"></td><td width="1%" class="not_allowed_globally"></td><td width="1%" class="script_count">[1]</td></tr></widget>'
+      'host_table_row' : '<widget name="host_table_row"><tr class="active" onclick><td width="1%"></td><td width="1%"></td><td width="1%"><input type="checkbox" checked="true"></td><td width="1%" class="host_part">code.</td><td class="domain_part">jquery.com</td><td width="1%"></td><td width="1%" class="not_allowed_globally"></td><td width="1%" class="script_count">[1]</td></tr></widget>',
+      'menu' : '<widget name="menu"><div class="menu" onmouseout ><h1 id="menu_title" ></h1><ul id="menu_content"></ul></div></widget>'
     };
 
 
