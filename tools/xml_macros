@@ -57,7 +57,7 @@ sub replace_macro
     my $s = $macros{$name};
     foreach my $arg (keys(%args))
     {
-	$s =~ s|\{$arg\}|$args{$arg}|gm;
+	$s =~ s|\$$arg|$args{$arg}|gm;
     }
     return $s;
 }

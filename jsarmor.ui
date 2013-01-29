@@ -32,13 +32,40 @@
       <ul>
 	<scope_widget/>
 	<mode_menu_item mode="block_all" label="Block All" title="Block all scripts." />
-	<mode_menu_item mode="filtered" label="Filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
-	<mode_menu_item mode="relaxed" label="Relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
+	<block_all_settings lazy id="block_all_settings"></block_all_settings>
+	<mode_menu_item mode="filtered" label="Filtered" 
+		title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
+	<mode_menu_item mode="relaxed" label="Relaxed" 
+		title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
 	<mode_menu_item mode="allow_all" label="Allow All" title="Allow everything…" />
 	<menu_item id="details_item" label="Details…"/>
       </ul>
   </div>
 </widget>
+
+<widget name="block_all_settings">
+  <block_inline_scripts id="block_inline_scripts"></block_inline_scripts>  
+  <checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags"
+		 title="Interpret noscript tags as if javascript was disabled in opera."
+		 state="`handle_noscript_tags"
+		 callback="`toggle_handle_noscript_tags"/></checkbox_item>
+</widget>
+
+<widget name="block_inline_scripts" >
+  <li>
+    <input type="checkbox"/>Block Inline Scripts
+    <div class="right_item">[-2k]</div>
+  </li>
+</widget>
+
+
+<widget name="checkbox_item" title innerText state callback init>
+  <li title="title">
+    <input type="checkbox"/>
+  </li>
+</widget>
+
+
 
 
 <widget name="host_table">
@@ -64,15 +91,15 @@
 <!--         [ low level building blocks ]         -->
  
 <def menu_title label >
-  <h1 id="title" oninit="menu_title_init">{label}</h1>
+  <h1 id="title" oninit="menu_title_init">$label</h1>
 </def>
 
 <def menu_item id label >
-  <li id="{id}">{label}</li>
+  <li id="$id">$label</li>
 </def>
 
 <def mode_menu_item mode label title >
-  <li class="{mode}" title="{title}">{label}</li>
+  <li class="$mode" title="$title">$label</li>
 </def>
 
 <def scope_widget>
@@ -87,7 +114,7 @@
 
 <def radio_button label >
   <input type="radio" name="radio"/>
-  <label> {label} </label>
+  <label> $label </label>
 </def>
 
 

@@ -164,7 +164,10 @@ function(){   // fake line, keep_editor_happy
 	    for (var i = 0; i < ph.attributes.length; i++)
 	    {
 		var a = ph.attributes[i];
-		content[a.name] = eval(a.value);
+		if (a.value.charAt(0) == "`")  // "`" means eval attribute 
+		    content[a.name] = eval(a.value.slice(1));
+		else
+		    content[a.name] = a.value;
 	    }
 	}
 

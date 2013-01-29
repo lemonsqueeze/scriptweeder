@@ -133,6 +133,12 @@ function(){   // fake line, keep_editor_happy
 	return d;
     }
 
+    function checkbox_item_init(li)
+    {
+	li.innerHTML += li.label; // hack
+	setup_checkbox_item(li, li.state, li.callback);
+    }
+    
     function setup_checkbox_item(widget, current, f)
     {
 	var checkbox = widget.getElementsByTagName('input')[0];
@@ -528,20 +534,22 @@ function(){   // fake line, keep_editor_happy
 	//setup_radio_buttons(scope_item, scope, change_scope)
 
 	if (mode == 'block_all')
-	{	
-	    var w = find_element(nsmenu, "block_inline_scripts");
-	    w.style = "display:block;";	    
-	    setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);
-
-	    var w = find_element(nsmenu, "inline_scripts_size");
+	{
+	    var w = find_element(nsmenu, "block_all_settings");
+	    wakeup_lazy_widgets(w);	    
+	    var w = find_element(nsmenu, "block_inline_scripts");	    
+	    setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);	    
+	    
+	    var w = find_element(nsmenu, "right_item");
 	    w.innerText = " [" + get_size_kb(total_inline_size) + "k]";
 
-	    var w = find_element(nsmenu, "handle_noscript_tags");
-	    setup_checkbox_item(w, handle_noscript_tags, toggle_handle_noscript_tags);
-	    if (block_inline_scripts)
-		w.style = "display:block;";
+	    if (!block_inline_scripts)
+	    {
+		var w = find_element(nsmenu, "handle_noscript_tags");
+		w.style = "display:none;";
+	    }
 	}
-
+	
 	function setup_mode_item_handler(w, mode)
 	{
 	    w.onclick = function() { set_mode(mode); };
@@ -850,6 +858,8 @@ function(){   // fake line, keep_editor_happy
 	}
     }
 
+
+    
 
 @include "jsarmor_style.js"
 

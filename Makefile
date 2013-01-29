@@ -33,7 +33,7 @@ jsarmor_style.js: jsarmor.css
 jsarmor.xml: jsarmor.ui
 	@echo generating $@ from $<
 # make it somewhat readable
-	@cat $< | sed -e 's|>|>\n|g' |  \
+	@cat $< | tr '\n' ' ' | sed -e 's|>|>\n|g' | sed -e 's|<|\n<|g' |  \
 	tools/xml_macros   |  \
 	grep -v '^ *$$'  > $@
 

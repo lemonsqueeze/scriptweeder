@@ -25,7 +25,7 @@ body			{ margin:0px; }
 .host_part		{ color:#888; text-align:right; }
 .helper			{ color:#000; }
 .script_count		{ text-align:right; }
-.inline_script_size	{ float:right; }
+.right_item		{ float:right; }
 
 /* 'script allowed globally' icon */
 .img_global		{ visibility:hidden; padding: 0px 3px; width:14px; height:14px; vertical-align:middle;

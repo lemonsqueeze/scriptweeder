@@ -1193,7 +1193,10 @@
 	    for (var i = 0; i < ph.attributes.length; i++)
 	    {
 		var a = ph.attributes[i];
-		content[a.name] = eval(a.value);
+		if (a.value.charAt(0) == "`")  // "`" means eval attribute 
+		    content[a.name] = eval(a.value.slice(1));
+		else
+		    content[a.name] = a.value;
 	    }
 	}
 
@@ -1749,6 +1752,12 @@
 	return d;
     }
 
+    function checkbox_item_init(li)
+    {
+	li.innerHTML += li.label; // hack
+	setup_checkbox_item(li, li.state, li.callback);
+    }
+    
     function setup_checkbox_item(widget, current, f)
     {
 	var checkbox = widget.getElementsByTagName('input')[0];
@@ -2144,6 +2153,22 @@
 	//setup_radio_buttons(scope_item, scope, change_scope)
 
 	if (mode == 'block_all')
+	{
+	    var w = find_element(nsmenu, "block_all_settings");
+	    wakeup_lazy_widgets(w);	    
+	    var w = find_element(nsmenu, "block_inline_scripts");	    
+	    setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);	    
+	    
+	    var w = find_element(nsmenu, "right_item");
+	    w.innerText = " [" + get_size_kb(total_inline_size) + "k]";
+
+	    if (!block_inline_scripts)
+	    {
+		var w = find_element(nsmenu, "handle_noscript_tags");
+		w.style = "display:none;";
+	    }
+	}
+	if (false)
 	{	
 	    var w = find_element(nsmenu, "block_inline_scripts");
 	    w.style = "display:block;";	    
@@ -2467,6 +2492,8 @@
     }
 
 
+    
+
     var builtin_style = 
 "/* jsarmor stylesheet */  \n\
 body			{ margin:0px; }  \n\
@@ -2495,7 +2522,7 @@ body			{ margin:0px; }  \n\
 .host_part		{ color:#888; text-align:right; }  \n\
 .helper			{ color:#000; }  \n\
 .script_count		{ text-align:right; }  \n\
-.inline_script_size	{ float:right; }  \n\
+.right_item		{ float:right; }  \n\
   \n\
 /* 'script allowed globally' icon */  \n\
 .img_global		{ visibility:hidden; padding: 0px 3px; width:14px; height:14px; vertical-align:middle;  \n\
@@ -2585,7 +2612,10 @@ li.allow_all::before		{ content:-o-skin('Smiley Cry'); }  \n\
     var widgets_layout = {
       'main' : '<widget name="main"><div id="main"><main_menu lazy></main_menu><main_button/></div></widget>',
       'main_button' : '<widget name="main_button" init><div id="main_button" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>',
-      'main_menu' : '<widget name="main_menu"><div id="main_menu" class="menu" onmouseout ><h1 id="title" oninit="menu_title_init">JSArmor</h1><ul><li id="scope" oninit="init_scope_buttons">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li><li class="block_all" title="Block all scripts.">Block All</li><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Relaxed</li><li class="allow_all" title="Allow everything…">Allow All</li><li id="details_item">Details…</li></ul></div></widget>',
+      'main_menu' : '<widget name="main_menu"><div id="main_menu" class="menu" onmouseout ><h1 id="title" oninit="menu_title_init">JSArmor</h1><ul><li id="scope" oninit="init_scope_buttons">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li><li class="block_all" title="Block all scripts.">Block All</li><block_all_settings lazy id="block_all_settings"></block_all_settings><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)">Relaxed</li><li class="allow_all" title="Allow everything…">Allow All</li><li id="details_item">Details…</li></ul></div></widget>',
+      'block_all_settings' : '<widget name="block_all_settings"><block_inline_scripts id="block_inline_scripts"></block_inline_scripts><checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags" 		 title="Interpret noscript tags as if javascript was disabled in opera." 		 state="`handle_noscript_tags" 		 callback="`toggle_handle_noscript_tags"/></checkbox_item></widget>',
+      'block_inline_scripts' : '<widget name="block_inline_scripts" ><li><input type="checkbox"/>Block Inline Scripts<div class="right_item">[-2k]</div></li></widget>',
+      'checkbox_item' : '<widget name="checkbox_item" title innerText state callback init><li title="title"><input type="checkbox"/></li></widget>',
       'host_table' : '<widget name="host_table"><table id="jsarmor_ftable"></table></widget>',
       'host_table_row' : '<widget name="host_table_row"><tr class="active"><td width="1%">&nbsp;&nbsp;</td><td width="1%"></td><td width="1%"><input type="checkbox" checked="true"></td><td width="1%" class="host_part">code.</td><td class="domain_part">jquery.com</td><td width="1%"></td><td width="1%" class="not_allowed_globally"></td><td width="1%" class="script_count">[1]</td></tr></widget>'
     };
