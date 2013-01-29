@@ -1193,7 +1193,7 @@
 	    for (var i = 0; i < ph.attributes.length; i++)
 	    {
 		var a = ph.attributes[i];
-		content[a.name] = a.value;
+		content[a.name] = eval(a.value);
 	    }
 	}
 
@@ -1236,8 +1236,18 @@
 	    replace_wrapped_widget(to[i], from[i]);
     }
 
+    function wrapped_widget_name(wrapped)
+    {
+	return wrapped.getAttribute('name');
+    }
+    
     function replace_wrapped_widget(to, from)
     {
+	// sanity check ...
+	if (from.children.length)
+	    my_alert("found a <" + wrapped_widget_name(to) +
+		     "> placeholder widget with children, this really shouldn't be happening !");
+	    
 	if (!to.firstChild) // empty widget ...
 	{
 	    from.parentNode.removeChild(from);
@@ -1752,7 +1762,6 @@
 	setup_radio_buttons(widget, scope, change_scope);
     }
 
-    
     function setup_radio_buttons(widget, current, f)
     {
 	var l = widget.getElementsByTagName('input');
@@ -2462,7 +2471,7 @@
 "/* jsarmor stylesheet */  \n\
 body			{ margin:0px; }  \n\
 #main			{ position:fixed; width:auto; height:auto; background:transparent;   \n\
-			  white-space:nowrap; z-index:99999999; direction:ltr; font-family:sans-serif;    \n\
+			  white-space:nowrap; z-index:99999999; direction:ltr;   \n\
 			  font-size:small;  margin-bottom:0px; }  \n\
   \n\
 /* main button */  \n\
@@ -2553,6 +2562,7 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
 li.allowed::before, li.blocked::before, li.not_loaded::before, li.iframe::before, li.allowed_globally::before,  \n\
 li.block_all::before, li.filtered::before, li.relaxed::before, li.allow_all::before {transform:scale(1.1); display:inline-block; vertical-align:middle}  \n\
 */  \n\
+  \n\
   \n\
 td.allowed::before		{ content:-o-skin('Transfer Success'); }  \n\
 td.blocked::before		{ content:-o-skin('Transfer Stopped'); }  \n\

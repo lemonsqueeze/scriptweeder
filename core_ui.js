@@ -164,7 +164,7 @@ function(){   // fake line, keep_editor_happy
 	    for (var i = 0; i < ph.attributes.length; i++)
 	    {
 		var a = ph.attributes[i];
-		content[a.name] = a.value;
+		content[a.name] = eval(a.value);
 	    }
 	}
 
@@ -207,8 +207,18 @@ function(){   // fake line, keep_editor_happy
 	    replace_wrapped_widget(to[i], from[i]);
     }
 
+    function wrapped_widget_name(wrapped)
+    {
+	return wrapped.getAttribute('name');
+    }
+    
     function replace_wrapped_widget(to, from)
     {
+	// sanity check ...
+	if (from.children.length)
+	    my_alert("found a <" + wrapped_widget_name(to) +
+		     "> placeholder widget with children, this really shouldn't be happening !");
+	    
 	if (!to.firstChild) // empty widget ...
 	{
 	    from.parentNode.removeChild(from);

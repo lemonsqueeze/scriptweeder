@@ -146,7 +146,6 @@ function(){   // fake line, keep_editor_happy
 	setup_radio_buttons(widget, scope, change_scope);
     }
 
-    
     function setup_radio_buttons(widget, current, f)
     {
 	var l = widget.getElementsByTagName('input');

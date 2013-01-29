@@ -1,7 +1,7 @@
 /* jsarmor stylesheet */
 body			{ margin:0px; }
 #main			{ position:fixed; width:auto; height:auto; background:transparent; 
-			  white-space:nowrap; z-index:99999999; direction:ltr; font-family:sans-serif;  
+			  white-space:nowrap; z-index:99999999; direction:ltr; 
 			  font-size:small;  margin-bottom:0px; }
 
 /* main button */
@@ -92,6 +92,7 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;
 li.allowed::before, li.blocked::before, li.not_loaded::before, li.iframe::before, li.allowed_globally::before,
 li.block_all::before, li.filtered::before, li.relaxed::before, li.allow_all::before {transform:scale(1.1); display:inline-block; vertical-align:middle}
 */
+
 
 td.allowed::before		{ content:-o-skin('Transfer Success'); }
 td.blocked::before		{ content:-o-skin('Transfer Stopped'); }
