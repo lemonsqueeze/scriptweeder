@@ -38,7 +38,7 @@ sub parse_args
     my ($s, $name) = @_;
     my $orig = $s;
     my %args;
-    while ($s =~ s| *([\w]+)="([^"]+)"||)
+    while ($s =~ s| *([\w]+)="([^"]*)"||)
     {
 	my ($name, $value) = ($1, $2);
 	#print "name: $name val: $value\n";

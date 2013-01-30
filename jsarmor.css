@@ -10,16 +10,13 @@ body			{ margin:0px; }
 /*************************************************************************************************************/
 
 /* host table */
-#jsarmor_ftable			{ width:100%; } 
-#jsarmor_ftable > tr > td	{ padding: 0px 0px 1px 0px;} 
-
-/* menu item stuff */
-.indent1		{ padding-left:12px }
-.indent2		{ padding-left:22px }
-.active:hover		{ background-color:#ddd; }
+#host_table			{ width:100%; } 
+#host_table > tr > td		{ padding: 0px 0px 1px 0px;} 
+#host_table > tr:hover		{ background:#ddd }
 
 /* hostnames display */
 .host_part		{ color:#888; text-align:right; }
+.domain_part		{ color:#333; }
 .helper			{ color:#000; }
 .script_count		{ text-align:right; }
 .right_item		{ float:right; }
@@ -38,6 +35,8 @@ input[type=radio] + label		{ box-shadow:inset 0px 1px 0px 0px #ffffff; border-ra
 					  display:inline-block; padding:1px 5px; text-decoration:none; 
 					} 
 input[type=radio]:checked + label	{ background-color: #fa4; } 
+
+textarea				{ width:400px; height:300px; }
 
 /* images */
 
@@ -71,18 +70,25 @@ img	{ width:22px; height:22px; vertical-align:middle; background-size:contain; }
 	display:table;
 	font-size:small;
 }
-.menu, #jsarmor_ftable { background: #ccc; }
+.menu { background: #ccc; }
 
 /* title */
 h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;
 	  margin:0;
 	  background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAYCAYAAAA7zJfaAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90BFRUGLEa8gbIAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAUElEQVQI102KOwqAQBDFsm+9/3Fs9RqChdgIVjYi6nxsLLYJCYSc+xTLgFhHhD8t0m5kAQo39Jojj0RuLzquQLUkUuG3qtJmJ9plOyua9uADjaopUrsHkrMAAAAASUVORK5CYII=) repeat-x;}
 
+/* menu item stuff */
+.indent1		{ padding-left:12px }
+.indent2		{ padding-left:22px }
+/*.active:hover		{ background-color:#ddd; } */
+
 .menu ul			{ padding:0; margin:0 }
 .menu ul ul			{ margin-left:1em }
 .menu li			{ list-style:none }
+
 .menu > ul > li:hover		{ background:#ddd }
-.menu > ul > li:first-child	{ background:inherit }
+.menu > ul > li.inactive:hover	{ background:inherit }
+
 
 /* mode menu item */
 .selected, .menu .selected:hover {

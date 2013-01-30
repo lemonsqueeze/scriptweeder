@@ -199,17 +199,15 @@ function(){   // fake line, keep_editor_happy
     {
 	var name = placeholder.tagName.toLowerCase();
 	var fname = name + "_init_proxy";
-	try
+	if (!function_exists(fname))
+	    return null;
+
+	var call_init = eval(fname);
+	return function(widget)
 	{
-	    var call_init = eval(fname);
-	    return function(widget)
-	      {
-		  eval_attributes(placeholder);
-		  call_init(widget, placeholder);
-	      };
-	}
-	catch (e) {}
-	return null;
+	    eval_attributes(placeholder);
+	    call_init(widget, placeholder);
+	};
     }
     
     function create_nested_widgets(widget, ignore_lazy)
@@ -294,26 +292,11 @@ function(){   // fake line, keep_editor_happy
 			node[a.name] = create_handler(a.value);
 		    else
 			node[a.name] = eval(name + "_" + a.name);
-		    console.log(name + ": handler " + a.name + " = ...");
-		    
-                    // call oninit handlers.
-		    // FIXME: this is probably not the best order to do things in
-		    //if (a.name == 'oninit')
-		    //(node.oninit)();
 		}
 	    }
 	}
     }
 
-/*
-    function add_widget(widget_id, parent_id)
-    {
-	var p = get_widget(parent_id);
-	var w = new_widget(widget_id);
-	p.appendChild(w);
-	return w;
-    }
- */
 
     /**************************** Injected iframe logic ***********************/
 

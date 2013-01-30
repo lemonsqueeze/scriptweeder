@@ -30,6 +30,8 @@ function(){   // fake line, keep_editor_happy
     // find element in parent with that id or class_name
     function find_element(parent, class_name)
     {
+	if (parent == null)
+	    parent = idoc.body;
 	return _find_element(parent, class_name, false, "find_element");
     }
 
@@ -202,6 +204,11 @@ function(){   // fake line, keep_editor_happy
 	if (d)
 	    return k.slice(0, d + 2);
 	return k;
+    }
+
+    function function_exists(name)
+    {
+	return eval("typeof " + name) == "function";
     }
     
     function my_alert(msg)

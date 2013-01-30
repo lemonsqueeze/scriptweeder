@@ -1228,17 +1228,15 @@
     {
 	var name = placeholder.tagName.toLowerCase();
 	var fname = name + "_init_proxy";
-	try
+	if (!function_exists(fname))
+	    return null;
+
+	var call_init = eval(fname);
+	return function(widget)
 	{
-	    var call_init = eval(fname);
-	    return function(widget)
-	      {
-		  eval_attributes(placeholder);
-		  call_init(widget, placeholder);
-	      };
-	}
-	catch (e) {}
-	return null;
+	    eval_attributes(placeholder);
+	    call_init(widget, placeholder);
+	};
     }
     
     function create_nested_widgets(widget, ignore_lazy)
@@ -1323,26 +1321,11 @@
 			node[a.name] = create_handler(a.value);
 		    else
 			node[a.name] = eval(name + "_" + a.name);
-		    console.log(name + ": handler " + a.name + " = ...");
-		    
-                    // call oninit handlers.
-		    // FIXME: this is probably not the best order to do things in
-		    //if (a.name == 'oninit')
-		    //(node.oninit)();
 		}
 	    }
 	}
     }
 
-/*
-    function add_widget(widget_id, parent_id)
-    {
-	var p = get_widget(parent_id);
-	var w = new_widget(widget_id);
-	p.appendChild(w);
-	return w;
-    }
- */
 
     /**************************** Injected iframe logic ***********************/
 
@@ -1443,6 +1426,8 @@
     // find element in parent with that id or class_name
     function find_element(parent, class_name)
     {
+	if (parent == null)
+	    parent = idoc.body;
 	return _find_element(parent, class_name, false, "find_element");
     }
 
@@ -1616,6 +1601,11 @@
 	    return k.slice(0, d + 2);
 	return k;
     }
+
+    function function_exists(name)
+    {
+	return eval("typeof " + name) == "function";
+    }
     
     function my_alert(msg)
     {
@@ -1647,127 +1637,11 @@
 
     /***************************** iframe handling **************************/
 
-    function iframe_icon(hn)
-    {
-	if (!hn.iframes || !hn.iframes.length)
-	    return null;
-
-	var n = hn.iframes.length;
-	var icon = new_icon();
-	icon.title = n + " iframe" + (n>1 ? "s" : "");
-	//icon.title += " See details.";
-	set_icon_image(icon, "iframe");
-	return icon;
-    }
-
     /****************************** UI primitives *****************************/
 
-    function new_icon(image)
+    function checkbox_item_init(li, id, title, label, state, callback)
     {
-      var icon = idoc.createElement('img');
-      if (image)
-	  set_icon_image(icon, image);
-      return icon;	
-    }
-
-    function set_icon_image(icon, image_name)
-    {
-	icon.className = image_name;
-    }
-    
-    function new_icon_mode(mode)
-    {
-	var icon = new_icon();
-	set_icon_mode(icon, mode);
-	return icon;
-    }
-
-    function set_icon_mode(icon, mode)
-    {
-      set_icon_image(icon, mode);
-    }
-    
-    function add_menu_item(nsmenu, text, indent, f, child)
-    {
-      var item = idoc.createElement('div');
-      item.className = 'menu_item';
-      if (child)
-	  item.appendChild(child);
-      if (indent)				// CSSFIXME find a better way
-	  item.className += " indent" + indent;
-      item.innerHTML += text;
-      if (f)
-      {
-	  item.className += " active";
-	  item.onclick = f;
-      }
-      // make text non selectable
-      item.onmousedown = function(){ return false; };
-      nsmenu.appendChild(item);
-      return item;
-    }
-
-    function add_mode_menu_item(nsmenu, title, tmode)
-    {
-	var handler = function() { set_mode(tmode); };
-	var item = add_menu_item(nsmenu, title, 0, handler, new_icon_mode(tmode));
-	if (mode == tmode)
-	    item.className = " selected";
-	return item;
-    }
-
-    function to_html(e)
-    {
-	if (!e)
-	    return "";
-	if (e.outerHTML)
-	    return e.outerHTML;
-	
-	var d = idoc.createElement('div');
-	d.innerText = e;
-	return d.innerHTML;
-    }
-
-    function add_table_item(table, col1, col2, col3, col4, col5, col6, col7, f, helper_host)
-    {
-	var tr = idoc.createElement('tr');
-	var s = "";
-	s += "<td width=1%></td>";
-	s += "<td width=1%>" + to_html(col1) + "</td>";
-	s += "<td width=1%>" + to_html(col2) + "</td>";
-	s += "<td width=1%>" + to_html(col3) + "</td>";
-	s += "<td>" + to_html(col4) + "</td>";
-	s += "<td width=1%>" + to_html(col5) + "</td>";
-	s += "<td width=1%>" + to_html(col6) + "</td>";
-	s += "<td width=1%>" + to_html(col7) + "</td>";
-	tr.innerHTML = s;
-	tr.childNodes[3].className = 'host';
-	tr.childNodes[4].className = 'domain';
-	if (helper_host)
-	    tr.childNodes[4].className += ' helper';
-	tr.childNodes[7].className = 'script_count';
-	if (f)
-	{
-	    tr.className = 'active';
-	    tr.onclick = f;
-	}
-	// make text non selectable
-	tr.onmousedown = function(){ return false; };
-	table.appendChild(tr);
-	return tr;
-    }
-
-    function add_right_aligned_text(parent, text)
-    {
-	var d = idoc.createElement('div');
-	d.className = 'inline_script_size';
-	d.innerText = text;
-	parent.appendChild(d);
-	return d;
-    }
-
-    function checkbox_item_init(li, title, label, state, callback)
-    {
+	li.id = id;
 	li.innerHTML += label; // hack
 	setup_checkbox_item(li, state, callback);
     }
@@ -1809,78 +1683,6 @@
 	}
     }
 
-    function add_link_menu_item(menu, url, label, indent)
-    {
-	var max_item_length = 60;
-	// truncate displayed url if too long
-	if (label.length > max_item_length) { label = label.slice(0, max_item_length) + "..."; }       
-	var link = '<a href="' + url + '">' + label + '</a>';
-	return add_menu_item(menu, link, indent);
-    }
-    
-    function add_menu_separator(menu)
-    {
-      var div = idoc.createElement('div');
-      div.className = 'separator';
-      menu.appendChild(div);
-    }
-
-    function new_checkbox(checked)
-    {
-      var c = idoc.createElement('input');
-      c.type = 'checkbox';
-      c.defaultChecked = checked;
-      return c;
-    }
-
-    function new_button(text, f)
-    {
-	var button = idoc.createElement('button');
-	button.innerText = text;
-	button.onclick = f;
-	return button;
-    }
-
-    function new_textarea(text)
-    {
-	var a = idoc.createElement('textarea');
-	// how do we add padding to this thing ??
-	a.innerText = text;
-	return a;
-    }
-
-    function icon_not_loaded(hn, allowed)
-    {
-	var s = hn.scripts;
-	var n = 0;
-	for (var i = 0; i < s.length; i++)
-	    if (!s[i].loaded)
-		n++;
-	if (!allowed || !n)
-	    return null;
-	
-	var icon = new_icon();
-	var image = "not_loaded";
-	icon.title = n + " script" + (n>1 ? "s" : "") + " not loaded.";
-	if (n == s.length)
-	{
-	    // FIXME: find a smaller/less invasive icon
-	    // image = "blocked";	    
-	    icon.title = "None loaded.";
-	}
-	icon.title += " See details.";
-	set_icon_image(icon, image);
-	return icon;
-    }
-
-    function init_global_icon(icon, host)
-    {
-	icon.title = "Allowed Globally";
-	icon.className = 'img_global';
-	if (host_allowed_globally(host))
-	    icon.className += ' visible';	
-    }
-
     function toggle_allow_inline(event)
     {
       block_inline_scripts = !block_inline_scripts;
@@ -1902,6 +1704,7 @@
 
     function edit_css_url()
     {
+/*	
 	var nsmenu = new_menu("css url to use");
 
 	var close_menu = function()
@@ -1928,149 +1731,61 @@
 	var td = idoc.getElementById('td_nsmenu');
 	td.appendChild(nsmenu);
 	resize_iframe();
+ */
     }
 
-    function edit_style()
+    function save_whitelist()
     {
-	var nsmenu = new_menu("style");
-
-	var close_menu = function()
-	{
-	   td.removeChild(nsmenu);
-	   resize_iframe();
-	};
-
-	var style = global_setting('style');
-	style = (style == '' ? builtin_style : style);
-	var text = new_textarea(style);
-	nsmenu.appendChild(text);
-
-	var div = idoc.createElement('div');
-	nsmenu.appendChild(div);		
-	var button = new_button("Save", function()
-				{
-				   set_global_setting('style', text.innerText);
-				   close_menu();
-				});
-	div.appendChild(button);
-	
-	var button = new_button("Cancel", close_menu);
-	div.appendChild(button);	
-	
-	var td = idoc.getElementById('td_nsmenu');
-	td.appendChild(nsmenu);
-	resize_iframe();
+	var w = find_element(null, "whitelist");
+	if (!w)
+	    return;
+	set_global_setting('whitelist', raw_string_to_list(w.innerText));
+	close_menu();
     }
-    
+
+    function whitelist_editor_init(realmenu)
+    {
+	var t = find_element(realmenu, "whitelist");
+	t.innerText = raw_list_to_string(global_setting('whitelist'));
+    }
+
     function edit_whitelist()
     {
-	var nsmenu = new_menu("Global Whitelist");
-
-	var close_menu = function()
-	{
-	   td.removeChild(nsmenu);
-	   resize_iframe();
-	};
-	
-	var text = new_textarea(raw_list_to_string(global_setting('whitelist')));
-	nsmenu.appendChild(text);
-	
-	var div = idoc.createElement('div');
-	nsmenu.appendChild(div);		
-	var button = new_button("Save", function()
-	    {
-	       set_global_setting('whitelist', raw_string_to_list(text.innerText));
-	       close_menu();
-	    });
-	div.appendChild(button);
-	
-	var button = new_button("Cancel", close_menu);
-	div.appendChild(button);
-	
-	var td = idoc.getElementById('td_nsmenu');
-	td.appendChild(nsmenu);
-	resize_iframe();
+	var w = new_widget("whitelist_editor");
+	switch_menu(w);
     }
-
-    function options_menu()
+    
+    function select_iframe_logic_init(widget)
     {
-	var realmenu = new_menu("Options");
-	var menu = find_element(realmenu, "menu_content");	
-	menu.id = "options_menu";
-
-	/*
-	// FIXME: sane menu logic to handle different menus
-	var need_reload = false;
-	menu.onmouseout = function(e)
-	{
-	   if (!mouseout_leaving_menu(e, menu))
-	       return;	   
-	   td.removeChild(menu);
-	   resize_iframe();
-	   if (need_reload)
-	       reload_page();
-	};
-	 */
-	
-	function remove_menu_and(f)
-	{ return function()
-	  {
-	      //td.removeChild(menu);
-	      switch_menu(null);
-	    f();
-	  };
-	}
-	
-	var item = add_menu_item(menu, "Edit whitelist...", 2, remove_menu_and(edit_whitelist));
-	
-	if (enable_external_css)
-	    var item = add_menu_item(menu, "Custom stylesheet...", 2, remove_menu_and(edit_css_url));
-	
-	var item = add_menu_item(menu, "Edit style...", 2, remove_menu_and(edit_style));	
-	
-	var item = add_menu_item(menu, "iframe logic", 2);
 	var set_iframe_logic = function (n)
 	{
 	    iframe_logic = n;
 	    set_global_setting('iframe', iframe_logic);
 	    need_reload = true;
 	};
-	//add_radio_button(item, " Block all ",   iframe_logic, 0, set_iframe_logic);
-	//add_radio_button(item, " Ask parent ",  iframe_logic, 1, set_iframe_logic);
-	//add_radio_button(item, " Normal page ", iframe_logic, 2, set_iframe_logic);
 	
-	// show ui in iframes
-	var f = function(event)
-	{
-	   var new_val = !global_bool_setting("iframe_ui", default_iframe_ui);
-	   set_global_bool_setting("iframe_ui", new_val);
-	   // update ui
-	   this.checkbox.checked = new_val;
-	   need_reload = true;
-	};	
-	var checkbox = new_checkbox(global_bool_setting("iframe_ui", default_iframe_ui));
-	var item = add_menu_item(menu, "Show jsarmor interface for each iframe", 0, f, checkbox);
-	item.checkbox = item.firstChild;       
+	setup_radio_buttons(widget, iframe_logic, set_iframe_logic);
+    }
 
-	var item = add_menu_item(menu, "Reload method", 2);	
-	
-	add_menu_separator(menu);	
+    function toggle_show_ui_in_iframes(event)
+    {
+	var new_val = !global_bool_setting("iframe_ui", default_iframe_ui);
+	set_global_bool_setting("iframe_ui", new_val);
+	// update ui
+	this.checkbox.checked = new_val;
+	need_reload = true;
+    }
 
-	var item = add_menu_item(menu, "Help", 0, function() { location.href = help_url; });
-	var item = add_menu_item(menu, "Clear all settings", 0, reset_settings);	
-	
-	// Import Settings
-	var form = idoc.createElement('form');
-	form.id = "import_form";
-	form.innerHTML = "<input type=file id=import_btn autocomplete=off >Import Settings...";
-	var item = add_menu_item(menu, "", 0, function() {}, form);
-	item.firstChild.firstChild.onchange = load_file;
-
-	var item = add_menu_item(menu, "Export Settings...", 0, export_settings);	
-	var item = add_menu_item(menu, "About");		
-
-	switch_menu(realmenu);
+    function go_to_help_page()
+    {
+	location.href = help_url;
     }    
+
+    function options_menu()
+    {
+	var w = new_widget("options_menu");
+	switch_menu(w);	
+    }
     
     /***************************** Details menu *******************************/
 
@@ -2078,9 +1793,13 @@
     {
 	var img = w.firstChild;
 	var link = img.nextSibling;
-	link.innerText = strip_http(s.url);
-	link.href = s.url;
 
+	var label = strip_http(s.url);
+	var max_item_length = 60;	// truncate displayed url if too long        
+        if (label.length > max_item_length) { label = label.slice(0, max_item_length) + "…"; }
+
+	link.innerText = label;
+	link.href = s.url;
 	var status = "blocked";
 	if (allowed_host(h))
 	{
@@ -2091,116 +1810,39 @@
 		w.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
 	    }
 	}
-	w.className = status;       
+	w.className += " " + status;       
     }
     
     function show_details()
-    {	
-	var realmenu = new_menu("Scripts");
+    {
+	var w = new_widget("details_menu");
+	switch_menu(w);		
+    }
+
+    function details_menu_init(realmenu)
+    {	    
 	var menu = find_element(realmenu, "menu_content");
+	var last = find_element(realmenu, "last_item");
 
 	// FIXME show iframes urls somewhere
 	foreach_host_node(function(host_node)
 	{
 	  var h = host_node.name;
 	  var s = host_node.scripts;
-	  // var item = add_menu_item(menu, h + ":");	  
-
+	  
 	  sort_scripts(s);
 	  for (var j = 0; j < s.length; j++)
 	  {
-	      var w = new_script_detail(h, s[j]);	      
-	      menu.appendChild(w);
+	      var w = new_script_detail(h, s[j]);
+	      menu.insertBefore(w, last);
 	  }
-	});
-	
-//	var td = idoc.getElementById('td_nsmenu');
-//	td.appendChild(menu);
-
-	item = add_menu_item(menu, "Options ...", 0, options_menu);
-	
-	//show_hide_menu(false);
-	switch_menu(realmenu);
-    }
-    
-    function _show_details()
-    {	
-	var realmenu = new_menu("Scripts");
-	var menu = find_element(realmenu, "menu_content");
-
-	// FIXME show iframes urls somewhere
-	foreach_host_node(function(host_node)
-	{
-	  var h = host_node.name;
-	  var s = host_node.scripts;
-	  // var item = add_menu_item(menu, h + ":");	  
-
-	  sort_scripts(s);
-	  for (var j = 0; j < s.length; j++)
-	  {
-	      var item = add_link_menu_item(menu, s[j].url, strip_http(s[j].url), 2);
-	      // script status
-	      var icon = new_icon();
-	      var image = "blocked";
-	      if (allowed_host(h))
-	      {
-		  image = "allowed";
-		  if (!s[j].loaded)
-		  {
-		      image = "not_loaded";
-		      icon.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
-		  }
-	      }
-	      set_icon_image(icon, image);
-
-	      item.insertBefore(icon, item.childNodes[0]);
-	  }	  
-	});
-	
-//	var td = idoc.getElementById('td_nsmenu');
-//	td.appendChild(menu);
-
-	item = add_menu_item(menu, "Options ...", 0, options_menu);
-	
-	//show_hide_menu(false);
-	switch_menu(realmenu);
-    }
-
-    
-
-    
-    /****************************** Main menu *********************************/
-
-    function menu_init(menu, title)
-    {
-	var w = find_element(menu, "menu_title");
-	w.innerText = title;
-    }
-
-    function menu_onmouseout(e)
-    {
-	if (!mouseout_leaving_menu(e, nsmenu))
-	    return;
-	show_hide_menu(false);
-	if (need_reload)
-	    reload_page();
-	switch_menu(null);
+	});	
     }    
 
     
-    function _new_menu(title)
-    {
-	var menu = idoc.createElement('div');
-	menu.className = 'menu';
-	if (title != "")
-	{
-	    var item = add_menu_item(menu, title);
-	    item.className = 'title';
-	}	
-	return menu;
-    }
+    /****************************** Menu logic *********************************/
 
-    var nsmenu = null;			// the main menu
+    var nsmenu = null;			// the current menu
     var need_reload = false;
 
     function main_menu_onmouseout(e)
@@ -2212,6 +1854,35 @@
 	    reload_page();
     }
 
+    function menu_onmouseout(e)
+    {
+	if (!mouseout_leaving_menu(e, nsmenu))
+	    return;
+	show_hide_menu(false);
+	if (need_reload)
+	    reload_page();
+	switch_menu(null);
+    }
+
+    function mouseout_leaving_menu(e, menu)
+    {
+	var reltg = e.relatedTarget;
+	if (reltg)
+	{
+  	    if (reltg.id == 'jsarmor_button')
+		return false; // moving back to button, doesn't count
+	    while (reltg != menu && reltg.nodeName != 'HTML')
+		reltg = reltg.parentNode;
+	    if (reltg == menu)
+		return false; // moving out of the div into a child layer
+	}
+	return true;
+    }    
+
+    function close_menu()
+    {
+	switch_menu(null);
+    }
     
     function switch_menu(menu)
     {
@@ -2224,6 +1895,23 @@
 	    show_hide_menu(true);
 	}
     }
+
+    function show_hide_menu(show, toggle)
+    {
+      if (!nsmenu)
+      {
+	  create_menu();
+	  parent_menu();
+      }
+      var d = (show ? 'inline-block' : 'none');
+      if (toggle)
+	  d = (nsmenu.style.display == 'none' ? 'inline-block' : 'none');
+      nsmenu.style.display = d;
+      resize_iframe();
+    }
+    
+    
+    /****************************** Main menu *********************************/
     
     function create_menu()
     {
@@ -2247,7 +1935,7 @@
 
     function mode_menu_item_oninit()
     {
-	var for_mode = this.className;
+	var for_mode = this.getAttribute('formode');
 	if (for_mode == mode)
 	    this.className += " selected";
 	else
@@ -2262,26 +1950,10 @@
     
     function main_menu_init(menu)
     {
-	menu_init(menu, "JSArmor");
-	
 	if (mode == 'block_all')
 	    wakeup_lazy_widgets(menu);
 	
-	function setup_mode_item_handler(w, mode)
-	{
-	    w.onclick = function() { set_mode(mode); };
-	}
-	
-	// take care of mode menu items.
-	for (var i = 0; i < modes.length; i++)
-	{
-
-	}
-	
-	var w = find_element(menu, "details_item");
-	w.onclick = show_details;
-
-	// FIXME put it back
+	// FIXME put it back one day
 	// plugin api
 	// if (enable_plugin_api)
 	// for (var prop in plugin_items)
@@ -2291,38 +1963,8 @@
 
     function parent_menu()
     {
-	//parent_widget(nsmenu, "main_menu", main_ui);
 	var w = find_element(main_ui, "main_menu_sibling");
 	w.parentNode.insertBefore(nsmenu, w);
-    }
-
-    function show_hide_menu(show, toggle)
-    {
-      if (!nsmenu)
-      {
-	  create_menu();
-	  parent_menu();
-      }
-      var d = (show ? 'inline-block' : 'none');
-      if (toggle)
-	  d = (nsmenu.style.display == 'none' ? 'inline-block' : 'none');
-      nsmenu.style.display = d;
-      resize_iframe();
-    }
-
-    function mouseout_leaving_menu(e, menu)
-    {
-	var reltg = e.relatedTarget;
-	if (reltg)
-	{
-  	    if (reltg.id == 'jsarmor_button')
-		return false; // moving back to button, doesn't count
-	    while (reltg != menu && reltg.nodeName != 'HTML')
-		reltg = reltg.parentNode;
-	    if (reltg == menu)
-		return false; // moving out of the div into a child layer
-	}
-	return true;
     }
 
     function host_table_row_onclick(event)
@@ -2358,41 +2000,76 @@
 	need_reload = true;
 	repaint_ui_now();
     };
+
+    function iframe_tooltip(hn)
+    {
+	if (!hn.iframes || !hn.iframes.length)
+	    return null;
+
+	var n = hn.iframes.length;
+	var title = n + " iframe" + (n>1 ? "s" : "");
+	//icon.title += " See details.";
+	return title;
+    }
+
+    function not_loaded_tooltip(hn, allowed)
+    {
+	var s = hn.scripts;
+	var n = 0;
+	for (var i = 0; i < s.length; i++)
+	    if (!s[i].loaded)
+		n++;
+	if (!allowed || !n)
+	    return null;
+	
+	var title = n + " script" + (n>1 ? "s" : "") + " not loaded.";
+	if (n == s.length)
+	{
+	    // FIXME: find a smaller/less invasive icon
+	    // image = "blocked";	    
+	    title = "None loaded.";
+	}
+	title += " See details.";
+	return title;
+    }    
     
     function add_host_table_after(item)
     {
 	var t = new_widget("host_table");
 	item.parentNode.insertBefore(t, item.nextSibling);
-
 	sort_domains();
-	
+
 	var found_not_loaded = false;
-	var tr = null;
+	var tr = null;	
 	foreach_host_node(function(hn, dn)
 	{
 	    var d = dn.name;
 	    var h = hn.name;
-	    var checkbox = new_checkbox(allowed_host(h));
 	    var host_part = h.slice(0, h.length - d.length);
-	    var not_loaded = icon_not_loaded(hn, checkbox.checked);
+	    var not_loaded = not_loaded_tooltip(hn, allowed_host(h));
 	    var count = "[" + hn.scripts.length + "]";
 	    var helper = hn.helper_host;
-	    var global_icon = idoc.createElement('img');   // globally allowed icon
-	    var iframes = iframe_icon(hn);
+	    var iframes = iframe_tooltip(hn);
 
 	    tr = new_widget("host_table_row");
 	    tr.host = h;
-	    t.appendChild(tr);
+	    t.appendChild(tr);	    
 	    
 	    if (not_loaded)
+	    {
 		tr.childNodes[1].className += " not_loaded";
+		tr.childNodes[1].title = not_loaded;
+	    }
 	    tr.childNodes[2].firstChild.checked = allowed_host(h);
 	    tr.childNodes[3].innerText = host_part;
 	    tr.childNodes[4].innerText = d;
 	    if (helper)
 		tr.childNodes[4].className += " helper";
 	    if (iframes)
+	    {
 		tr.childNodes[5].className += " iframe";
+		tr.childNodes[5].title = iframes;
+	    }
 	    if (host_allowed_globally(h))
 		tr.childNodes[6].className += " visible";
 	    tr.childNodes[7].innerText = count;
@@ -2405,51 +2082,10 @@
 //	    tr.childNodes[0].innerHTML = "&nbsp;&nbsp;";	
     }
 
-/*    
-    function add_ftable(nsmenu)
-    {
-
-
-	var table = idoc.createElement('table');
-	table.id = "jsarmor_ftable";
-	nsmenu.appendChild(table);
-
-	sort_domains();
-	
-	var found_not_loaded = false;
-	var item = null;
-	foreach_host_node(function(hn, dn)
-	{
-	    var d = dn.name;
-	    var h = hn.name;
-	    var checkbox = new_checkbox(allowed_host(h));
-	    var host_part = h.slice(0, h.length - d.length);
-	    var not_loaded = icon_not_loaded(hn, checkbox.checked);
-	    var count = "[" + hn.scripts.length + "]";
-	    var helper = hn.helper_host;
-	    var icon = idoc.createElement('img');   // globally allowed icon
-	    var iframes = iframe_icon(hn);
-	    item = add_table_item(table, not_loaded, checkbox, host_part, d, iframes, icon, count, f, helper);
-	    
-	    icon = item.childNodes[6].firstChild;
-	    init_global_icon(icon, h);
-	    
-	    item.checkbox = item.childNodes[2].firstChild;
-	    item.icon = icon;
-	    item.host = h;
-
-	    if (not_loaded)
-		found_not_loaded = true;
-	});
-	
-	if (item && !found_not_loaded) // indent
-	    item.childNodes[0].innerHTML = "&nbsp;&nbsp;";
-    }
- */
-
 
     /**************************** Plugin API **********************************/
 
+    // currently disabled ...
     // plugin api: can be used to display extra stuff in the menu from other scripts.
     // useful for debugging and hacking purposes when console.log() isn't ideal.
     if (enable_plugin_api)
@@ -2524,7 +2160,6 @@
 	    reload_page();
     }
     
-    
     var main_ui = null;
     function create_main_ui()
     {
@@ -2569,9 +2204,6 @@
 	}
     }
 
-
-    
-
     var builtin_style = 
 "/* jsarmor stylesheet */  \n\
 body			{ margin:0px; }  \n\
@@ -2585,16 +2217,13 @@ body			{ margin:0px; }  \n\
 /*************************************************************************************************************/  \n\
   \n\
 /* host table */  \n\
-#jsarmor_ftable			{ width:100%; }   \n\
-#jsarmor_ftable > tr > td	{ padding: 0px 0px 1px 0px;}   \n\
-  \n\
-/* menu item stuff */  \n\
-.indent1		{ padding-left:12px }  \n\
-.indent2		{ padding-left:22px }  \n\
-.active:hover		{ background-color:#ddd; }  \n\
+#host_table			{ width:100%; }   \n\
+#host_table > tr > td		{ padding: 0px 0px 1px 0px;}   \n\
+#host_table > tr:hover		{ background:#ddd }  \n\
   \n\
 /* hostnames display */  \n\
 .host_part		{ color:#888; text-align:right; }  \n\
+.domain_part		{ color:#333; }  \n\
 .helper			{ color:#000; }  \n\
 .script_count		{ text-align:right; }  \n\
 .right_item		{ float:right; }  \n\
@@ -2613,6 +2242,8 @@ input[type=radio] + label		{ box-shadow:inset 0px 1px 0px 0px #ffffff; border-ra
 					  display:inline-block; padding:1px 5px; text-decoration:none;   \n\
 					}   \n\
 input[type=radio]:checked + label	{ background-color: #fa4; }   \n\
+  \n\
+textarea				{ width:400px; height:300px; }  \n\
   \n\
 /* images */  \n\
   \n\
@@ -2646,18 +2277,25 @@ img	{ width:22px; height:22px; vertical-align:middle; background-size:contain; }
 	display:table;  \n\
 	font-size:small;  \n\
 }  \n\
-.menu, #jsarmor_ftable { background: #ccc; }  \n\
+.menu { background: #ccc; }  \n\
   \n\
 /* title */  \n\
 h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
 	  margin:0;  \n\
 	  background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAYCAYAAAA7zJfaAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90BFRUGLEa8gbIAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAUElEQVQI102KOwqAQBDFsm+9/3Fs9RqChdgIVjYi6nxsLLYJCYSc+xTLgFhHhD8t0m5kAQo39Jojj0RuLzquQLUkUuG3qtJmJ9plOyua9uADjaopUrsHkrMAAAAASUVORK5CYII=) repeat-x;}  \n\
   \n\
+/* menu item stuff */  \n\
+.indent1		{ padding-left:12px }  \n\
+.indent2		{ padding-left:22px }  \n\
+/*.active:hover		{ background-color:#ddd; } */  \n\
+  \n\
 .menu ul			{ padding:0; margin:0 }  \n\
 .menu ul ul			{ margin-left:1em }  \n\
 .menu li			{ list-style:none }  \n\
+  \n\
 .menu > ul > li:hover		{ background:#ddd }  \n\
-.menu > ul > li:first-child	{ background:inherit }  \n\
+.menu > ul > li.inactive:hover	{ background:inherit }  \n\
+  \n\
   \n\
 /* mode menu item */  \n\
 .selected, .menu .selected:hover {  \n\
@@ -2683,55 +2321,45 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
     var widgets_layout = {
       'main' : '<widget name="main"><div id="main"><main_button/></div></widget>',
       'main_button' : '<widget name="main_button" init><div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>',
-      'main_menu' : '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout ><h1 id="menu_title" ></h1><ul><scope_widget></scope_widget><li class="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img>Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img>Relaxed</li><li class="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img>Allow All</li><li id="details_item">Details…</li></ul></div></widget>',
-      'block_all_settings' : '<widget name="block_all_settings" init><block_inline_scripts></block_inline_scripts><checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags" 		 title="Interpret noscript tags as if javascript was disabled in opera." 		 state="`handle_noscript_tags" 		 callback="`toggle_handle_noscript_tags"/></checkbox_item></widget>',
-      'block_inline_scripts' : '<widget name="block_inline_scripts" ><li id="block_inline_scripts"><input type="checkbox"/>Block Inline Scripts<div class="right_item">[-2k]</div></li></widget>',
-      'checkbox_item' : '<widget name="checkbox_item" title label state callback init><li title="title"><input type="checkbox"/></li></widget>',
-      'host_table' : '<widget name="host_table"><table id="jsarmor_ftable"></table></widget>',
-      'host_table_row' : '<widget name="host_table_row"><tr class="active" onclick><td width="1%"></td><td width="1%"><img></img></td><td width="1%"><input type="checkbox" checked="true"></td><td width="1%" class="host_part">code.</td><td class="domain_part">jquery.com</td><td width="1%"><img></img></td><td width="1%" class="allowed_globally"><img></img></td><td width="1%" class="script_count">[1]</td></tr></widget>',
-      'menu' : '<widget name="menu" title init><div class="menu" onmouseout ><h1 id="menu_title" ></h1><ul id="menu_content"></ul></div></widget>',
+      'main_menu' : '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout ><h1 id="menu_title" >JSArmor</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img>Filtered</li><li class="relaxed" formode="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img>Allow All</li><li id="details_item" onclick="show_details">Details…</li></ul></div></widget>',
+      'host_table' : '<widget name="host_table"><table id="host_table"></table></widget>',
+      'host_table_row' : '<widget name="host_table_row"><tr  onclick><td width="1%"></td><td width="1%"><img></img></td><td width="1%"><input type="checkbox" checked="true"></td><td width="1%" class="host_part">code.</td><td class="domain_part">jquery.com</td><td width="1%"><img></img></td><td width="1%" class="allowed_globally"><img></img></td><td width="1%" class="script_count">[1]</td></tr></widget>',
+      'details_menu' : '<widget name="details_menu" init><div id="details_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Scripts</h1><ul id="menu_content"><li id="last_item" onclick="options_menu">Options…</li></ul></div></widget>',
       'script_detail' : '<widget name="script_detail" host script init><li><img><a></a></li></widget>',
-      'scope_widget' : '<widget name="scope_widget" init><li id="scope">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li></widget>'
+      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><ul id="menu_content"><select_iframe_logic></select_iframe_logic><checkbox_item label="Show jsarmor ui in iframes" id="show_ui_in_iframes" 		     title="" 		     state="`false"     		     callback="`toggle_show_ui_in_iframes"/></checkbox_item><li id="$id" onclick="edit_whitelist">Edit whitelist…</li><li id="$id" onclick="null">Reload method</li><li class="separator"></li><li id="$id" onclick="null">Load custom style…</li><li id="$id" onclick="null">Save current style…</li><li class="separator"></li><li id="$id" onclick="export_settings">Export Settings…</li><li><form id="import_form"><input type=file id=import_btn autocomplete=off onchange="load_file" >Import Settings...</form></li><li id="$id" onclick="reset_settings">Clear All Settings…</li><li class="separator"></li><li id="$id" onclick="go_to_help_page">Help</li><li id="$id" onclick="null">About</li></ul></div></widget>',
+      'select_iframe_logic' : '<widget name="select_iframe_logic" init><li id="iframe_logic">iframe logic<input type="radio" name="radio"/><label>Block all</label><input type="radio" name="radio"/><label>Ask parent</label><input type="radio" name="radio"/><label>Normal page</label></li></widget>',
+      'whitelist_editor' : '<widget name="whitelist_editor" init><div class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Global Whitelist</h1><ul id="menu_content"><li><textarea spellcheck="false" id="whitelist"></textarea></li><li class="inactive"><button onclick="save_whitelist">Save</button><button onclick="close_menu">Cancel</button></li></ul></div></widget>',
+      'checkbox_item' : '<widget name="checkbox_item" id title label state callback init><li title="title"><input type="checkbox"/></li></widget>',
+      'scope_widget' : '<widget name="scope_widget" init><li id="scope" class="inactive">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li></widget>',
+      'block_all_settings' : '<widget name="block_all_settings" init><block_inline_scripts></block_inline_scripts><checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags" 		 title="Interpret noscript tags as if javascript was disabled in opera." 		 state="`handle_noscript_tags" 		 callback="`toggle_handle_noscript_tags"/></checkbox_item></widget>',
+      'block_inline_scripts' : '<widget name="block_inline_scripts" ><li id="block_inline_scripts"><input type="checkbox"/>Block Inline Scripts<div class="right_item">[-2k]</div></li></widget>'
     };
 
     /* init proxies (internal use only) */
-    function checkbox_item_init_proxy(w, ph)
-    {
-        checkbox_item_init(w, ph.title, ph.label, ph.state, ph.callback);
-    }
-
-    function menu_init_proxy(w, ph)
-    {
-        menu_init(w, ph.title);
-    }
-
     function script_detail_init_proxy(w, ph)
     {
         script_detail_init(w, ph.host, ph.script);
     }
 
+    function checkbox_item_init_proxy(w, ph)
+    {
+        checkbox_item_init(w, ph.id, ph.title, ph.label, ph.state, ph.callback);
+    }
+
     /* functions for creating widgets */
-    function new_checkbox_item(title, label, state, callback)
-    {
-      return new_widget("checkbox_item", function(w)
-        {
-          checkbox_item_init(w, title, label, state, callback);
-        });
-    }
-
-    function new_menu(title)
-    {
-      return new_widget("menu", function(w)
-        {
-          menu_init(w, title);
-        });
-    }
-
     function new_script_detail(host, script)
     {
       return new_widget("script_detail", function(w)
         {
           script_detail_init(w, host, script);
+        });
+    }
+
+    function new_checkbox_item(id, title, label, state, callback)
+    {
+      return new_widget("checkbox_item", function(w)
+        {
+          checkbox_item_init(w, id, title, label, state, callback);
         });
     }
 

@@ -1,8 +1,6 @@
 <!-- interface layout
-     paste into generate_layout.html to get jsarmor.html
-
      xml "macros" are used here to allow for a little bit of structure.
-     They're nothing but custom tags with an associated definition stating
+     They're basically custom tags with an associated definition stating
      what content to replace them with. Macros can use other macros, and
      can also take parameters: tag attributes are substituted in the output
      so it can be used for templating etc...
@@ -12,10 +10,10 @@
 
 <!-- main ui -->
 <widget name="main">
-<div id="main">
-  <!-- main menu goes here -->
-  <main_button/>
-</div>
+  <div id="main">
+    <!-- main menu goes here -->
+    <main_button/>
+  </div>
 </widget>
 
 <widget name="main_button" init>
@@ -28,7 +26,7 @@
 <!-- main menu -->
 <widget name="main_menu" init>
   <div id="main_menu" class="menu" onmouseout >
-    <menu_title/>
+    <menu_title title="JSArmor"/>
     <ul>
       <scope_widget></scope_widget>
       <mode_menu_item mode="block_all" label="Block All" title="Block all scripts." />
@@ -38,9 +36,146 @@
       <mode_menu_item mode="relaxed" label="Relaxed" 
 	      title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
       <mode_menu_item mode="allow_all" label="Allow All" title="Allow everything…" />
-      <menu_item id="details_item" label="Details…"/>
+      <menu_item id="details_item" label="Details…" onclick="show_details"/>
       </ul>
   </div>
+</widget>
+
+
+<!-- host table -->
+<widget name="host_table">
+  <table id="host_table"></table>
+</widget>
+
+<widget name="host_table_row">
+  <tr  onclick>
+    <td width="1%"></td>
+    <td width="1%"><img></img></td>			<!-- not loaded -->
+    <td width="1%">
+      <input type="checkbox" checked="true">
+    </td>
+    <td width="1%" class="host_part">code.</td>
+    <td class="domain_part">jquery.com</td>
+    <td width="1%"><img></img></td>			<!-- iframe -->
+    <td width="1%" class="allowed_globally"><img></img></td>
+    <td width="1%" class="script_count">[1]</td>
+  </tr>
+</widget>
+
+
+<!-- details menu -->
+<widget name="details_menu" init>
+  <div id="details_menu" class="menu" onmouseout="menu_onmouseout" >
+    <menu_title title="Scripts"/>
+    <ul id="menu_content">
+      <menu_item id="last_item" label="Options…" onclick="options_menu"/>
+    </ul>
+  </div>
+</widget>
+
+<widget name="script_detail" host script init>
+    <li><img><a></a></li>
+</widget>
+
+
+<!-- options menu -->
+<widget name="options_menu">
+  <div id="options_menu" class="menu" onmouseout="menu_onmouseout" >
+    <menu_title title="Options"/>
+    <ul id="menu_content">
+      <select_iframe_logic></select_iframe_logic>
+      <checkbox_item label="Show jsarmor ui in iframes" id="show_ui_in_iframes"
+		     title=""
+		     state="`false"    <!-- fixme ! -->
+		     callback="`toggle_show_ui_in_iframes"/></checkbox_item>
+      <menu_item label="Edit whitelist…" onclick="edit_whitelist"/>
+      <menu_item label="Reload method" onclick="null"/>
+
+      <separator/>
+      <menu_item label="Load custom style…" onclick="null"/>
+      <menu_item label="Save current style…" onclick="null"/>
+
+      <separator/>
+      <menu_item label="Export Settings…" onclick="export_settings"/>
+      <import_settings/>
+      <menu_item label="Clear All Settings…" onclick="reset_settings"/>
+      <separator/>
+      <menu_item label="Help" onclick="go_to_help_page"/>
+      <menu_item label="About" onclick="null"/>
+    </ul>
+  </div>
+</widget>
+
+<widget name="select_iframe_logic" init>
+  <li id="iframe_logic">iframe logic
+    <radio_button label="Block all"/>
+    <radio_button label="Ask parent"/>
+    <radio_button label="Normal page"/>
+  </li>
+</widget>
+
+<def import_settings>
+  <li>
+    <form id="import_form">
+      <input type=file id=import_btn autocomplete=off onchange="load_file" >
+	Import Settings...
+    </form>
+  </li>
+</def>
+
+
+<!-- edit whitelist -->
+<widget name="whitelist_editor" init>
+  <div class="menu" onmouseout="menu_onmouseout" >
+    <menu_title title="Global Whitelist"/>
+    <ul id="menu_content">
+      <li><textarea spellcheck="false" id="whitelist"></textarea></li>
+      <li class="inactive">
+	<button onclick="save_whitelist">Save</button>
+	<button onclick="close_menu">Cancel</button>
+      </li>
+    </ul>
+  </div>
+</widget>
+
+
+<!--         [ low level stuff ]         -->
+
+<widget name="checkbox_item" id title label state callback init>
+  <li title="title">
+    <input type="checkbox"/>
+  </li>
+</widget>
+
+ 
+<def menu_title title>
+  <h1 id="menu_title" >$title</h1>
+</def>
+
+<def menu_item id label onclick>
+  <li id="$id" onclick="$onclick">$label</li>
+</def>
+
+<def mode_menu_item mode label title >
+  <li class="$mode" formode="$mode" title="$title" oninit="mode_menu_item_oninit"><img>$label</li>
+</def>
+
+<def separator>
+ <li class="separator"></li>
+</def>
+
+<def radio_button label >
+  <input type="radio" name="radio"/>
+  <label> $label </label>
+</def>
+
+<widget name="scope_widget" init>
+  <li id="scope" class="inactive">Set for:
+    <radio_button label="Page"/>
+    <radio_button label="Site"/>
+    <radio_button label="Domain"/>
+    <radio_button label="Global"/>
+  </li>
 </widget>
 
 <widget name="block_all_settings" init>
@@ -57,80 +192,6 @@
     <div class="right_item">[-2k]</div>
   </li>
 </widget>
-
-
-<widget name="checkbox_item" title label state callback init>
-  <li title="title">
-    <input type="checkbox"/>
-  </li>
-</widget>
-
-
-
-
-<widget name="host_table">
-  <table id="jsarmor_ftable"></table>
-</widget>
-
-<widget name="host_table_row">
-  <tr class="active" onclick>
-    <td width="1%"></td>
-    <td width="1%"><img></img></td>			<!-- not loaded -->
-    <td width="1%">
-      <input type="checkbox" checked="true">
-    </td>
-    <td width="1%" class="host_part">code.</td>
-    <td class="domain_part">jquery.com</td>
-    <td width="1%"><img></img></td>			<!-- iframe -->
-    <td width="1%" class="allowed_globally"><img></img></td>
-    <td width="1%" class="script_count">[1]</td>
-  </tr>
-</widget>
-
-
-<!-- generic menu (details ...) -->
-
-<widget name="menu" title init>
-  <div class="menu" onmouseout >
-    <menu_title />
-      <ul id="menu_content">
-      </ul>
-  </div>
-</widget>
-
-<widget name="script_detail" host script init>
-    <li><img><a></a></li>
-</widget>
-
-<!--         [ low level building blocks ]         -->
- 
-<def menu_title >
-  <h1 id="menu_title" ></h1>
-</def>
-
-<def menu_item id label >
-  <li id="$id">$label</li>
-</def>
-
-<def mode_menu_item mode label title >
-  <li class="$mode" title="$title" oninit="mode_menu_item_oninit"><img>$label</li>
-</def>
-
-<widget name="scope_widget" init>
-  <li id="scope">Set for:
-    <radio_button label="Page"/>
-    <radio_button label="Site"/>
-    <radio_button label="Domain"/>
-    <radio_button label="Global"/>
-  </li>
-</widget>
-
-
-<def radio_button label >
-  <input type="radio" name="radio"/>
-  <label> $label </label>
-</def>
-
 
 
 </widgets>

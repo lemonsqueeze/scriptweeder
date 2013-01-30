@@ -14,127 +14,11 @@ function(){   // fake line, keep_editor_happy
 
     /***************************** iframe handling **************************/
 
-    function iframe_icon(hn)
-    {
-	if (!hn.iframes || !hn.iframes.length)
-	    return null;
-
-	var n = hn.iframes.length;
-	var icon = new_icon();
-	icon.title = n + " iframe" + (n>1 ? "s" : "");
-	//icon.title += " See details.";
-	set_icon_image(icon, "iframe");
-	return icon;
-    }
-
     /****************************** UI primitives *****************************/
 
-    function new_icon(image)
+    function checkbox_item_init(li, id, title, label, state, callback)
     {
-      var icon = idoc.createElement('img');
-      if (image)
-	  set_icon_image(icon, image);
-      return icon;	
-    }
-
-    function set_icon_image(icon, image_name)
-    {
-	icon.className = image_name;
-    }
-    
-    function new_icon_mode(mode)
-    {
-	var icon = new_icon();
-	set_icon_mode(icon, mode);
-	return icon;
-    }
-
-    function set_icon_mode(icon, mode)
-    {
-      set_icon_image(icon, mode);
-    }
-    
-    function add_menu_item(nsmenu, text, indent, f, child)
-    {
-      var item = idoc.createElement('div');
-      item.className = 'menu_item';
-      if (child)
-	  item.appendChild(child);
-      if (indent)				// CSSFIXME find a better way
-	  item.className += " indent" + indent;
-      item.innerHTML += text;
-      if (f)
-      {
-	  item.className += " active";
-	  item.onclick = f;
-      }
-      // make text non selectable
-      item.onmousedown = function(){ return false; };
-      nsmenu.appendChild(item);
-      return item;
-    }
-
-    function add_mode_menu_item(nsmenu, title, tmode)
-    {
-	var handler = function() { set_mode(tmode); };
-	var item = add_menu_item(nsmenu, title, 0, handler, new_icon_mode(tmode));
-	if (mode == tmode)
-	    item.className = " selected";
-	return item;
-    }
-
-    function to_html(e)
-    {
-	if (!e)
-	    return "";
-	if (e.outerHTML)
-	    return e.outerHTML;
-	
-	var d = idoc.createElement('div');
-	d.innerText = e;
-	return d.innerHTML;
-    }
-
-    function add_table_item(table, col1, col2, col3, col4, col5, col6, col7, f, helper_host)
-    {
-	var tr = idoc.createElement('tr');
-	var s = "";
-	s += "<td width=1%></td>";
-	s += "<td width=1%>" + to_html(col1) + "</td>";
-	s += "<td width=1%>" + to_html(col2) + "</td>";
-	s += "<td width=1%>" + to_html(col3) + "</td>";
-	s += "<td>" + to_html(col4) + "</td>";
-	s += "<td width=1%>" + to_html(col5) + "</td>";
-	s += "<td width=1%>" + to_html(col6) + "</td>";
-	s += "<td width=1%>" + to_html(col7) + "</td>";
-	tr.innerHTML = s;
-	tr.childNodes[3].className = 'host';
-	tr.childNodes[4].className = 'domain';
-	if (helper_host)
-	    tr.childNodes[4].className += ' helper';
-	tr.childNodes[7].className = 'script_count';
-	if (f)
-	{
-	    tr.className = 'active';
-	    tr.onclick = f;
-	}
-	// make text non selectable
-	tr.onmousedown = function(){ return false; };
-	table.appendChild(tr);
-	return tr;
-    }
-
-    function add_right_aligned_text(parent, text)
-    {
-	var d = idoc.createElement('div');
-	d.className = 'inline_script_size';
-	d.innerText = text;
-	parent.appendChild(d);
-	return d;
-    }
-
-    function checkbox_item_init(li, title, label, state, callback)
-    {
+	li.id = id;
 	li.innerHTML += label; // hack
 	setup_checkbox_item(li, state, callback);
     }
@@ -176,78 +60,6 @@ function(){   // fake line, keep_editor_happy
 	}
     }
 
-    function add_link_menu_item(menu, url, label, indent)
-    {
-	var max_item_length = 60;
-	// truncate displayed url if too long
-	if (label.length > max_item_length) { label = label.slice(0, max_item_length) + "..."; }       
-	var link = '<a href="' + url + '">' + label + '</a>';
-	return add_menu_item(menu, link, indent);
-    }
-    
-    function add_menu_separator(menu)
-    {
-      var div = idoc.createElement('div');
-      div.className = 'separator';
-      menu.appendChild(div);
-    }
-
-    function new_checkbox(checked)
-    {
-      var c = idoc.createElement('input');
-      c.type = 'checkbox';
-      c.defaultChecked = checked;
-      return c;
-    }
-
-    function new_button(text, f)
-    {
-	var button = idoc.createElement('button');
-	button.innerText = text;
-	button.onclick = f;
-	return button;
-    }
-
-    function new_textarea(text)
-    {
-	var a = idoc.createElement('textarea');
-	// how do we add padding to this thing ??
-	a.innerText = text;
-	return a;
-    }
-
-    function icon_not_loaded(hn, allowed)
-    {
-	var s = hn.scripts;
-	var n = 0;
-	for (var i = 0; i < s.length; i++)
-	    if (!s[i].loaded)
-		n++;
-	if (!allowed || !n)
-	    return null;
-	
-	var icon = new_icon();
-	var image = "not_loaded";
-	icon.title = n + " script" + (n>1 ? "s" : "") + " not loaded.";
-	if (n == s.length)
-	{
-	    // FIXME: find a smaller/less invasive icon
-	    // image = "blocked";	    
-	    icon.title = "None loaded.";
-	}
-	icon.title += " See details.";
-	set_icon_image(icon, image);
-	return icon;
-    }
-
-    function init_global_icon(icon, host)
-    {
-	icon.title = "Allowed Globally";
-	icon.className = 'img_global';
-	if (host_allowed_globally(host))
-	    icon.className += ' visible';	
-    }
-
     function toggle_allow_inline(event)
     {
       block_inline_scripts = !block_inline_scripts;
@@ -269,6 +81,7 @@ function(){   // fake line, keep_editor_happy
 
     function edit_css_url()
     {
+/*	
 	var nsmenu = new_menu("css url to use");
 
 	var close_menu = function()
@@ -295,149 +108,61 @@ function(){   // fake line, keep_editor_happy
 	var td = idoc.getElementById('td_nsmenu');
 	td.appendChild(nsmenu);
 	resize_iframe();
+ */
     }
 
-    function edit_style()
+    function save_whitelist()
     {
-	var nsmenu = new_menu("style");
-
-	var close_menu = function()
-	{
-	   td.removeChild(nsmenu);
-	   resize_iframe();
-	};
-
-	var style = global_setting('style');
-	style = (style == '' ? builtin_style : style);
-	var text = new_textarea(style);
-	nsmenu.appendChild(text);
-
-	var div = idoc.createElement('div');
-	nsmenu.appendChild(div);		
-	var button = new_button("Save", function()
-				{
-				   set_global_setting('style', text.innerText);
-				   close_menu();
-				});
-	div.appendChild(button);
-	
-	var button = new_button("Cancel", close_menu);
-	div.appendChild(button);	
-	
-	var td = idoc.getElementById('td_nsmenu');
-	td.appendChild(nsmenu);
-	resize_iframe();
+	var w = find_element(null, "whitelist");
+	if (!w)
+	    return;
+	set_global_setting('whitelist', raw_string_to_list(w.innerText));
+	close_menu();
     }
-    
+
+    function whitelist_editor_init(realmenu)
+    {
+	var t = find_element(realmenu, "whitelist");
+	t.innerText = raw_list_to_string(global_setting('whitelist'));
+    }
+
     function edit_whitelist()
     {
-	var nsmenu = new_menu("Global Whitelist");
-
-	var close_menu = function()
-	{
-	   td.removeChild(nsmenu);
-	   resize_iframe();
-	};
-	
-	var text = new_textarea(raw_list_to_string(global_setting('whitelist')));
-	nsmenu.appendChild(text);
-	
-	var div = idoc.createElement('div');
-	nsmenu.appendChild(div);		
-	var button = new_button("Save", function()
-	    {
-	       set_global_setting('whitelist', raw_string_to_list(text.innerText));
-	       close_menu();
-	    });
-	div.appendChild(button);
-	
-	var button = new_button("Cancel", close_menu);
-	div.appendChild(button);
-	
-	var td = idoc.getElementById('td_nsmenu');
-	td.appendChild(nsmenu);
-	resize_iframe();
+	var w = new_widget("whitelist_editor");
+	switch_menu(w);
     }
-
-    function options_menu()
+    
+    function select_iframe_logic_init(widget)
     {
-	var realmenu = new_menu("Options");
-	var menu = find_element(realmenu, "menu_content");	
-	menu.id = "options_menu";
-
-	/*
-	// FIXME: sane menu logic to handle different menus
-	var need_reload = false;
-	menu.onmouseout = function(e)
-	{
-	   if (!mouseout_leaving_menu(e, menu))
-	       return;	   
-	   td.removeChild(menu);
-	   resize_iframe();
-	   if (need_reload)
-	       reload_page();
-	};
-	 */
-	
-	function remove_menu_and(f)
-	{ return function()
-	  {
-	      //td.removeChild(menu);
-	      switch_menu(null);
-	    f();
-	  };
-	}
-	
-	var item = add_menu_item(menu, "Edit whitelist...", 2, remove_menu_and(edit_whitelist));
-	
-	if (enable_external_css)
-	    var item = add_menu_item(menu, "Custom stylesheet...", 2, remove_menu_and(edit_css_url));
-	
-	var item = add_menu_item(menu, "Edit style...", 2, remove_menu_and(edit_style));	
-	
-	var item = add_menu_item(menu, "iframe logic", 2);
 	var set_iframe_logic = function (n)
 	{
 	    iframe_logic = n;
 	    set_global_setting('iframe', iframe_logic);
 	    need_reload = true;
 	};
-	//add_radio_button(item, " Block all ",   iframe_logic, 0, set_iframe_logic);
-	//add_radio_button(item, " Ask parent ",  iframe_logic, 1, set_iframe_logic);
-	//add_radio_button(item, " Normal page ", iframe_logic, 2, set_iframe_logic);
 	
-	// show ui in iframes
-	var f = function(event)
-	{
-	   var new_val = !global_bool_setting("iframe_ui", default_iframe_ui);
-	   set_global_bool_setting("iframe_ui", new_val);
-	   // update ui
-	   this.checkbox.checked = new_val;
-	   need_reload = true;
-	};	
-	var checkbox = new_checkbox(global_bool_setting("iframe_ui", default_iframe_ui));
-	var item = add_menu_item(menu, "Show jsarmor interface for each iframe", 0, f, checkbox);
-	item.checkbox = item.firstChild;       
+	setup_radio_buttons(widget, iframe_logic, set_iframe_logic);
+    }
 
-	var item = add_menu_item(menu, "Reload method", 2);	
-	
-	add_menu_separator(menu);	
+    function toggle_show_ui_in_iframes(event)
+    {
+	var new_val = !global_bool_setting("iframe_ui", default_iframe_ui);
+	set_global_bool_setting("iframe_ui", new_val);
+	// update ui
+	this.checkbox.checked = new_val;
+	need_reload = true;
+    }
 
-	var item = add_menu_item(menu, "Help", 0, function() { location.href = help_url; });
-	var item = add_menu_item(menu, "Clear all settings", 0, reset_settings);	
-	
-	// Import Settings
-	var form = idoc.createElement('form');
-	form.id = "import_form";
-	form.innerHTML = "<input type=file id=import_btn autocomplete=off >Import Settings...";
-	var item = add_menu_item(menu, "", 0, function() {}, form);
-	item.firstChild.firstChild.onchange = load_file;
-
-	var item = add_menu_item(menu, "Export Settings...", 0, export_settings);	
-	var item = add_menu_item(menu, "About");		
-
-	switch_menu(realmenu);
+    function go_to_help_page()
+    {
+	location.href = help_url;
     }    
+
+    function options_menu()
+    {
+	var w = new_widget("options_menu");
+	switch_menu(w);	
+    }
     
     /***************************** Details menu *******************************/
 
@@ -445,9 +170,13 @@ function(){   // fake line, keep_editor_happy
     {
 	var img = w.firstChild;
 	var link = img.nextSibling;
-	link.innerText = strip_http(s.url);
-	link.href = s.url;
 
+	var label = strip_http(s.url);
+	var max_item_length = 60;	// truncate displayed url if too long        
+        if (label.length > max_item_length) { label = label.slice(0, max_item_length) + "…"; }
+
+	link.innerText = label;
+	link.href = s.url;
 	var status = "blocked";
 	if (allowed_host(h))
 	{
@@ -458,116 +187,39 @@ function(){   // fake line, keep_editor_happy
 		w.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
 	    }
 	}
-	w.className = status;       
+	w.className += " " + status;       
     }
     
     function show_details()
-    {	
-	var realmenu = new_menu("Scripts");
+    {
+	var w = new_widget("details_menu");
+	switch_menu(w);		
+    }
+
+    function details_menu_init(realmenu)
+    {	    
 	var menu = find_element(realmenu, "menu_content");
+	var last = find_element(realmenu, "last_item");
 
 	// FIXME show iframes urls somewhere
 	foreach_host_node(function(host_node)
 	{
 	  var h = host_node.name;
 	  var s = host_node.scripts;
-	  // var item = add_menu_item(menu, h + ":");	  
-
+	  
 	  sort_scripts(s);
 	  for (var j = 0; j < s.length; j++)
 	  {
-	      var w = new_script_detail(h, s[j]);	      
-	      menu.appendChild(w);
+	      var w = new_script_detail(h, s[j]);
+	      menu.insertBefore(w, last);
 	  }
-	});
-	
-//	var td = idoc.getElementById('td_nsmenu');
-//	td.appendChild(menu);
-
-	item = add_menu_item(menu, "Options ...", 0, options_menu);
-	
-	//show_hide_menu(false);
-	switch_menu(realmenu);
-    }
-    
-    function _show_details()
-    {	
-	var realmenu = new_menu("Scripts");
-	var menu = find_element(realmenu, "menu_content");
-
-	// FIXME show iframes urls somewhere
-	foreach_host_node(function(host_node)
-	{
-	  var h = host_node.name;
-	  var s = host_node.scripts;
-	  // var item = add_menu_item(menu, h + ":");	  
-
-	  sort_scripts(s);
-	  for (var j = 0; j < s.length; j++)
-	  {
-	      var item = add_link_menu_item(menu, s[j].url, strip_http(s[j].url), 2);
-	      // script status
-	      var icon = new_icon();
-	      var image = "blocked";
-	      if (allowed_host(h))
-	      {
-		  image = "allowed";
-		  if (!s[j].loaded)
-		  {
-		      image = "not_loaded";
-		      icon.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
-		  }
-	      }
-	      set_icon_image(icon, image);
-
-	      item.insertBefore(icon, item.childNodes[0]);
-	  }	  
-	});
-	
-//	var td = idoc.getElementById('td_nsmenu');
-//	td.appendChild(menu);
-
-	item = add_menu_item(menu, "Options ...", 0, options_menu);
-	
-	//show_hide_menu(false);
-	switch_menu(realmenu);
-    }
-
-    
-
-    
-    /****************************** Main menu *********************************/
-
-    function menu_init(menu, title)
-    {
-	var w = find_element(menu, "menu_title");
-	w.innerText = title;
-    }
-
-    function menu_onmouseout(e)
-    {
-	if (!mouseout_leaving_menu(e, nsmenu))
-	    return;
-	show_hide_menu(false);
-	if (need_reload)
-	    reload_page();
-	switch_menu(null);
+	});	
     }    
 
     
-    function _new_menu(title)
-    {
-	var menu = idoc.createElement('div');
-	menu.className = 'menu';
-	if (title != "")
-	{
-	    var item = add_menu_item(menu, title);
-	    item.className = 'title';
-	}	
-	return menu;
-    }
+    /****************************** Menu logic *********************************/
 
-    var nsmenu = null;			// the main menu
+    var nsmenu = null;			// the current menu
     var need_reload = false;
 
     function main_menu_onmouseout(e)
@@ -579,6 +231,35 @@ function(){   // fake line, keep_editor_happy
 	    reload_page();
     }
 
+    function menu_onmouseout(e)
+    {
+	if (!mouseout_leaving_menu(e, nsmenu))
+	    return;
+	show_hide_menu(false);
+	if (need_reload)
+	    reload_page();
+	switch_menu(null);
+    }
+
+    function mouseout_leaving_menu(e, menu)
+    {
+	var reltg = e.relatedTarget;
+	if (reltg)
+	{
+  	    if (reltg.id == 'jsarmor_button')
+		return false; // moving back to button, doesn't count
+	    while (reltg != menu && reltg.nodeName != 'HTML')
+		reltg = reltg.parentNode;
+	    if (reltg == menu)
+		return false; // moving out of the div into a child layer
+	}
+	return true;
+    }    
+
+    function close_menu()
+    {
+	switch_menu(null);
+    }
     
     function switch_menu(menu)
     {
@@ -591,6 +272,23 @@ function(){   // fake line, keep_editor_happy
 	    show_hide_menu(true);
 	}
     }
+
+    function show_hide_menu(show, toggle)
+    {
+      if (!nsmenu)
+      {
+	  create_menu();
+	  parent_menu();
+      }
+      var d = (show ? 'inline-block' : 'none');
+      if (toggle)
+	  d = (nsmenu.style.display == 'none' ? 'inline-block' : 'none');
+      nsmenu.style.display = d;
+      resize_iframe();
+    }
+    
+    
+    /****************************** Main menu *********************************/
     
     function create_menu()
     {
@@ -614,7 +312,7 @@ function(){   // fake line, keep_editor_happy
 
     function mode_menu_item_oninit()
     {
-	var for_mode = this.className;
+	var for_mode = this.getAttribute('formode');
 	if (for_mode == mode)
 	    this.className += " selected";
 	else
@@ -629,26 +327,10 @@ function(){   // fake line, keep_editor_happy
     
     function main_menu_init(menu)
     {
-	menu_init(menu, "JSArmor");
-	
 	if (mode == 'block_all')
 	    wakeup_lazy_widgets(menu);
 	
-	function setup_mode_item_handler(w, mode)
-	{
-	    w.onclick = function() { set_mode(mode); };
-	}
-	
-	// take care of mode menu items.
-	for (var i = 0; i < modes.length; i++)
-	{
-
-	}
-	
-	var w = find_element(menu, "details_item");
-	w.onclick = show_details;
-
-	// FIXME put it back
+	// FIXME put it back one day
 	// plugin api
 	// if (enable_plugin_api)
 	// for (var prop in plugin_items)
@@ -658,38 +340,8 @@ function(){   // fake line, keep_editor_happy
 
     function parent_menu()
     {
-	//parent_widget(nsmenu, "main_menu", main_ui);
 	var w = find_element(main_ui, "main_menu_sibling");
 	w.parentNode.insertBefore(nsmenu, w);
-    }
-
-    function show_hide_menu(show, toggle)
-    {
-      if (!nsmenu)
-      {
-	  create_menu();
-	  parent_menu();
-      }
-      var d = (show ? 'inline-block' : 'none');
-      if (toggle)
-	  d = (nsmenu.style.display == 'none' ? 'inline-block' : 'none');
-      nsmenu.style.display = d;
-      resize_iframe();
-    }
-
-    function mouseout_leaving_menu(e, menu)
-    {
-	var reltg = e.relatedTarget;
-	if (reltg)
-	{
-  	    if (reltg.id == 'jsarmor_button')
-		return false; // moving back to button, doesn't count
-	    while (reltg != menu && reltg.nodeName != 'HTML')
-		reltg = reltg.parentNode;
-	    if (reltg == menu)
-		return false; // moving out of the div into a child layer
-	}
-	return true;
     }
 
     function host_table_row_onclick(event)
@@ -725,41 +377,76 @@ function(){   // fake line, keep_editor_happy
 	need_reload = true;
 	repaint_ui_now();
     };
+
+    function iframe_tooltip(hn)
+    {
+	if (!hn.iframes || !hn.iframes.length)
+	    return null;
+
+	var n = hn.iframes.length;
+	var title = n + " iframe" + (n>1 ? "s" : "");
+	//icon.title += " See details.";
+	return title;
+    }
+
+    function not_loaded_tooltip(hn, allowed)
+    {
+	var s = hn.scripts;
+	var n = 0;
+	for (var i = 0; i < s.length; i++)
+	    if (!s[i].loaded)
+		n++;
+	if (!allowed || !n)
+	    return null;
+	
+	var title = n + " script" + (n>1 ? "s" : "") + " not loaded.";
+	if (n == s.length)
+	{
+	    // FIXME: find a smaller/less invasive icon
+	    // image = "blocked";	    
+	    title = "None loaded.";
+	}
+	title += " See details.";
+	return title;
+    }    
     
     function add_host_table_after(item)
     {
 	var t = new_widget("host_table");
 	item.parentNode.insertBefore(t, item.nextSibling);
-
 	sort_domains();
-	
+
 	var found_not_loaded = false;
-	var tr = null;
+	var tr = null;	
 	foreach_host_node(function(hn, dn)
 	{
 	    var d = dn.name;
 	    var h = hn.name;
-	    var checkbox = new_checkbox(allowed_host(h));
 	    var host_part = h.slice(0, h.length - d.length);
-	    var not_loaded = icon_not_loaded(hn, checkbox.checked);
+	    var not_loaded = not_loaded_tooltip(hn, allowed_host(h));
 	    var count = "[" + hn.scripts.length + "]";
 	    var helper = hn.helper_host;
-	    var global_icon = idoc.createElement('img');   // globally allowed icon
-	    var iframes = iframe_icon(hn);
+	    var iframes = iframe_tooltip(hn);
 
 	    tr = new_widget("host_table_row");
 	    tr.host = h;
-	    t.appendChild(tr);
+	    t.appendChild(tr);	    
 	    
 	    if (not_loaded)
+	    {
 		tr.childNodes[1].className += " not_loaded";
+		tr.childNodes[1].title = not_loaded;
+	    }
 	    tr.childNodes[2].firstChild.checked = allowed_host(h);
 	    tr.childNodes[3].innerText = host_part;
 	    tr.childNodes[4].innerText = d;
 	    if (helper)
 		tr.childNodes[4].className += " helper";
 	    if (iframes)
+	    {
 		tr.childNodes[5].className += " iframe";
+		tr.childNodes[5].title = iframes;
+	    }
 	    if (host_allowed_globally(h))
 		tr.childNodes[6].className += " visible";
 	    tr.childNodes[7].innerText = count;
@@ -772,51 +459,10 @@ function(){   // fake line, keep_editor_happy
 //	    tr.childNodes[0].innerHTML = "&nbsp;&nbsp;";	
     }
 
-/*    
-    function add_ftable(nsmenu)
-    {
-
-
-	var table = idoc.createElement('table');
-	table.id = "jsarmor_ftable";
-	nsmenu.appendChild(table);
-
-	sort_domains();
-	
-	var found_not_loaded = false;
-	var item = null;
-	foreach_host_node(function(hn, dn)
-	{
-	    var d = dn.name;
-	    var h = hn.name;
-	    var checkbox = new_checkbox(allowed_host(h));
-	    var host_part = h.slice(0, h.length - d.length);
-	    var not_loaded = icon_not_loaded(hn, checkbox.checked);
-	    var count = "[" + hn.scripts.length + "]";
-	    var helper = hn.helper_host;
-	    var icon = idoc.createElement('img');   // globally allowed icon
-	    var iframes = iframe_icon(hn);
-	    item = add_table_item(table, not_loaded, checkbox, host_part, d, iframes, icon, count, f, helper);
-	    
-	    icon = item.childNodes[6].firstChild;
-	    init_global_icon(icon, h);
-	    
-	    item.checkbox = item.childNodes[2].firstChild;
-	    item.icon = icon;
-	    item.host = h;
-
-	    if (not_loaded)
-		found_not_loaded = true;
-	});
-	
-	if (item && !found_not_loaded) // indent
-	    item.childNodes[0].innerHTML = "&nbsp;&nbsp;";
-    }
- */
-
 
     /**************************** Plugin API **********************************/
 
+    // currently disabled ...
     // plugin api: can be used to display extra stuff in the menu from other scripts.
     // useful for debugging and hacking purposes when console.log() isn't ideal.
     if (enable_plugin_api)
@@ -891,7 +537,6 @@ function(){   // fake line, keep_editor_happy
 	    reload_page();
     }
     
-    
     var main_ui = null;
     function create_main_ui()
     {
@@ -935,9 +580,6 @@ function(){   // fake line, keep_editor_happy
 	    show_hide_menu(true);
 	}
     }
-
-
-    
 
 @include "jsarmor_style.js"
 
