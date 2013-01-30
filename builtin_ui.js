@@ -440,21 +440,64 @@ function(){   // fake line, keep_editor_happy
     }    
     
     /***************************** Details menu *******************************/
+
+    function script_detail_init(w)
+    {
+	var h = w.host;
+	var s = w.script;
+	
+	var img = w.firstChild;
+	var link = img.nextSibling;
+	link.innerText = strip_http(s.url);
+	link.href = s.url;
+
+	var status = "blocked";
+	if (allowed_host(h))
+	{
+	    status = "allowed";
+	    if (!s.loaded)
+	    {
+		status = "not_loaded";
+		img.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
+	    }
+	}
+	w.className = status;       
+    }
     
     function show_details()
     {	
 	var realmenu = new_menu("Scripts");
 	var menu = find_element(realmenu, "menu_content");
-	/*
-	menu.onmouseout = function(e)
+
+	// FIXME show iframes urls somewhere
+	foreach_host_node(function(host_node)
 	{
-	   if (!mouseout_leaving_menu(e, menu))
-	       return;	   
-	   td.removeChild(menu);
-	   resize_iframe();	   
-	};
-	 */
+	  var h = host_node.name;
+	  var s = host_node.scripts;
+	  // var item = add_menu_item(menu, h + ":");	  
+
+	  sort_scripts(s);
+	  for (var j = 0; j < s.length; j++)
+	  {
+	      var w = new_script_detail(h, s[j]);	      
+	      menu.appendChild(w);
+	  }
+	});
 	
+//	var td = idoc.getElementById('td_nsmenu');
+//	td.appendChild(menu);
+
+	item = add_menu_item(menu, "Options ...", 0, options_menu);
+	
+	//show_hide_menu(false);
+	switch_menu(realmenu);
+    }
+    
+    function _show_details()
+    {	
+	var realmenu = new_menu("Scripts");
+	var menu = find_element(realmenu, "menu_content");
+
 	// FIXME show iframes urls somewhere
 	foreach_host_node(function(host_node)
 	{
@@ -487,11 +530,13 @@ function(){   // fake line, keep_editor_happy
 //	var td = idoc.getElementById('td_nsmenu');
 //	td.appendChild(menu);
 
-	//item = add_menu_item(menu, "Options ...", 0, options_menu);
+	item = add_menu_item(menu, "Options ...", 0, options_menu);
 	
 	//show_hide_menu(false);
 	switch_menu(realmenu);
     }
+
+    
 
     
     /****************************** Main menu *********************************/
@@ -654,7 +699,7 @@ function(){   // fake line, keep_editor_happy
     function host_table_row_onclick(event)
     {
 	var h = this.host;
-	var glob_icon_clicked = (event.target.className.indexOf("allowed_globally") != -1);
+	var glob_icon_clicked = (event.target.parentNode.className.indexOf("allowed_globally") != -1);
 
 	if (glob_icon_clicked)
 	{
@@ -720,15 +765,15 @@ function(){   // fake line, keep_editor_happy
 	    if (iframes)
 		tr.childNodes[5].className += " iframe";
 	    if (host_allowed_globally(h))
-		tr.childNodes[6].className = "allowed_globally";
+		tr.childNodes[6].className += " visible";
 	    tr.childNodes[7].innerText = count;
 
 	    if (not_loaded)
 		found_not_loaded = true;	    
 	});
 	
-	if (tr && !found_not_loaded) // indent
-	    tr.childNodes[0].innerHTML = "&nbsp;&nbsp;&nbsp;";	
+//	if (tr && !found_not_loaded) // indent
+//	    tr.childNodes[0].innerHTML = "&nbsp;&nbsp;";	
     }
 
 /*    
@@ -825,8 +870,7 @@ function(){   // fake line, keep_editor_happy
     {
 	var tooltip = main_button_tooltip();
 	div.title = tooltip;
-	var img = find_element(div, "main_button_image");
-	set_icon_mode(img, mode);
+	div.className += " " + mode;
     }
     
     function main_button_onmouseover()

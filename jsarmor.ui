@@ -75,14 +75,14 @@
 <widget name="host_table_row">
   <tr class="active" onclick>
     <td width="1%"></td>
-    <td width="1%"></td>
+    <td width="1%"><img></img></td>			<!-- not loaded -->
     <td width="1%">
       <input type="checkbox" checked="true">
     </td>
     <td width="1%" class="host_part">code.</td>
     <td class="domain_part">jquery.com</td>
-    <td width="1%"></td>
-    <td width="1%" class="not_allowed_globally"></td>
+    <td width="1%"><img></img></td>			<!-- iframe -->
+    <td width="1%" class="allowed_globally"><img></img></td>
     <td width="1%" class="script_count">[1]</td>
   </tr>
 </widget>
@@ -98,6 +98,9 @@
   </div>
 </widget>
 
+<widget name="script_detail" host script init>
+    <li><img><a></a></li>
+</widget>
 
 <!--         [ low level building blocks ]         -->
  
@@ -110,7 +113,7 @@
 </def>
 
 <def mode_menu_item mode label title >
-  <li class="$mode" title="$title" oninit="mode_menu_item_oninit">$label</li>
+  <li class="$mode" title="$title" oninit="mode_menu_item_oninit"><img>$label</li>
 </def>
 
 <widget name="scope_widget" init>

@@ -1521,16 +1521,8 @@
 
     function foreach(l, f)
     {
-	try
-	{
-	    for (var i = 0; i < l.length; i++)
-		f(l[i]);
-	}
-	catch(e)
-	{
-	    if (e != "stop_foreach")
-		throw(e);
-	}
+	for (var i = 0; i < l.length; i++)
+	    f(l[i]);
     }
 
     function list_contains(list, str)
@@ -2062,21 +2054,64 @@
     }    
     
     /***************************** Details menu *******************************/
+
+    function script_detail_init(w)
+    {
+	var h = w.host;
+	var s = w.script;
+	
+	var img = w.firstChild;
+	var link = img.nextSibling;
+	link.innerText = strip_http(s.url);
+	link.href = s.url;
+
+	var status = "blocked";
+	if (allowed_host(h))
+	{
+	    status = "allowed";
+	    if (!s.loaded)
+	    {
+		status = "not_loaded";
+		img.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
+	    }
+	}
+	w.className = status;       
+    }
     
     function show_details()
     {	
 	var realmenu = new_menu("Scripts");
 	var menu = find_element(realmenu, "menu_content");
-	/*
-	menu.onmouseout = function(e)
+
+	// FIXME show iframes urls somewhere
+	foreach_host_node(function(host_node)
 	{
-	   if (!mouseout_leaving_menu(e, menu))
-	       return;	   
-	   td.removeChild(menu);
-	   resize_iframe();	   
-	};
-	 */
+	  var h = host_node.name;
+	  var s = host_node.scripts;
+	  // var item = add_menu_item(menu, h + ":");	  
+
+	  sort_scripts(s);
+	  for (var j = 0; j < s.length; j++)
+	  {
+	      var w = new_script_detail(h, s[j]);	      
+	      menu.appendChild(w);
+	  }
+	});
 	
+//	var td = idoc.getElementById('td_nsmenu');
+//	td.appendChild(menu);
+
+	item = add_menu_item(menu, "Options ...", 0, options_menu);
+	
+	//show_hide_menu(false);
+	switch_menu(realmenu);
+    }
+    
+    function _show_details()
+    {	
+	var realmenu = new_menu("Scripts");
+	var menu = find_element(realmenu, "menu_content");
+
 	// FIXME show iframes urls somewhere
 	foreach_host_node(function(host_node)
 	{
@@ -2109,11 +2144,13 @@
 //	var td = idoc.getElementById('td_nsmenu');
 //	td.appendChild(menu);
 
-	//item = add_menu_item(menu, "Options ...", 0, options_menu);
+	item = add_menu_item(menu, "Options ...", 0, options_menu);
 	
 	//show_hide_menu(false);
 	switch_menu(realmenu);
     }
+
+    
 
     
     /****************************** Main menu *********************************/
@@ -2276,7 +2313,7 @@
     function host_table_row_onclick(event)
     {
 	var h = this.host;
-	var glob_icon_clicked = (event.target.className.indexOf("allowed_globally") != -1);
+	var glob_icon_clicked = (event.target.parentNode.className.indexOf("allowed_globally") != -1);
 
 	if (glob_icon_clicked)
 	{
@@ -2342,15 +2379,15 @@
 	    if (iframes)
 		tr.childNodes[5].className += " iframe";
 	    if (host_allowed_globally(h))
-		tr.childNodes[6].className = "allowed_globally";
+		tr.childNodes[6].className += " visible";
 	    tr.childNodes[7].innerText = count;
 
 	    if (not_loaded)
 		found_not_loaded = true;	    
 	});
 	
-	if (tr && !found_not_loaded) // indent
-	    tr.childNodes[0].innerHTML = "&nbsp;&nbsp;&nbsp;";	
+//	if (tr && !found_not_loaded) // indent
+//	    tr.childNodes[0].innerHTML = "&nbsp;&nbsp;";	
     }
 
 /*    
@@ -2447,8 +2484,7 @@
     {
 	var tooltip = main_button_tooltip();
 	div.title = tooltip;
-	var img = find_element(div, "main_button_image");
-	set_icon_mode(img, mode);
+	div.className += " " + mode;
     }
     
     function main_button_onmouseover()
@@ -2548,13 +2584,6 @@ body			{ margin:0px; }  \n\
 .script_count		{ text-align:right; }  \n\
 .right_item		{ float:right; }  \n\
   \n\
-/* 'script allowed globally' icon */  \n\
-.img_global		{ visibility:hidden; padding: 0px 3px; width:14px; height:14px; vertical-align:middle;  \n\
-			  background-size:contain;   \n\
-			  background:-o-skin('RSS'); }  \n\
-.img_global.visible	{ visibility:visible; }  \n\
-td:hover > .img_global	{ visibility:visible; }   \n\
-  \n\
   \n\
 /*************************************************************************************************************/  \n\
 /* generic stuff */  \n\
@@ -2570,18 +2599,33 @@ input[type=radio] + label		{ box-shadow:inset 0px 1px 0px 0px #ffffff; border-ra
 					}   \n\
 input[type=radio]:checked + label	{ background-color: #fa4; }   \n\
   \n\
-/* icons */  \n\
-img { width:22px; height:22px; vertical-align:middle; background-size:contain; }   \n\
+/* images */  \n\
   \n\
-img.allowed		{ background:-o-skin('Transfer Success'); }  \n\
-img.blocked		{ background:-o-skin('Transfer Stopped'); }  \n\
-img.not_loaded		{ background:-o-skin('Transfer Size Mismatch'); }  \n\
-img.iframe		{ background:-o-skin('Menu Info'); }  \n\
-img.allowed_globally	{ background:-o-skin('RSS'); }  \n\
-img.block_all		{ background:-o-skin('Smiley Pacman'); }  \n\
-img.filtered		{ background:-o-skin('Smiley Cool'); }  \n\
-img.relaxed		{ background:-o-skin('Smiley Tongue'); }  \n\
-img.allow_all		{ background:-o-skin('Smiley Cry'); }  \n\
+img	{ width:22px; height:22px; vertical-align:middle; background-size:contain; }  \n\
+  \n\
+.block_all img		{ background:-o-skin('Smiley Pacman'); }  \n\
+.filtered  img		{ background:-o-skin('Smiley Cool'); }  \n\
+.relaxed   img		{ background:-o-skin('Smiley Tongue'); }  \n\
+.allow_all img		{ background:-o-skin('Smiley Cry'); }  \n\
+  \n\
+.allowed img		{ background:-o-skin('Transfer Success'); }  \n\
+.blocked img		{ background:-o-skin('Transfer Stopped'); }  \n\
+.not_loaded img		{ background:-o-skin('Transfer Size Mismatch'); }  \n\
+.iframe	img		{ background:-o-skin('Menu Info'); }  \n\
+  \n\
+/* 'script allowed globally' icon */  \n\
+.allowed_globally img		{ visibility:hidden; padding: 0px 3px; width:14px; height:14px; vertical-align:middle;  \n\
+				  background-size:contain;   \n\
+				  background:-o-skin('RSS'); }  \n\
+.allowed_globally:hover img	{ visibility:visible; }   \n\
+.allowed_globally.visible img	{ visibility:visible; }  \n\
+  \n\
+  \n\
+  \n\
+/* for small icons use this instead:  \n\
+#main_button.filtered	img	{ content:-o-skin('Smiley Cool'); }  \n\
+*/  \n\
+  \n\
   \n\
 .menu {  \n\
 	padding: 1px 1px; text-align:left;  \n\
@@ -2614,7 +2658,7 @@ li.allowed::before, li.blocked::before, li.not_loaded::before, li.iframe::before
 li.block_all::before, li.filtered::before, li.relaxed::before, li.allow_all::before {transform:scale(1.1); display:inline-block; vertical-align:middle}  \n\
 */  \n\
   \n\
-  \n\
+/*  \n\
 td.allowed::before		{ content:-o-skin('Transfer Success'); }  \n\
 td.blocked::before		{ content:-o-skin('Transfer Stopped'); }  \n\
 td.not_loaded			{ content:-o-skin('Transfer Size Mismatch'); }  \n\
@@ -2622,13 +2666,14 @@ td.iframe			{ content:-o-skin('Menu Info'); }  \n\
 td.allowed_globally		{ content:-o-skin('RSS'); }  \n\
 td.not_allowed_globally:hover	{ content:-o-skin('RSS'); }  \n\
   \n\
+  \n\
 li.block_all::before		{ content:-o-skin('Smiley Pacman');}  \n\
-li.filtered::before		{ content:-o-skin('Smiley Cool'); }  \n\
-li.relaxed::before		{ content:-o-skin('Smiley Tongue'); }  \n\
+li.filtered::before  		{ content:-o-skin('Smiley Cool'); }  \n\
+li.relaxed::before   		{ content:-o-skin('Smiley Tongue'); }  \n\
 li.allow_all::before		{ content:-o-skin('Smiley Cry'); }  \n\
+*/  \n\
   \n\
   \n\
-/* #main_button img { background:-o-skin('Smiley Tongue'); } */  \n\
   \n\
 ";
 
@@ -2636,13 +2681,14 @@ li.allow_all::before		{ content:-o-skin('Smiley Cry'); }  \n\
     var widgets_layout = {
       'main' : '<widget name="main"><div id="main"><main_button/></div></widget>',
       'main_button' : '<widget name="main_button" init><div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>',
-      'main_menu' : '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout ><h1 id="menu_title" ></h1><ul><scope_widget></scope_widget><li class="block_all" title="Block all scripts." oninit="mode_menu_item_oninit">Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit">Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit">Relaxed</li><li class="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit">Allow All</li><li id="details_item">Details…</li></ul></div></widget>',
+      'main_menu' : '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout ><h1 id="menu_title" ></h1><ul><scope_widget></scope_widget><li class="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img>Filtered</li><li class="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img>Relaxed</li><li class="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img>Allow All</li><li id="details_item">Details…</li></ul></div></widget>',
       'block_all_settings' : '<widget name="block_all_settings" init><block_inline_scripts></block_inline_scripts><checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags" 		 title="Interpret noscript tags as if javascript was disabled in opera." 		 state="`handle_noscript_tags" 		 callback="`toggle_handle_noscript_tags"/></checkbox_item></widget>',
       'block_inline_scripts' : '<widget name="block_inline_scripts" ><li id="block_inline_scripts"><input type="checkbox"/>Block Inline Scripts<div class="right_item">[-2k]</div></li></widget>',
       'checkbox_item' : '<widget name="checkbox_item" title label state callback init><li title="title"><input type="checkbox"/></li></widget>',
       'host_table' : '<widget name="host_table"><table id="jsarmor_ftable"></table></widget>',
-      'host_table_row' : '<widget name="host_table_row"><tr class="active" onclick><td width="1%"></td><td width="1%"></td><td width="1%"><input type="checkbox" checked="true"></td><td width="1%" class="host_part">code.</td><td class="domain_part">jquery.com</td><td width="1%"></td><td width="1%" class="not_allowed_globally"></td><td width="1%" class="script_count">[1]</td></tr></widget>',
+      'host_table_row' : '<widget name="host_table_row"><tr class="active" onclick><td width="1%"></td><td width="1%"><img></img></td><td width="1%"><input type="checkbox" checked="true"></td><td width="1%" class="host_part">code.</td><td class="domain_part">jquery.com</td><td width="1%"><img></img></td><td width="1%" class="allowed_globally"><img></img></td><td width="1%" class="script_count">[1]</td></tr></widget>',
       'menu' : '<widget name="menu" title init><div class="menu" onmouseout ><h1 id="menu_title" ></h1><ul id="menu_content"></ul></div></widget>',
+      'script_detail' : '<widget name="script_detail" host script init><li><img><a></a></li></widget>',
       'scope_widget' : '<widget name="scope_widget" init><li id="scope">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li></widget>'
     };
 
@@ -2663,6 +2709,15 @@ li.allow_all::before		{ content:-o-skin('Smiley Cry'); }  \n\
         return new_widget("menu", function(n)
         {
             n.title = title;
+        });
+    }
+
+    function new_script_detail(host, script)
+    {
+        return new_widget("script_detail", function(n)
+        {
+            n.host = host;
+            n.script = script;
         });
     }
 

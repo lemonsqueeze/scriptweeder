@@ -24,13 +24,6 @@ body			{ margin:0px; }
 .script_count		{ text-align:right; }
 .right_item		{ float:right; }
 
-/* 'script allowed globally' icon */
-.img_global		{ visibility:hidden; padding: 0px 3px; width:14px; height:14px; vertical-align:middle;
-			  background-size:contain; 
-			  background:-o-skin('RSS'); }
-.img_global.visible	{ visibility:visible; }
-td:hover > .img_global	{ visibility:visible; } 
-
 
 /*************************************************************************************************************/
 /* generic stuff */
@@ -46,18 +39,33 @@ input[type=radio] + label		{ box-shadow:inset 0px 1px 0px 0px #ffffff; border-ra
 					} 
 input[type=radio]:checked + label	{ background-color: #fa4; } 
 
-/* icons */
-img { width:22px; height:22px; vertical-align:middle; background-size:contain; } 
+/* images */
 
-img.allowed		{ background:-o-skin('Transfer Success'); }
-img.blocked		{ background:-o-skin('Transfer Stopped'); }
-img.not_loaded		{ background:-o-skin('Transfer Size Mismatch'); }
-img.iframe		{ background:-o-skin('Menu Info'); }
-img.allowed_globally	{ background:-o-skin('RSS'); }
-img.block_all		{ background:-o-skin('Smiley Pacman'); }
-img.filtered		{ background:-o-skin('Smiley Cool'); }
-img.relaxed		{ background:-o-skin('Smiley Tongue'); }
-img.allow_all		{ background:-o-skin('Smiley Cry'); }
+img	{ width:22px; height:22px; vertical-align:middle; background-size:contain; }
+
+.block_all img		{ background:-o-skin('Smiley Pacman'); }
+.filtered  img		{ background:-o-skin('Smiley Cool'); }
+.relaxed   img		{ background:-o-skin('Smiley Tongue'); }
+.allow_all img		{ background:-o-skin('Smiley Cry'); }
+
+.allowed img		{ background:-o-skin('Transfer Success'); }
+.blocked img		{ background:-o-skin('Transfer Stopped'); }
+.not_loaded img		{ background:-o-skin('Transfer Size Mismatch'); }
+.iframe	img		{ background:-o-skin('Menu Info'); }
+
+/* 'script allowed globally' icon */
+.allowed_globally img		{ visibility:hidden; padding: 0px 3px; width:14px; height:14px; vertical-align:middle;
+				  background-size:contain; 
+				  background:-o-skin('RSS'); }
+.allowed_globally:hover img	{ visibility:visible; } 
+.allowed_globally.visible img	{ visibility:visible; }
+
+
+
+/* for small icons use this instead:
+#main_button.filtered	img	{ content:-o-skin('Smiley Cool'); }
+*/
+
 
 .menu {
 	padding: 1px 1px; text-align:left;
@@ -90,7 +98,7 @@ li.allowed::before, li.blocked::before, li.not_loaded::before, li.iframe::before
 li.block_all::before, li.filtered::before, li.relaxed::before, li.allow_all::before {transform:scale(1.1); display:inline-block; vertical-align:middle}
 */
 
-
+/*
 td.allowed::before		{ content:-o-skin('Transfer Success'); }
 td.blocked::before		{ content:-o-skin('Transfer Stopped'); }
 td.not_loaded			{ content:-o-skin('Transfer Size Mismatch'); }
@@ -98,11 +106,12 @@ td.iframe			{ content:-o-skin('Menu Info'); }
 td.allowed_globally		{ content:-o-skin('RSS'); }
 td.not_allowed_globally:hover	{ content:-o-skin('RSS'); }
 
+
 li.block_all::before		{ content:-o-skin('Smiley Pacman');}
-li.filtered::before		{ content:-o-skin('Smiley Cool'); }
-li.relaxed::before		{ content:-o-skin('Smiley Tongue'); }
+li.filtered::before  		{ content:-o-skin('Smiley Cool'); }
+li.relaxed::before   		{ content:-o-skin('Smiley Tongue'); }
 li.allow_all::before		{ content:-o-skin('Smiley Cry'); }
+*/
 
 
-/* #main_button img { background:-o-skin('Smiley Tongue'); } */
 

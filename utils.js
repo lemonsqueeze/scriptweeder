@@ -127,16 +127,8 @@ function(){   // fake line, keep_editor_happy
 
     function foreach(l, f)
     {
-	try
-	{
-	    for (var i = 0; i < l.length; i++)
-		f(l[i]);
-	}
-	catch(e)
-	{
-	    if (e != "stop_foreach")
-		throw(e);
-	}
+	for (var i = 0; i < l.length; i++)
+	    f(l[i]);
     }
 
     function list_contains(list, str)
