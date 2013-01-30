@@ -14,12 +14,15 @@ new features:
 
   - option to start with blank settings.
 
-  - button toggle option
-  - autohide button
-  - always hide and use opera button to show ?
+  - button ui options:
+    menu toggle
+    autohide button
+    always hide and use opera button to show ?
     no need to display it at all then ...
 
   - bindings to do stuff from opera buttons ?
+
+  - batch settings editor
 
   - reload method
 
@@ -27,17 +30,21 @@ new features:
     maybe load page with hash in url: #jsarmor_safemode ...
 
 wip:
-  - take out layout 
-    would be nice to separate classes used for layout and styles.
 
-  - style editor,
-    FIXME need to escape \n for export file to work ...    
-    whatever is missing for styling (classes, ids...)
+  - iframe handling
+    use load event instead of harvesting DOM ?
 
+  - can't even get iframe.src for cross domain stuff ??
+  - do we want placeholder icon for blocked iframes ?
+  - channel stuff to block/allow from iframes ? (iframes in iframes ...)
 
-  - new css style switch.
-    (sizing bug when using css, but .. doesn't matter, it's gone with plain styles!)
-    indent is broken (see block all mode)
+  - custom styles: load / save
+    do *not* save it in export settings !
+    whatever is missing for user styling (classes, ids...)
+      - set class on checkbox parent (host table)
+      - what else ?
+    (put external css hack back in ?)
+    cool styles, please !
 
   - what ui to access options menu ?
     notebook ?  (inside a menu it's strange...)
@@ -45,21 +52,14 @@ wip:
 
   - tabs to organize options ?
 
-  - some kind of test suite.
-    make the external css hack available ?
-
-  - iframe handling
-  - can't even get iframe.src for cross domain stuff ??
-  - do we want placeholder icon for blocked iframes ?
-  - channel stuff to block/allow from iframes ? (iframes in iframes ...)
-
   - set_global_setting('version', version) on startup, 
     will be needed later to detect upgrading...
 
   - fix title bar bg image
 
-  - find way to make it work as extension
+  - find way to make it work as extension !!
 
+  - some kind of test suite.
 
 doc:
   - doc or startup: warn about 
@@ -90,13 +90,6 @@ Urgent:
       -> potentially any external script can be run !!
     Also UI showing up: ugly and not useable.
     
-    - basic: iframe handling: "block all & shut up" / "show ui" ?
-
-    - special cases:
-      - block invisible iframes by default ?!
-      - iframes from current host
-
----------------------------------------------------------
     - better logic:
        - merge iframe hosts in main menu (display special icon)
        - iframe instance can get parent's url, and check if its host is allowed there.
@@ -110,15 +103,11 @@ Urgent:
        - iframes handling "block all" "filtered = better logic" "treat as normal page"
        - "show ui inside iframes"
 
-    ui problem in small iframes:
-    - make iframes scrollable when ui enabled ?
-    - or use popup ?
-
     - what do we do for normal frames ??
-      can we even distinguish between frames and iframes ??
+      can we distinguish between frames and iframes ??
 
 ------------------------------------------------------
-    - Ideas:
+    - other ideas:
 
       1) integrate with external iframe blocking ?
          (so we don't have to click on them on allowed sites)
@@ -143,6 +132,9 @@ Urgent:
       - event handlers
       - javascript url
     cf http://www.howtocreate.co.uk/operaStuff/userjs/disablescript.js    
+
+Skin:
+  - can we use css for the layout as well ??
 
 Features:
   - Settings window,
@@ -206,7 +198,6 @@ Optimization/Cleanup:
     confused. i suspect a trick to hide third party content there ...
     http://dictionary.reference.com/
 
-  - Move styles into CSS
   - cleanup
 
 Extension problems (not userjs):
@@ -233,6 +224,8 @@ Extension problems (not userjs):
         (opened from google search)
     - reload from cache not working, button goes away (wikipedia)
       but full reload -> ok
+
+  Idea: just block scripts when we're stuck, and reload them later !
 
 
 Sites:

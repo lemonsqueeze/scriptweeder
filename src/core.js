@@ -15,7 +15,7 @@
 // When running as userjs, document and window.document are the same,
 // but when running as an extension they're 2 different things, beware !
 (function(document, location, opera, scriptStorage) {    
-    var version = 'jsarmor v2.0';
+    var version = 'jsarmor v1.5.0 (dev)';
 
     /************************* Default Settings *******************************/
     
@@ -501,7 +501,7 @@
 	set_mode_no_update(mode);
     }
 
-    /***************************** iframe handling **************************/
+    /***************************** filtering js in iframes **************************/
     
     function init_iframe_logic()
     {

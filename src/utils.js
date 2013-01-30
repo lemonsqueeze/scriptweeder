@@ -28,6 +28,8 @@ function(){   // fake line, keep_editor_happy
     }
     
     // find element in parent with that id or class_name
+    // supports unparented nodes
+    // for parented nodes idoc.querySelector('css selector') is very nice !
     function find_element(parent, class_name)
     {
 	if (parent == null)

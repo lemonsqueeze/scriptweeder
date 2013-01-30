@@ -15,7 +15,7 @@
 // When running as userjs, document and window.document are the same,
 // but when running as an extension they're 2 different things, beware !
 (function(document, location, opera, scriptStorage) {    
-    var version = 'jsarmor v2.0';
+    var version = 'jsarmor v1.5.0 (dev)';
 
     /************************* Default Settings *******************************/
     
@@ -1952,6 +1952,9 @@
     {
 	if (mode == 'block_all')
 	    wakeup_lazy_widgets(menu);
+
+	w = find_element(menu, "menu_title");
+	w.title = version;
 	
 	// FIXME put it back one day
 	// plugin api

@@ -329,6 +329,9 @@ function(){   // fake line, keep_editor_happy
     {
 	if (mode == 'block_all')
 	    wakeup_lazy_widgets(menu);
+
+	w = find_element(menu, "menu_title");
+	w.title = version;
 	
 	// FIXME put it back one day
 	// plugin api
