@@ -10,7 +10,7 @@ body			{ margin:0px; }
 /*************************************************************************************************************/
 
 /* host table */
-#jsarmor_ftable		{ width:100%; } 
+#jsarmor_ftable			{ width:100%; } 
 #jsarmor_ftable > tr > td	{ padding: 0px 0px 1px 0px;} 
 
 /* menu item stuff */
@@ -60,12 +60,9 @@ img	{ width:22px; height:22px; vertical-align:middle; background-size:contain; }
 .allowed_globally:hover img	{ visibility:visible; } 
 .allowed_globally.visible img	{ visibility:visible; }
 
-
-
 /* for small icons use this instead:
 #main_button.filtered	img	{ content:-o-skin('Smiley Cool'); }
 */
-
 
 .menu {
 	padding: 1px 1px; text-align:left;
@@ -93,25 +90,15 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;
 	padding: 1px; /* for highlighting */
 }
 
-/*
-li.allowed::before, li.blocked::before, li.not_loaded::before, li.iframe::before, li.allowed_globally::before,
-li.block_all::before, li.filtered::before, li.relaxed::before, li.allow_all::before {transform:scale(1.1); display:inline-block; vertical-align:middle}
-*/
 
-/*
-td.allowed::before		{ content:-o-skin('Transfer Success'); }
-td.blocked::before		{ content:-o-skin('Transfer Stopped'); }
-td.not_loaded			{ content:-o-skin('Transfer Size Mismatch'); }
-td.iframe			{ content:-o-skin('Menu Info'); }
-td.allowed_globally		{ content:-o-skin('RSS'); }
-td.not_allowed_globally:hover	{ content:-o-skin('RSS'); }
+/*************************************************************************************************************/
+/* Options menu */
 
+#options_menu		{ min-width:250px; }
 
-li.block_all::before		{ content:-o-skin('Smiley Pacman');}
-li.filtered::before  		{ content:-o-skin('Smiley Cool'); }
-li.relaxed::before   		{ content:-o-skin('Smiley Tongue'); }
-li.allow_all::before		{ content:-o-skin('Smiley Cry'); }
-*/
+.separator	{ height: 1px; display: block; background-color: #555555; margin-left: auto; margin-right: auto; }
 
-
+/* import file (make form and button look like a menuitem) */
+#import_form	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }
+#import_btn	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }
 

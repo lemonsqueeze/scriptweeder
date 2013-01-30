@@ -74,9 +74,9 @@ function(){   // fake line, keep_editor_happy
     // create ui elements from html strings in widgets_layout. this one is for normal
     // (single node) widgets. nested widgets are created as well unless they have the
     // "lazy" attribute.
-    function new_widget(name, args_func)
+    function new_widget(name, init_proxy)
     {
-	var wrap = new_wrapped_widget(name, null, args_func);
+	var wrap = new_wrapped_widget(name, init_proxy);
 	if (wrap.children.length > 1)
 	    my_alert("new_widget(" + name + "):\n" +
 		     "this isn't a single node widget, call new_wrapped_widget() instead !");
@@ -112,8 +112,8 @@ function(){   // fake line, keep_editor_happy
     
     // same as new_widget() but returns the <widget> wrapper. this is necessary if
     // the widget is actually a forest... (.forest is set on the div in this case)
-    // placeholder is optional (the new widget gets its its attributes)
-    function new_wrapped_widget(name, placeholder, args_func)
+    // init_proxy function is used to pass arguments to widget_init()
+    function new_wrapped_widget(name, init_proxy)
     {
 	name = name.toLowerCase();
 	// do we have this guy in cache ? use that then
@@ -143,40 +143,42 @@ function(){   // fake line, keep_editor_happy
 	setup_widget_event_handlers(wrap, name);
 	call_oninit_handlers(wrap);
 	create_nested_widgets(wrap, false);	
-	init_widget(wrap, wrap.firstChild, name, placeholder, args_func);
+	init_widget(wrap, wrap.firstChild, name, init_proxy);
 	
 	// cached_widgets[id] = d.firstChild;
 	//return widget.cloneNode(true);
 	return wrap;
     }
+    
+    function eval_attributes(ph)
+    {
+	if (!ph)
+	    return;
 
+	for (var i = 0; i < ph.attributes.length; i++)
+	{
+	    var a = ph.attributes[i];
+	    if (a.value.charAt(0) == "`")  // "`" means eval attribute 
+		ph[a.name] = eval(a.value.slice(1));
+	    else
+		ph[a.name] = a.value;
+	}
+    }
+    
     // copy attributes from placeholder (or use args_func if available), and call init handler if needed:
     // if widget "foo" has the 'init' attribute, then foo_init(widget) is called.
     // we could call function foo_init() automatically if it exists, but that would open a nice hole:
     // if the page's scripts have such a handler and we didn't define one, now it'd get called !
-    function init_widget(wrap, content, name, ph, args_func)
+    function init_widget(wrap, content, name, init_proxy)
     {
-	// for empty widgets, pass attributes in wrap instead
 	content = (content ? content : wrap);
-	if (args_func)
-	    args_func(content);
-	else if (ph)
-	{
-	    for (var i = 0; i < ph.attributes.length; i++)
-	    {
-		var a = ph.attributes[i];
-		if (a.value.charAt(0) == "`")  // "`" means eval attribute 
-		    content[a.name] = eval(a.value.slice(1));
-		else
-		    content[a.name] = a.value;
-	    }
-	}
-
-	if (wrap.hasAttribute('init'))
-	{
-	    var fname = name.toLowerCase() + "_init";	    
-	    (eval(fname))(content);
-	}
+	
+	if (!wrap.hasAttribute('init'))
+	    return;
+	if (init_proxy)
+	    init_proxy(content);
+	else // no proxy ? widget_init() takes no args then, call it directly.
+	    (eval(name + "_init"))(content);
     }
 
     function call_oninit_handlers(widget)
@@ -192,7 +194,24 @@ function(){   // fake line, keep_editor_happy
     {
 	return (widgets_layout[widget.tagName] != null);
     }
-
+    
+    function get_init_proxy(placeholder)
+    {
+	var name = placeholder.tagName.toLowerCase();
+	var fname = name + "_init_proxy";
+	try
+	{
+	    var call_init = eval(fname);
+	    return function(widget)
+	      {
+		  eval_attributes(placeholder);
+		  call_init(widget, placeholder);
+	      };
+	}
+	catch (e) {}
+	return null;
+    }
+    
     function create_nested_widgets(widget, ignore_lazy)
     {
 	// NodeLists are live so we can't walk and change the tree at the same time.
@@ -204,7 +223,7 @@ function(){   // fake line, keep_editor_happy
 		(!ignore_lazy && n.hasAttribute('lazy')))
 		return;
 	    from.push(n);
-	    to.push(new_wrapped_widget(n.tagName, n));
+	    to.push(new_wrapped_widget(n.tagName, get_init_proxy(n)));
 	});
 
 	for (var i = 0; i < to.length; i++)

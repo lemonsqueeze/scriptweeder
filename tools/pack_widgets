@@ -68,6 +68,36 @@ dump_widget_layouts();
 print("    };\n\n");
 
 
+sub widget_init_proxy_functions
+{
+    foreach my $s (@lines)
+    {
+	# remove comments
+	$s =~ s|<!--[^>]*-->||g;
+
+	if ($s =~ m|<widget name="([^"]*)"([^>]*)>|)
+	{
+	    my ($id, $args_str) = ($1, $2);
+	    my @args = split(" ", $args_str);
+	    @args = grep(!/init/, @args);
+
+	    if (@args == 0)
+	    {  next;   } # these are rather useless 
+	    print "    function ${id}_init_proxy(w, ph)\n";
+	    print "    {\n";
+	    print "        ${id}_init(w";
+	    foreach my $arg (@args)
+	    {  print ", ph.$arg";  }
+	    print ");\n";
+	    print "    }\n\n";
+	}
+    }
+}
+
+print("    /* init proxies (internal use only) */\n");
+widget_init_proxy_functions();
+
+
 sub widget_new_functions
 {
     foreach my $s (@lines)
@@ -91,12 +121,12 @@ sub widget_new_functions
 	    }
 	    print "    function new_$id(" . join(", ", @args) . ")\n";
 	    print "    {\n";
-	    print "        return new_widget(\"$id\", function(n)\n";
+	    print "      return new_widget(\"$id\", function(w)\n";
 	    print "        {\n";
+	    print "          ${id}_init(w";
 	    foreach my $arg (@args)
-	    {
-	    print "            n.$arg = $arg;\n";
-	    }
+	    {  print ", $arg";  }
+	    print ");\n";
 	    print "        });\n";
 	    print "    }\n\n";
 	}

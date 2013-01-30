@@ -1103,9 +1103,9 @@
     // create ui elements from html strings in widgets_layout. this one is for normal
     // (single node) widgets. nested widgets are created as well unless they have the
     // "lazy" attribute.
-    function new_widget(name, args_func)
+    function new_widget(name, init_proxy)
     {
-	var wrap = new_wrapped_widget(name, null, args_func);
+	var wrap = new_wrapped_widget(name, init_proxy);
 	if (wrap.children.length > 1)
 	    my_alert("new_widget(" + name + "):\n" +
 		     "this isn't a single node widget, call new_wrapped_widget() instead !");
@@ -1141,8 +1141,8 @@
     
     // same as new_widget() but returns the <widget> wrapper. this is necessary if
     // the widget is actually a forest... (.forest is set on the div in this case)
-    // placeholder is optional (the new widget gets its its attributes)
-    function new_wrapped_widget(name, placeholder, args_func)
+    // init_proxy function is used to pass arguments to widget_init()
+    function new_wrapped_widget(name, init_proxy)
     {
 	name = name.toLowerCase();
 	// do we have this guy in cache ? use that then
@@ -1172,40 +1172,42 @@
 	setup_widget_event_handlers(wrap, name);
 	call_oninit_handlers(wrap);
 	create_nested_widgets(wrap, false);	
-	init_widget(wrap, wrap.firstChild, name, placeholder, args_func);
+	init_widget(wrap, wrap.firstChild, name, init_proxy);
 	
 	// cached_widgets[id] = d.firstChild;
 	//return widget.cloneNode(true);
 	return wrap;
     }
+    
+    function eval_attributes(ph)
+    {
+	if (!ph)
+	    return;
 
+	for (var i = 0; i < ph.attributes.length; i++)
+	{
+	    var a = ph.attributes[i];
+	    if (a.value.charAt(0) == "`")  // "`" means eval attribute 
+		ph[a.name] = eval(a.value.slice(1));
+	    else
+		ph[a.name] = a.value;
+	}
+    }
+    
     // copy attributes from placeholder (or use args_func if available), and call init handler if needed:
     // if widget "foo" has the 'init' attribute, then foo_init(widget) is called.
     // we could call function foo_init() automatically if it exists, but that would open a nice hole:
     // if the page's scripts have such a handler and we didn't define one, now it'd get called !
-    function init_widget(wrap, content, name, ph, args_func)
+    function init_widget(wrap, content, name, init_proxy)
     {
-	// for empty widgets, pass attributes in wrap instead
 	content = (content ? content : wrap);
-	if (args_func)
-	    args_func(content);
-	else if (ph)
-	{
-	    for (var i = 0; i < ph.attributes.length; i++)
-	    {
-		var a = ph.attributes[i];
-		if (a.value.charAt(0) == "`")  // "`" means eval attribute 
-		    content[a.name] = eval(a.value.slice(1));
-		else
-		    content[a.name] = a.value;
-	    }
-	}
-
-	if (wrap.hasAttribute('init'))
-	{
-	    var fname = name.toLowerCase() + "_init";	    
-	    (eval(fname))(content);
-	}
+	
+	if (!wrap.hasAttribute('init'))
+	    return;
+	if (init_proxy)
+	    init_proxy(content);
+	else // no proxy ? widget_init() takes no args then, call it directly.
+	    (eval(name + "_init"))(content);
     }
 
     function call_oninit_handlers(widget)
@@ -1221,7 +1223,24 @@
     {
 	return (widgets_layout[widget.tagName] != null);
     }
-
+    
+    function get_init_proxy(placeholder)
+    {
+	var name = placeholder.tagName.toLowerCase();
+	var fname = name + "_init_proxy";
+	try
+	{
+	    var call_init = eval(fname);
+	    return function(widget)
+	      {
+		  eval_attributes(placeholder);
+		  call_init(widget, placeholder);
+	      };
+	}
+	catch (e) {}
+	return null;
+    }
+    
     function create_nested_widgets(widget, ignore_lazy)
     {
 	// NodeLists are live so we can't walk and change the tree at the same time.
@@ -1233,7 +1252,7 @@
 		(!ignore_lazy && n.hasAttribute('lazy')))
 		return;
 	    from.push(n);
-	    to.push(new_wrapped_widget(n.tagName, n));
+	    to.push(new_wrapped_widget(n.tagName, get_init_proxy(n)));
 	});
 
 	for (var i = 0; i < to.length; i++)
@@ -1747,10 +1766,10 @@
 	return d;
     }
 
-    function checkbox_item_init(li)
+    function checkbox_item_init(li, title, label, state, callback)
     {
-	li.innerHTML += li.label; // hack
-	setup_checkbox_item(li, li.state, li.callback);
+	li.innerHTML += label; // hack
+	setup_checkbox_item(li, state, callback);
     }
     
     function setup_checkbox_item(widget, current, f)
@@ -2055,11 +2074,8 @@
     
     /***************************** Details menu *******************************/
 
-    function script_detail_init(w)
+    function script_detail_init(w, h, s)
     {
-	var h = w.host;
-	var s = w.script;
-	
 	var img = w.firstChild;
 	var link = img.nextSibling;
 	link.innerText = strip_http(s.url);
@@ -2072,7 +2088,7 @@
 	    if (!s.loaded)
 	    {
 		status = "not_loaded";
-		img.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
+		w.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
 	    }
 	}
 	w.className = status;       
@@ -2155,10 +2171,10 @@
     
     /****************************** Main menu *********************************/
 
-    function menu_init(menu)
+    function menu_init(menu, title)
     {
 	var w = find_element(menu, "menu_title");
-	w.innerText = menu.title;
+	w.innerText = title;
     }
 
     function menu_onmouseout(e)
@@ -2246,8 +2262,7 @@
     
     function main_menu_init(menu)
     {
-	menu.title = "JSArmor";
-	menu_init(menu);
+	menu_init(menu, "JSArmor");
 	
 	if (mode == 'block_all')
 	    wakeup_lazy_widgets(menu);
@@ -2570,7 +2585,7 @@ body			{ margin:0px; }  \n\
 /*************************************************************************************************************/  \n\
   \n\
 /* host table */  \n\
-#jsarmor_ftable		{ width:100%; }   \n\
+#jsarmor_ftable			{ width:100%; }   \n\
 #jsarmor_ftable > tr > td	{ padding: 0px 0px 1px 0px;}   \n\
   \n\
 /* menu item stuff */  \n\
@@ -2620,12 +2635,9 @@ img	{ width:22px; height:22px; vertical-align:middle; background-size:contain; }
 .allowed_globally:hover img	{ visibility:visible; }   \n\
 .allowed_globally.visible img	{ visibility:visible; }  \n\
   \n\
-  \n\
-  \n\
 /* for small icons use this instead:  \n\
 #main_button.filtered	img	{ content:-o-skin('Smiley Cool'); }  \n\
 */  \n\
-  \n\
   \n\
 .menu {  \n\
 	padding: 1px 1px; text-align:left;  \n\
@@ -2653,27 +2665,17 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
 	padding: 1px; /* for highlighting */  \n\
 }  \n\
   \n\
-/*  \n\
-li.allowed::before, li.blocked::before, li.not_loaded::before, li.iframe::before, li.allowed_globally::before,  \n\
-li.block_all::before, li.filtered::before, li.relaxed::before, li.allow_all::before {transform:scale(1.1); display:inline-block; vertical-align:middle}  \n\
-*/  \n\
   \n\
-/*  \n\
-td.allowed::before		{ content:-o-skin('Transfer Success'); }  \n\
-td.blocked::before		{ content:-o-skin('Transfer Stopped'); }  \n\
-td.not_loaded			{ content:-o-skin('Transfer Size Mismatch'); }  \n\
-td.iframe			{ content:-o-skin('Menu Info'); }  \n\
-td.allowed_globally		{ content:-o-skin('RSS'); }  \n\
-td.not_allowed_globally:hover	{ content:-o-skin('RSS'); }  \n\
+/*************************************************************************************************************/  \n\
+/* Options menu */  \n\
   \n\
+#options_menu		{ min-width:250px; }  \n\
   \n\
-li.block_all::before		{ content:-o-skin('Smiley Pacman');}  \n\
-li.filtered::before  		{ content:-o-skin('Smiley Cool'); }  \n\
-li.relaxed::before   		{ content:-o-skin('Smiley Tongue'); }  \n\
-li.allow_all::before		{ content:-o-skin('Smiley Cry'); }  \n\
-*/  \n\
+.separator	{ height: 1px; display: block; background-color: #555555; margin-left: auto; margin-right: auto; }  \n\
   \n\
-  \n\
+/* import file (make form and button look like a menuitem) */  \n\
+#import_form	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }  \n\
+#import_btn	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }  \n\
   \n\
 ";
 
@@ -2692,32 +2694,44 @@ li.allow_all::before		{ content:-o-skin('Smiley Cry'); }  \n\
       'scope_widget' : '<widget name="scope_widget" init><li id="scope">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li></widget>'
     };
 
+    /* init proxies (internal use only) */
+    function checkbox_item_init_proxy(w, ph)
+    {
+        checkbox_item_init(w, ph.title, ph.label, ph.state, ph.callback);
+    }
+
+    function menu_init_proxy(w, ph)
+    {
+        menu_init(w, ph.title);
+    }
+
+    function script_detail_init_proxy(w, ph)
+    {
+        script_detail_init(w, ph.host, ph.script);
+    }
+
     /* functions for creating widgets */
     function new_checkbox_item(title, label, state, callback)
     {
-        return new_widget("checkbox_item", function(n)
+      return new_widget("checkbox_item", function(w)
         {
-            n.title = title;
-            n.label = label;
-            n.state = state;
-            n.callback = callback;
+          checkbox_item_init(w, title, label, state, callback);
         });
     }
 
     function new_menu(title)
     {
-        return new_widget("menu", function(n)
+      return new_widget("menu", function(w)
         {
-            n.title = title;
+          menu_init(w, title);
         });
     }
 
     function new_script_detail(host, script)
     {
-        return new_widget("script_detail", function(n)
+      return new_widget("script_detail", function(w)
         {
-            n.host = host;
-            n.script = script;
+          script_detail_init(w, host, script);
         });
     }
 

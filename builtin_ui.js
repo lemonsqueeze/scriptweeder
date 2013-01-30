@@ -133,10 +133,10 @@ function(){   // fake line, keep_editor_happy
 	return d;
     }
 
-    function checkbox_item_init(li)
+    function checkbox_item_init(li, title, label, state, callback)
     {
-	li.innerHTML += li.label; // hack
-	setup_checkbox_item(li, li.state, li.callback);
+	li.innerHTML += label; // hack
+	setup_checkbox_item(li, state, callback);
     }
     
     function setup_checkbox_item(widget, current, f)
@@ -441,11 +441,8 @@ function(){   // fake line, keep_editor_happy
     
     /***************************** Details menu *******************************/
 
-    function script_detail_init(w)
+    function script_detail_init(w, h, s)
     {
-	var h = w.host;
-	var s = w.script;
-	
 	var img = w.firstChild;
 	var link = img.nextSibling;
 	link.innerText = strip_http(s.url);
@@ -458,7 +455,7 @@ function(){   // fake line, keep_editor_happy
 	    if (!s.loaded)
 	    {
 		status = "not_loaded";
-		img.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
+		w.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
 	    }
 	}
 	w.className = status;       
@@ -541,10 +538,10 @@ function(){   // fake line, keep_editor_happy
     
     /****************************** Main menu *********************************/
 
-    function menu_init(menu)
+    function menu_init(menu, title)
     {
 	var w = find_element(menu, "menu_title");
-	w.innerText = menu.title;
+	w.innerText = title;
     }
 
     function menu_onmouseout(e)
@@ -632,8 +629,7 @@ function(){   // fake line, keep_editor_happy
     
     function main_menu_init(menu)
     {
-	menu.title = "JSArmor";
-	menu_init(menu);
+	menu_init(menu, "JSArmor");
 	
 	if (mode == 'block_all')
 	    wakeup_lazy_widgets(menu);
