@@ -86,7 +86,7 @@
       <select_iframe_logic></select_iframe_logic>
       <checkbox_item label="Show jsarmor ui in iframes" id="show_ui_in_iframes"
 		     title=""
-		     state="`false"    <!-- fixme ! -->
+		     state="`show_ui_in_iframes"
 		     callback="`toggle_show_ui_in_iframes"/></checkbox_item>
       <menu_item label="Edit whitelist…" onclick="edit_whitelist"/>
       <menu_item label="Reload method" onclick="null"/>

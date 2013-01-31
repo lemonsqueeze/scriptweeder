@@ -129,6 +129,7 @@ function(){   // fake line, keep_editor_happy
 
     /**************************** List utils *******************************/
 
+    // FIXME use l.forEach(f) !
     function foreach(l, f)
     {
 	for (var i = 0; i < l.length; i++)
@@ -216,6 +217,20 @@ function(){   // fake line, keep_editor_happy
     function my_alert(msg)
     {
 	alert("jsarmor:\n\n" + msg);
+    }
+
+    function assert(test, msg)
+    {
+	if (test)
+	    return;
+	my_alert(msg);
+	throw("assertion failed");
+    }
+
+    function error(msg)
+    {
+	my_alert(msg);
+	throw("error: " + msg);
     }
 
     // or use Object.keys(obj) if browser supports it.

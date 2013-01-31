@@ -77,9 +77,9 @@ function(){   // fake line, keep_editor_happy
     function new_widget(name, init_proxy)
     {
 	var wrap = new_wrapped_widget(name, init_proxy);
-	if (wrap.children.length > 1)
-	    my_alert("new_widget(" + name + "):\n" +
-		     "this isn't a single node widget, call new_wrapped_widget() instead !");
+	assert(wrap.children.length <= 1,
+	       "new_widget(" + name + "):\n" +
+	       "this isn't a single node widget, call new_wrapped_widget() instead !");
 	return wrap.firstChild;
     }
 
@@ -102,7 +102,7 @@ function(){   // fake line, keep_editor_happy
 	    replace_widget(widget, n);
 	    return;
 	}
-	my_alert("parent_widget() couldn't find placeholder for " + widget_name);
+	error("parent_widget() couldn't find placeholder for " + widget_name);
     }
     
     
@@ -121,22 +121,14 @@ function(){   // fake line, keep_editor_happy
 	// return cached_widgets[name].cloneNode(true);
 
 	var layout = widgets_layout[name];
-	if (!layout)
-	{
-	    my_alert("new_widget(" + name + "): the layout for this widget is missing!");
-	    return null;
-	}		    
-
+	assert(layout, "new_widget(" + name + "): the layout for this widget is missing!");
+	
 	// otherwise create a new one...
 	var d = idoc.createElement('foo');
 	d.innerHTML = layout;
 	var wrap = d.firstChild;	// the <widget> element
-	if (!wrap)
-	{
-	    my_alert("new_widget(" + name + "):\n" +
-		     "couldn't create this guy, check the html in widgets_layout.");
-	    return null;
-	}
+	assert(wrap, "new_widget(" + name + "):\n" +
+	             "couldn't create this guy, check the html in widgets_layout.");	
 	if (wrap.children.length > 1)
 	    wrap.forest = true;
 
@@ -236,9 +228,8 @@ function(){   // fake line, keep_editor_happy
     function replace_wrapped_widget(to, from)
     {
 	// sanity check ...
-	if (from.children.length)
-	    my_alert("found a <" + wrapped_widget_name(to) +
-		     "> placeholder widget with children, this really shouldn't be happening !");
+	assert(!from.children.length, "found a <" + wrapped_widget_name(to) +
+	       "> placeholder widget with children, this really shouldn't be happening !");
 	    
 	if (!to.firstChild) // empty widget ...
 	{

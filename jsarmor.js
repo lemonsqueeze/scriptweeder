@@ -61,24 +61,79 @@
     var current_domain;    
     var block_inline_scripts = false;
     var handle_noscript_tags = false;
+
     var iframe_logic;
+    var parent_host;
+    var there_is_work_todo = false;    
+            
+    /************************** Deferred events handling  *****************************/    
+
+    var async_init_request = false;
+    var async_init = false;  // currently only used when running inside iframe
+    var sync_init = false;
+
+    function ready()
+    {	return (sync_init && async_init);  }
+    
+    function init()
+    {
+	// sync_init, async_init both false
+	core_init();
+	sync_init = true;
+	
+	if (!async_init_request)
+	    async_init_finished();
+	if (ready())
+	    trigger_deferred_events();
+    }
+
+    function async_init_finished()
+    {
+	// note: unlocking async_init first implies the ordering of events might not be preserved.
+	// for example if domcontentloaded fires now, it'll get handled before the queued events.
+	// that's fine though, the script handlers take notice something happened even when deferred.
+	async_init = true;
+	if (sync_init) // ready() then  (can't set async_init yet)
+	    trigger_deferred_events();
+    }
+
+    var event_queue = [];    
+    function trigger_deferred_events()
+    {
+	// if (event_queue.length) alert("deferred events: " + event_queue.length);
+	foreach(event_queue, function(o)
+	{
+	    o.handler(o.event, true); // deferred call
+	});
+	event_queue = [];
+    }
+
+    function deferred(handler, allow_unhandled_event)
+    {
+	return function(e)
+	{
+	    if (ready())
+	    {
+		handler(e, false); // synchronous call
+		return;
+	    }
+	    
+	    // queue it, and block current event if requested
+	    event_queue.push({handler: handler, event: e});
+	    if (!allow_unhandled_event)
+		e.preventDefault();
+	};
+    }
     
     
-    /********************************* Init ************************************/    
+    /********************************* Startup ************************************/    
     
     // jsarmor ui's iframe, don't recurse !
     if (window != window.top &&
 	window.name == 'jsarmor_iframe')
 	return;
-    
-    var init = false;			// see call_handler();
-    if (true)
-    {
-	init_handlers();
-	check_script_storage();
-	load_global_settings();
-    }
-    init = true;
+
+    init();
     
     if (global_setting('whitelist') == '')
     {
@@ -91,6 +146,15 @@
 			   '. ' + default_globally_allowed_hosts.join(' '));
     }
 
+    /******************************** Normal init *******************************/
+
+    function core_init()
+    {
+	check_script_storage();
+	load_global_settings();
+	init_handlers();
+    }
+	
     function load_global_settings()
     {
 	load_global_context(location.hostname);
@@ -474,11 +538,8 @@
 	  block_inline_scripts = bool_setting('inline',
 					      default_block_inline_scripts);
 	  handle_noscript_tags = bool_setting('nstags',
-					      default_handle_noscript_tags);	  
-      }      
-// UIFIXME
-//      if (button_image)
-//	  set_icon_mode(button_image, mode);
+					      default_handle_noscript_tags);
+      }
     }
 
 // UIFIXME
@@ -500,70 +561,93 @@
 	    mode = default_mode; 
 	set_mode_no_update(mode);
     }
+    
+    /***************************** filtering js in iframes **************************/
 
-    /***************************** iframe handling **************************/
+    var show_ui_in_iframes;
     
     function init_iframe_logic()
     {
+	show_ui_in_iframes = global_bool_setting("iframe_ui", default_iframe_ui);
+	
 	iframe_logic = global_setting('iframe');
 	if (iframe_logic == '')
 	    iframe_logic = default_iframe_logic; 
 	
-	if (window == window.top)
+	if (window == window.top) // not running in iframe
 	    return;
 	
-	// running in iframe. switch mode depending on iframe_logic
-	// FIXME: add way to override with page setting *only*, which should be safe enough
+	// switch mode depending on iframe_logic
+	// TODO: add way to override with page setting *only*, which should be safe enough
 	
-	if (iframe_logic == 0)  // block all
-	    set_mode_no_update('block_all');	    
-	if (iframe_logic == 1)  // ask parent
+	if (iframe_logic != 1)
 	{
-	    //FIXME find a real solution to get parent hostname somehow;
-	    //alert("In iframe parent logic!\n" + document.referrer);
-	    console.log("my window.name: " + window.name);
-	    return;
-	    if (!is_prefix("jsarmor:", window.name))
-	    {
-		alert("jsarmor, running inside iframe:\n\n we're screwed. (window.name=" + window.name + ")");
-		return;
-	    }
-	    var o = window.name.indexOf(':');
-	    var parent_hostname = window.name.slice(o + 1);
-	    alert("got window:" + parent_hostname);
-	    
-	    // does our parent allow us ?
-	    load_global_context(parent_hostname);
-	    var allowed = allowed_host(location.hostname);		
-	    clear_domain_nodes();	// wipe out hosts nodes this will have created
-	    load_global_context(location.hostname);
-	    
-	    if (!allowed)
+	    if (iframe_logic == 0)  // block all	    
 		set_mode_no_update('block_all');
-	    // else: allowed. treat it as a normal page: current mode applies.
+	    // (iframe_logic == 2) treat as normal page. nothing to do. easy.
+	    return;
 	}
-	// (iframe_logic == 2) treat as normal page: nothing to do, easy.
+	
+	// (iframe_logic == 1)  ask parent
+	// use parent's settings to know if we're allowed to run.
+	// for that we need our parent's hostname, but because of cross-domain restrictions
+	// we can't find out on our own. So wait for our parent to tell us its hostname.
+	async_init_request = true; 
+	return;	   
+    }
+
+    function message_handler(e)
+    {
+	var m = e.data;	
+	// console.log("little iframe from " + current_host + " says:\n" +
+	//             "oh, someone sent me a message:\n" + m);
+	if (!is_prefix(iframe_message_header, m))
+	    return;		// i only listen to my parent.
+	e.preventDefault();	// keep this conversation private.
+
+	parent_host = m.slice(m.indexOf(':') + 1);
+	// alert("parent_host: " + parent_host);
+	
+	// now that we know parent window's hostname we can decide what to do.
+	// does our parent allow us ?
+	load_global_context(parent_host);
+	var allowed = allowed_host(location.hostname);		
+	clear_domain_nodes();	// wipe out hosts nodes this will have created
+	load_global_context(location.hostname);
+	
+	if (!allowed)
+	{
+	    // can't set_mode_no_update('block_all'), it would save the setting.
+	    mode = 'block_all';
+	    block_inline_scripts = true;
+	    handle_noscript_tags = true;
+	}
+	// else: allowed. treat it as a normal page: current mode applies.
+	
+	async_init_finished(); // happy now
     }
     
-    // find iframes in the page and add their host so it shows up in the menu.
-    function add_iframe_hosts()
+    var iframe_message_header = "little iframe, this is your parent:";
+
+    function iframe_loaded_handler(e)
     {
-	// FIXME: what do we do with normal frames ?
-	var iframes = document.getElementsByTagName('iframe');
-	for (var j = 0; j < iframes.length; j++)
+	var iframe = e.event.target;
+	assert(iframe && iframe.tagName && element_tag_is(iframe, 'iframe'),
+	       "iframe_loaded_handler() called on non iframe, this is extremely strange");
+	if (iframe.src == "")
+	    return;
+	
+	// iframe instance needs our host to decide what to do, send message.
+	if (iframe_logic == 1) // ask_parent
 	{
-	    var f = iframes[j];
-	    // FIXME check what happens with weird urls (injected iframe, relative, local file ...)
-	    var host = url_hostname(f.src);
-	    //alert("in parent");
-	    f.contentWindow.name = "yoeuoeuoue";
-	    //f.contentWindow.name = "jsarmor:" + current_host;
-	    add_iframe(f.src, host);
+	    iframe.contentWindow.postMessage(iframe_message_header + current_host, '*');
+	    add_iframe(iframe.src);  // display in menu so we can block/allow it.
 	}
     }
 
-    function add_iframe(url, host)
+    function add_iframe(url)
     {
+	var host = url_hostname(url);
 	var domain = get_domain(host);
 	var i = new_script(url); // iframe really
 
@@ -573,13 +657,13 @@
 	return i;
     }
 
-
-    // FIXME iframe placeholder ?
-    // FIXME get notified about new iframes
-    // that should do it:
-    //   DOMNodeInserted
-    //   DOMNodeRemoved
-    //   then repaint_ui()    
+    function need_iframe_parent_handling()
+    {
+	return (iframe_logic == 1 &&
+		document.querySelector('iframe'));
+    }
+    
+    // TODO iframe placeholder ?
     
     
     /***************************** Domain, url utils **************************/    
@@ -607,8 +691,7 @@
 	//        http://www.joezimjs.com/javascript/the-lazy-mans-url-parsing/
 	u = strip_http(u);
 	var a = u.match(/^([^/]*)\/([^/?&:]*)(.*)$/);
-	if (!a)
-	    my_alert("split_url(): shouldn't happen");
+	assert(a, "split_url(): shouldn't happen");
 	return a.slice(1);
     }
     
@@ -722,7 +805,7 @@
     // dn arg optional
     function relaxed_mode_helper_host(host, dn)
     {
-	dn = (dn ? dn : get_domain_node(get_domain(host)));
+	dn = (dn ? dn : get_domain_node(get_domain(host), true));
 	return (dn.related ||
 		((dn.helper || helper_host(host)) &&
 		 !helper_blacklist[host]));
@@ -762,7 +845,7 @@
       if (mode == 'filtered')  return filtered_mode_allowed_host(host);
       if (mode == 'relaxed')   return relaxed_mode_allowed_host(host); 
       if (mode == 'allow_all') return true;
-      my_alert('mode="' + mode + '", this should not happen!');
+      error('mode="' + mode + '", this should not happen!');
     }
     
     /**************************** Scripts store *******************************/
@@ -842,17 +925,13 @@
     {
 	var domain = get_domain(host);	
 	var domain_node = get_domain_node(domain, false);
-	if (!domain_node)
-	{
-	    my_alert("get_domain_node() failed! should not happen.");
-	    return null;
-	}
+	assert(domain_node, "get_domain_node() failed! should not happen.");
 	var host_node = get_host_node(host, domain_node, false);
 	var scripts = host_node.scripts;
 	for (var i = scripts.length - 1; i >= 0; i--)
 	    if (scripts[i].url == url)
 		return scripts[i];
-	my_alert("find_script(): should not happen.");
+	error("find_script(): should not happen.");
 	return null;
     }
 
@@ -904,7 +983,7 @@
 
     
     /****************************** Handlers **********************************/
-    
+
     var blocked_current_host = 0;
     var loaded_current_host = 0;
     var total_current_host = 0;
@@ -916,12 +995,24 @@
     var total_inline = 0;
     var total_inline_size = 0;
 
+    function reload_script(script)
+    {
+	var clone = script.cloneNode(true);
+	script.parentNode.replaceChild(clone, script);
+    }
+    
     // Handler for both inline *and* external scripts
-    function beforescript_handler(e)
+    function beforescript_handler(e, deferred_call)
     {
       if (e.element.src) // external script
 	  return;
       
+      if (deferred_call && !block_inline_scripts)	// now we know it's allowed, load it !
+      {
+	  reload_script(e.element);
+	  return;
+      }
+	
       total_inline++;
       total_inline_size += e.element.text.length;
       
@@ -932,19 +1023,21 @@
 	e.preventDefault();
     }
 
-    function beforeextscript_handler(e)				 
+    function beforeextscript_handler(e, deferred_call)
     {
-        if (!element_tag_is(e.element, 'script'))
-	{
-	  my_alert("BeforeExternalScript: non <script>: " + e.element.tagName);
-	  return;
-        }
-	
+	assert(element_tag_is(e.element, 'script'),
+	       "BeforeExternalScript: non <script>: " + e.element.tagName);
 	var url = e.element.src;
 	var host = url_hostname(url);
-	var script = add_script(url, host);
-	var allowed = allowed_host(host);
+	var allowed = allowed_host(host);	
+
+	if (deferred_call && allowed)	// now we know it's allowed, load it !
+	{
+	    reload_script(e.element);
+            return;
+	}
 	
+	add_script(url, host);
 	if (host == current_host)
 	{
 	  total_current_host++;
@@ -967,14 +1060,21 @@
     // Find out which scripts are actually loaded,
     // this way we can find out if *something else* is blocking
     // (blocked content, bad url, syntax error...). Awesome!    
-    function beforeload_handler(ev)
-    {
+    function beforeload_handler(ev, deferred_call)
+    {	
 	var e = ev.event.target;
         if (!e || !e.tagName || !element_tag_is(e, 'script') || !e.src)
-	    return; // not an external script.	    
+	    return; // not an external script.
+	assert(!deferred_call,
+	       "beforeload_handler() has been deferred. That's extremely strange.");
+	
 	var host = url_hostname(e.src);
 	var script = find_script(e.src, host);
 
+	// FIXME for performance, could remove this
+	assert(allowed_host(host),		// sanity check ...
+	       "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
+	
 	if (host == current_host)
 	    loaded_current_host++; 
 	else
@@ -986,11 +1086,10 @@
     }
 
 //UIFIXME    
-    function domcontentloaded_handler()
+    function domcontentloaded_handler(e, deferred_call)
     {
-	add_iframe_hosts();
-	
-        if (!domain_nodes.length && !total_inline) 
+        if (!there_is_work_todo &&
+	    !need_iframe_parent_handling())
             return;  // no scripts ? exit.
 
 	if (block_inline_scripts)
@@ -998,36 +1097,39 @@
 
 	// display ui in frame / iframe ?
 	if (window != window.top &&
-	    !global_bool_setting("iframe_ui", default_iframe_ui))
+	    !show_ui_in_iframes)
 	    return;
 	
 	create_iframe();
     }
 
     /**************************** Handlers setup ***************************/
-    
+
+    function work_todo(f)
+    {
+	return function(e)
+	{
+	    there_is_work_todo = true;
+	    f(e);
+	}
+    }
+
     function init_handlers()
     {
-    	opera.addEventListener('BeforeScript',	       wrap_handler(beforescript_handler), false);
-	opera.addEventListener('BeforeExternalScript', wrap_handler(beforeextscript_handler), false);
-	opera.addEventListener('BeforeEvent.load',     wrap_handler(beforeload_handler), false);
-	document.addEventListener('DOMContentLoaded',  wrap_handler(domcontentloaded_handler), false);
-    }
+	// deferred: events should be queued until we're initialized
+    	opera.addEventListener('BeforeScript',	       work_todo(deferred(beforescript_handler)),		false);
+	opera.addEventListener('BeforeExternalScript', work_todo(deferred(beforeextscript_handler)),		false);
+	opera.addEventListener('BeforeEvent.load',               deferred(beforeload_handler, true),		false);
+	document.addEventListener('DOMContentLoaded',            deferred(domcontentloaded_handler, true),	false);
 
-    // guard against race conditions which come up when running as extension.    
-    function wrap_handler(h)
-    {
-	return function(e){ call_handler(h, e); };
+	// iframe handling
+	if (iframe_logic == 1) // ask_parent
+	    opera.addEventListener('BeforeEvent.DOMFrameContentLoaded', iframe_loaded_handler,	false);
+	if (window != window.top) // running in iframe
+	    window.addEventListener('message',			message_handler,				false);
     }
     
-    function call_handler(h, e)
-    {
-	if (!init)
-	    alert("jsarmor\n\nevent received before init finished !!!\nIgnoring.");
-	else
-	    h(e);
-    }
-
+    
 
     /********************************* Core ui *********************************/
 
@@ -1106,9 +1208,9 @@
     function new_widget(name, init_proxy)
     {
 	var wrap = new_wrapped_widget(name, init_proxy);
-	if (wrap.children.length > 1)
-	    my_alert("new_widget(" + name + "):\n" +
-		     "this isn't a single node widget, call new_wrapped_widget() instead !");
+	assert(wrap.children.length <= 1,
+	       "new_widget(" + name + "):\n" +
+	       "this isn't a single node widget, call new_wrapped_widget() instead !");
 	return wrap.firstChild;
     }
 
@@ -1131,7 +1233,7 @@
 	    replace_widget(widget, n);
 	    return;
 	}
-	my_alert("parent_widget() couldn't find placeholder for " + widget_name);
+	error("parent_widget() couldn't find placeholder for " + widget_name);
     }
     
     
@@ -1150,22 +1252,14 @@
 	// return cached_widgets[name].cloneNode(true);
 
 	var layout = widgets_layout[name];
-	if (!layout)
-	{
-	    my_alert("new_widget(" + name + "): the layout for this widget is missing!");
-	    return null;
-	}		    
-
+	assert(layout, "new_widget(" + name + "): the layout for this widget is missing!");
+	
 	// otherwise create a new one...
 	var d = idoc.createElement('foo');
 	d.innerHTML = layout;
 	var wrap = d.firstChild;	// the <widget> element
-	if (!wrap)
-	{
-	    my_alert("new_widget(" + name + "):\n" +
-		     "couldn't create this guy, check the html in widgets_layout.");
-	    return null;
-	}
+	assert(wrap, "new_widget(" + name + "):\n" +
+	             "couldn't create this guy, check the html in widgets_layout.");	
 	if (wrap.children.length > 1)
 	    wrap.forest = true;
 
@@ -1265,9 +1359,8 @@
     function replace_wrapped_widget(to, from)
     {
 	// sanity check ...
-	if (from.children.length)
-	    my_alert("found a <" + wrapped_widget_name(to) +
-		     "> placeholder widget with children, this really shouldn't be happening !");
+	assert(!from.children.length, "found a <" + wrapped_widget_name(to) +
+	       "> placeholder widget with children, this really shouldn't be happening !");
 	    
 	if (!to.firstChild) // empty widget ...
 	{
@@ -1424,6 +1517,8 @@
     }
     
     // find element in parent with that id or class_name
+    // supports unparented nodes
+    // for parented nodes idoc.querySelector('css selector') is very nice !
     function find_element(parent, class_name)
     {
 	if (parent == null)
@@ -1523,6 +1618,7 @@
 
     /**************************** List utils *******************************/
 
+    // FIXME use l.forEach(f) !
     function foreach(l, f)
     {
 	for (var i = 0; i < l.length; i++)
@@ -1610,6 +1706,20 @@
     function my_alert(msg)
     {
 	alert("jsarmor:\n\n" + msg);
+    }
+
+    function assert(test, msg)
+    {
+	if (test)
+	    return;
+	my_alert(msg);
+	throw("assertion failed");
+    }
+
+    function error(msg)
+    {
+	my_alert(msg);
+	throw("error: " + msg);
     }
 
     // or use Object.keys(obj) if browser supports it.
@@ -2329,7 +2439,7 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
       'host_table_row' : '<widget name="host_table_row"><tr  onclick><td width="1%"></td><td width="1%"><img></img></td><td width="1%"><input type="checkbox" checked="true"></td><td width="1%" class="host_part">code.</td><td class="domain_part">jquery.com</td><td width="1%"><img></img></td><td width="1%" class="allowed_globally"><img></img></td><td width="1%" class="script_count">[1]</td></tr></widget>',
       'details_menu' : '<widget name="details_menu" init><div id="details_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Scripts</h1><ul id="menu_content"><li id="last_item" onclick="options_menu">Options…</li></ul></div></widget>',
       'script_detail' : '<widget name="script_detail" host script init><li><img><a></a></li></widget>',
-      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><ul id="menu_content"><select_iframe_logic></select_iframe_logic><checkbox_item label="Show jsarmor ui in iframes" id="show_ui_in_iframes" 		     title="" 		     state="`false"     		     callback="`toggle_show_ui_in_iframes"/></checkbox_item><li id="$id" onclick="edit_whitelist">Edit whitelist…</li><li id="$id" onclick="null">Reload method</li><li class="separator"></li><li id="$id" onclick="null">Load custom style…</li><li id="$id" onclick="null">Save current style…</li><li class="separator"></li><li id="$id" onclick="export_settings">Export Settings…</li><li><form id="import_form"><input type=file id=import_btn autocomplete=off onchange="load_file" >Import Settings...</form></li><li id="$id" onclick="reset_settings">Clear All Settings…</li><li class="separator"></li><li id="$id" onclick="go_to_help_page">Help</li><li id="$id" onclick="null">About</li></ul></div></widget>',
+      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><ul id="menu_content"><select_iframe_logic></select_iframe_logic><checkbox_item label="Show jsarmor ui in iframes" id="show_ui_in_iframes" 		     title="" 		     state="`show_ui_in_iframes" 		     callback="`toggle_show_ui_in_iframes"/></checkbox_item><li id="$id" onclick="edit_whitelist">Edit whitelist…</li><li id="$id" onclick="null">Reload method</li><li class="separator"></li><li id="$id" onclick="null">Load custom style…</li><li id="$id" onclick="null">Save current style…</li><li class="separator"></li><li id="$id" onclick="export_settings">Export Settings…</li><li><form id="import_form"><input type=file id=import_btn autocomplete=off onchange="load_file" >Import Settings...</form></li><li id="$id" onclick="reset_settings">Clear All Settings…</li><li class="separator"></li><li id="$id" onclick="go_to_help_page">Help</li><li id="$id" onclick="null">About</li></ul></div></widget>',
       'select_iframe_logic' : '<widget name="select_iframe_logic" init><li id="iframe_logic">iframe logic<input type="radio" name="radio"/><label>Block all</label><input type="radio" name="radio"/><label>Ask parent</label><input type="radio" name="radio"/><label>Normal page</label></li></widget>',
       'whitelist_editor' : '<widget name="whitelist_editor" init><div class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Global Whitelist</h1><ul id="menu_content"><li><textarea spellcheck="false" id="whitelist"></textarea></li><li class="inactive"><button onclick="save_whitelist">Save</button><button onclick="close_menu">Cancel</button></li></ul></div></widget>',
       'checkbox_item' : '<widget name="checkbox_item" id title label state callback init><li title="title"><input type="checkbox"/></li></widget>',
