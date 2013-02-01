@@ -276,9 +276,12 @@
 	    set_scoped_setting(scope, name, value);
     }
 
-    function global_setting(name)
+    function global_setting(name, default_value)
     {
-	return scoped_setting(3, name);
+	var v = scoped_setting(3, name);
+	if (default_value)
+	    return (v != '' ? v : default_value);
+	return v;
     }
 
     function set_global_setting(name, value)
@@ -289,8 +292,7 @@
     function global_bool_setting(name, default_value)
     {
 	var c = global_setting(name);
-	c = (c == '' ? default_value : c == 'y');
-	return c;
+	return (c != '' ? c == 'y' : default_value);
     }
 
     function set_global_bool_setting(name, val)

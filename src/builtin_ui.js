@@ -5,16 +5,35 @@ function(){   // fake line, keep_editor_happy
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
 
+    var default_autohide_main_button = false;
+    var default_menu_display_logic = 'auto';
+    
     // can be used to display stuff in jsarmor menu from outside scripts.
     var enable_plugin_api = false;
 
-    /********************************* Globals *********************************/
+    /********************************* UI Init *********************************/
 
-    var button_image = null;
+    var main_ui = null;
+    var autohide_main_button;
+    var menu_display_logic;		// auto   delay   click
+    var menu_display_timer = null;
+    
+    function create_main_ui()
+    {
+	autohide_main_button = global_bool_setting("autohide_main_button", default_autohide_main_button);
+	menu_display_logic = global_setting("menu_display_logic", default_menu_display_logic);	
+	main_ui = new_widget("main");
+	if (menu_display_logic == 'click')
+	    window.addEventListener('click', window_onclick, false);
+    }
 
-    /***************************** iframe handling **************************/
+    function parent_main_ui()
+    {
+	idoc.body.appendChild(main_ui);
+    }
+    
 
-    /****************************** UI primitives *****************************/
+    /****************************** widget handlers *****************************/
 
     function checkbox_item_init(li, id, title, label, state, callback)
     {
@@ -135,15 +154,27 @@ function(){   // fake line, keep_editor_happy
     function select_iframe_logic_init(widget)
     {
 	var iframe_logic_values = ['block_all', 'ask_parent', 'normal_page'];
-	var set_iframe_logic = function (n)
+	var f = function (n)
 	{
-	    iframe_logic = iframe_logic_values[n];
-	    set_global_setting('iframe', iframe_logic);
+	    set_global_setting('iframe', iframe_logic_values[n]);
 	    need_reload = true;
 	};
 
 	var index = iframe_logic_values.indexOf(iframe_logic);
-	setup_radio_buttons(widget, index, set_iframe_logic);
+	setup_radio_buttons(widget, index, f);
+    }
+
+    function select_menu_display_logic_init(widget)
+    {
+	var menu_display_logic_values = ['auto', 'delay', 'click'];
+	var f = function (n)
+	{
+	    set_global_setting('menu_display_logic', menu_display_logic_values[n]);
+	    need_reload = true;
+	};
+
+	var index = menu_display_logic_values.indexOf(menu_display_logic);
+	setup_radio_buttons(widget, index, f);
     }
 
     function toggle_show_ui_in_iframes(event)
@@ -153,6 +184,15 @@ function(){   // fake line, keep_editor_happy
 	// update ui
 	this.checkbox.checked = new_val;
 	need_reload = true;
+    }
+
+    function toggle_autohide_main_button(event)
+    {
+	var new_val = !global_bool_setting("autohide_main_button", default_autohide_main_button);
+	set_global_bool_setting("autohide_main_button", new_val);
+	// update ui
+	this.checkbox.checked = new_val;
+	need_repaint = true;
     }
 
     function go_to_help_page()
@@ -223,24 +263,41 @@ function(){   // fake line, keep_editor_happy
 
     var nsmenu = null;			// the current menu
     var need_reload = false;
+    var need_repaint = false;
 
-    function main_menu_onmouseout(e)
+    function really_leaving_menu(e)
     {
-	if (!mouseout_leaving_menu(e, nsmenu))
-	    return;
+	if (!mouseout_leaving_menu(e, nsmenu) ||
+	    menu_display_logic == 'click')
+	    return false;
 	show_hide_menu(false);
 	if (need_reload)
 	    reload_page();
+	return true;
+    }
+
+    // hide menu on clickout for menu_display_logic == 'click'
+    function window_onclick()
+    {
+	close_menu();
+	if (need_reload)
+	    reload_page();
+	if (need_repaint)
+	    repaint_ui_now();	
+    }
+    
+    function main_menu_onmouseout(e)
+    {
+	really_leaving_menu(e);
     }
 
     function menu_onmouseout(e)
     {
-	if (!mouseout_leaving_menu(e, nsmenu))
+	if (!really_leaving_menu(e))
 	    return;
-	show_hide_menu(false);
-	if (need_reload)
-	    reload_page();
-	switch_menu(null);
+	close_menu();
+	if (need_repaint)
+	    repaint_ui_now();
     }
 
     function mouseout_leaving_menu(e, menu)
@@ -280,15 +337,16 @@ function(){   // fake line, keep_editor_happy
       if (!nsmenu)
       {
 	  create_menu();
-	  parent_menu();
+	  nsmenu.style.display = 'none';
+	  parent_menu();	  
       }
-      var d = (show ? 'inline-block' : 'none');
+      var d = (show ? 'inline-block' : 'none');	
       if (toggle)
 	  d = (nsmenu.style.display == 'none' ? 'inline-block' : 'none');
-      nsmenu.style.display = d;
+      nsmenu.style.display = d;      
       resize_iframe();
     }
-    
+
     
     /****************************** Main menu *********************************/
     
@@ -490,7 +548,7 @@ function(){   // fake line, keep_editor_happy
 	};
     }
     
-    /***************************** Main table *********************************/
+    /***************************** Main ui *********************************/
 
     function main_button_tooltip()
     {
@@ -519,12 +577,25 @@ function(){   // fake line, keep_editor_happy
 	var tooltip = main_button_tooltip();
 	div.title = tooltip;
 	div.className += " " + mode;
+
+	if (autohide_main_button)
+	    div.className += " autohide";
+	
+	if (menu_display_logic == 'click')
+	    div.onclick = function() { (nsmenu ? close_menu() : show_hide_menu(true)); }
+	if (menu_display_logic == 'delay')
+	{
+	    div.onclick = div.onmouseover;
+	    div.onmouseover = function()
+	    {  menu_display_timer = setTimeout(main_button_onmouseover, 400); }  // canceled in onmouseout 
+	}	
     }
     
     function main_button_onmouseover()
     {
 	// console.log("button mouseover");
-	show_hide_menu(true);    // menu can disappear if we switch these two, strange
+	if (menu_display_logic != 'click')
+	    show_hide_menu(true);    // menu can disappear if we switch these two, strange
 	check_changed_settings();
     }
     
@@ -539,21 +610,15 @@ function(){   // fake line, keep_editor_happy
     
     function main_button_onmouseout()
     {
+	if (menu_display_timer)
+	{
+	    clearTimeout(menu_display_timer);	    
+	    menu_display_timer = null;
+	}
 	if (need_reload)
 	    reload_page();
     }
     
-    var main_ui = null;
-    function create_main_ui()
-    {
-	main_ui = new_widget("main");
-    }
-
-    function parent_main_ui()
-    {
-	idoc.body.appendChild(main_ui);
-    }
-
     /***************************** Repaint logic ******************************/
 
     var repaint_ui_count = 0;

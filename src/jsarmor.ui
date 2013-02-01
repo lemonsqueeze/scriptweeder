@@ -90,6 +90,12 @@
 		     title=""
 		     state="`show_ui_in_iframes"
 		     callback="`toggle_show_ui_in_iframes"/></checkbox_item>
+      <checkbox_item label="Auto-hide main button"
+		     title=""
+		     state="`autohide_main_button"
+		     callback="`toggle_autohide_main_button"/></checkbox_item>
+      <select_menu_display_logic></select_menu_display_logic>
+
       <menu_item label="Edit whitelist…" onclick="edit_whitelist"/>
       <menu_item label="Reload method" onclick="null"/>
 
@@ -109,10 +115,18 @@
 </widget>
 
 <widget name="select_iframe_logic" init>
-  <li id="iframe_logic">iframe logic
-    <radio_button label="Block all"/>
-    <radio_button label="Ask parent"/>
-    <radio_button label="Normal page"/>
+  <li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filtered: block if host not allowed in the menu. Normal Page: current mode applies.">Javascript in iframes:
+    <radio_button label="Block All"/>
+    <radio_button label="Filtered"/>
+    <radio_button label="Normal Page"/>
+  </li>
+</widget>
+
+<widget name="select_menu_display_logic" init>
+  <li id="menu_display"  class="inactive">Menu popup: 
+    <radio_button label="Auto"/>
+    <radio_button label="Delay"/>
+    <radio_button label="Click"/>
   </li>
 </widget>
 
@@ -144,7 +158,7 @@
 <!--         [ low level stuff ]         -->
 
 <widget name="checkbox_item" id title label state callback init>
-  <li title="title">
+  <li>
     <input type="checkbox"/>
   </li>
 </widget>

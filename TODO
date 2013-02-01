@@ -15,8 +15,6 @@ new features:
   - option to start with blank settings.
 
   - button ui options:
-    menu toggle
-    autohide button
     always hide and use opera button to show ?
     no need to display it at all then ...
 
@@ -31,12 +29,17 @@ new features:
 
 wip:
 
-  - iframe handling
-    use load event instead of harvesting DOM ?
+  - finish options menu !
 
-  - can't even get iframe.src for cross domain stuff ??
+  - transparent button !
+
+  - ui bugs:
+    - autohide button + menu onclick -> button shouldn't disappear when menu is shown ...
+    - page scripts can interfere ?? ex: delay on myopera doesn't work...
+
   - do we want placeholder icon for blocked iframes ?
-  - channel stuff to block/allow from iframes ? (iframes in iframes ...)
+  - iframe recursion ? ie channel stuff from buried iframes to block/allow from iframes ?
+  - normal frames ?!
 
   - custom styles: load / save
     do *not* save it in export settings !
@@ -49,7 +52,6 @@ wip:
   - what ui to access options menu ?
     notebook ?  (inside a menu it's strange...)
     popup ?
-
   - tabs to organize options ?
 
   - set_global_setting('version', version) on startup, 
@@ -71,6 +73,8 @@ mainstream show stoppers:
   - extension !
 
 Urgent:
+
+  - block event handlers ! (onload onclick ...)
 
   - Fix "event received before..." popup msg on install !
 
@@ -129,7 +133,6 @@ Urgent:
       (can be scripts in them we don't know anything about but ...)
 
   - when using 'block all' mode and 'block inline scripts', block these as well ?
-      - event handlers
       - javascript url
     cf http://www.howtocreate.co.uk/operaStuff/userjs/disablescript.js    
 

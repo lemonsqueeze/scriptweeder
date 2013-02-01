@@ -276,9 +276,12 @@
 	    set_scoped_setting(scope, name, value);
     }
 
-    function global_setting(name)
+    function global_setting(name, default_value)
     {
-	return scoped_setting(3, name);
+	var v = scoped_setting(3, name);
+	if (default_value)
+	    return (v != '' ? v : default_value);
+	return v;
     }
 
     function set_global_setting(name, value)
@@ -289,8 +292,7 @@
     function global_bool_setting(name, default_value)
     {
 	var c = global_setting(name);
-	c = (c == '' ? default_value : c == 'y');
-	return c;
+	return (c != '' ? c == 'y' : default_value);
     }
 
     function set_global_bool_setting(name, val)
@@ -1507,8 +1509,7 @@
 	    return idoc.getElementById(id);
 
 	// unparented, do it by hand ...
-	if (!parent)
-	    my_alert("parent is null !!");
+	assert(parent, "get_by_id(): parent is null !!");
 	if (parent.id == id)
 	    return parent;
 	l = parent.getElementsByTagName("*");
@@ -1523,6 +1524,7 @@
     // for parented nodes idoc.querySelector('css selector') is very nice !
     function find_element(parent, class_name)
     {
+	assert(class_name, "find_element(): null class_name !");
 	if (parent == null)
 	    parent = idoc.body;
 	return _find_element(parent, class_name, false, "find_element");
@@ -1538,16 +1540,8 @@
 	var l = getElementsByClassName(parent, class_name);
 	if (l.length == 1)
 	    return l[0];
-	if (!l.length)
-	{
-	    my_alert(fname +"(" + class_name + "):\n couldn't find element by that name !");
-	    return null;
-	}
-	if (unique)	// should be unique ?
-	{
-	    my_alert(fname +"(" + class_name + "): multiple matches !");
-	    return null;
-	}
+	assert(l.length, fname +"(" + class_name + "):\n couldn't find element by that name !");
+	assert(!unique, fname +"(" + class_name + "): multiple matches !");
 	return l[0];	// return first match.
     }
 
@@ -1748,16 +1742,35 @@
     var cornerposition = 4;
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
 
+    var default_autohide_main_button = false;
+    var default_menu_display_logic = 'auto';
+    
     // can be used to display stuff in jsarmor menu from outside scripts.
     var enable_plugin_api = false;
 
-    /********************************* Globals *********************************/
+    /********************************* UI Init *********************************/
 
-    var button_image = null;
+    var main_ui = null;
+    var autohide_main_button;
+    var menu_display_logic;		// auto   delay   click
+    var menu_display_timer = null;
+    
+    function create_main_ui()
+    {
+	autohide_main_button = global_bool_setting("autohide_main_button", default_autohide_main_button);
+	menu_display_logic = global_setting("menu_display_logic", default_menu_display_logic);	
+	main_ui = new_widget("main");
+	if (menu_display_logic == 'click')
+	    window.addEventListener('click', window_onclick, false);
+    }
 
-    /***************************** iframe handling **************************/
+    function parent_main_ui()
+    {
+	idoc.body.appendChild(main_ui);
+    }
+    
 
-    /****************************** UI primitives *****************************/
+    /****************************** widget handlers *****************************/
 
     function checkbox_item_init(li, id, title, label, state, callback)
     {
@@ -1878,15 +1891,27 @@
     function select_iframe_logic_init(widget)
     {
 	var iframe_logic_values = ['block_all', 'ask_parent', 'normal_page'];
-	var set_iframe_logic = function (n)
+	var f = function (n)
 	{
-	    iframe_logic = iframe_logic_values[n];
-	    set_global_setting('iframe', iframe_logic);
+	    set_global_setting('iframe', iframe_logic_values[n]);
 	    need_reload = true;
 	};
 
 	var index = iframe_logic_values.indexOf(iframe_logic);
-	setup_radio_buttons(widget, index, set_iframe_logic);
+	setup_radio_buttons(widget, index, f);
+    }
+
+    function select_menu_display_logic_init(widget)
+    {
+	var menu_display_logic_values = ['auto', 'delay', 'click'];
+	var f = function (n)
+	{
+	    set_global_setting('menu_display_logic', menu_display_logic_values[n]);
+	    need_reload = true;
+	};
+
+	var index = menu_display_logic_values.indexOf(menu_display_logic);
+	setup_radio_buttons(widget, index, f);
     }
 
     function toggle_show_ui_in_iframes(event)
@@ -1896,6 +1921,15 @@
 	// update ui
 	this.checkbox.checked = new_val;
 	need_reload = true;
+    }
+
+    function toggle_autohide_main_button(event)
+    {
+	var new_val = !global_bool_setting("autohide_main_button", default_autohide_main_button);
+	set_global_bool_setting("autohide_main_button", new_val);
+	// update ui
+	this.checkbox.checked = new_val;
+	need_repaint = true;
     }
 
     function go_to_help_page()
@@ -1966,24 +2000,41 @@
 
     var nsmenu = null;			// the current menu
     var need_reload = false;
+    var need_repaint = false;
 
-    function main_menu_onmouseout(e)
+    function really_leaving_menu(e)
     {
-	if (!mouseout_leaving_menu(e, nsmenu))
-	    return;
+	if (!mouseout_leaving_menu(e, nsmenu) ||
+	    menu_display_logic == 'click')
+	    return false;
 	show_hide_menu(false);
 	if (need_reload)
 	    reload_page();
+	return true;
+    }
+
+    // hide menu on clickout for menu_display_logic == 'click'
+    function window_onclick()
+    {
+	close_menu();
+	if (need_reload)
+	    reload_page();
+	if (need_repaint)
+	    repaint_ui_now();	
+    }
+    
+    function main_menu_onmouseout(e)
+    {
+	really_leaving_menu(e);
     }
 
     function menu_onmouseout(e)
     {
-	if (!mouseout_leaving_menu(e, nsmenu))
+	if (!really_leaving_menu(e))
 	    return;
-	show_hide_menu(false);
-	if (need_reload)
-	    reload_page();
-	switch_menu(null);
+	close_menu();
+	if (need_repaint)
+	    repaint_ui_now();
     }
 
     function mouseout_leaving_menu(e, menu)
@@ -2023,15 +2074,16 @@
       if (!nsmenu)
       {
 	  create_menu();
-	  parent_menu();
+	  nsmenu.style.display = 'none';
+	  parent_menu();	  
       }
-      var d = (show ? 'inline-block' : 'none');
+      var d = (show ? 'inline-block' : 'none');	
       if (toggle)
 	  d = (nsmenu.style.display == 'none' ? 'inline-block' : 'none');
-      nsmenu.style.display = d;
+      nsmenu.style.display = d;      
       resize_iframe();
     }
-    
+
     
     /****************************** Main menu *********************************/
     
@@ -2233,7 +2285,7 @@
 	};
     }
     
-    /***************************** Main table *********************************/
+    /***************************** Main ui *********************************/
 
     function main_button_tooltip()
     {
@@ -2262,12 +2314,25 @@
 	var tooltip = main_button_tooltip();
 	div.title = tooltip;
 	div.className += " " + mode;
+
+	if (autohide_main_button)
+	    div.className += " autohide";
+	
+	if (menu_display_logic == 'click')
+	    div.onclick = function() { (nsmenu ? close_menu() : show_hide_menu(true)); }
+	if (menu_display_logic == 'delay')
+	{
+	    div.onclick = div.onmouseover;
+	    div.onmouseover = function()
+	    {  menu_display_timer = setTimeout(main_button_onmouseover, 400); }  // canceled in onmouseout 
+	}	
     }
     
     function main_button_onmouseover()
     {
 	// console.log("button mouseover");
-	show_hide_menu(true);    // menu can disappear if we switch these two, strange
+	if (menu_display_logic != 'click')
+	    show_hide_menu(true);    // menu can disappear if we switch these two, strange
 	check_changed_settings();
     }
     
@@ -2282,21 +2347,15 @@
     
     function main_button_onmouseout()
     {
+	if (menu_display_timer)
+	{
+	    clearTimeout(menu_display_timer);	    
+	    menu_display_timer = null;
+	}
 	if (need_reload)
 	    reload_page();
     }
     
-    var main_ui = null;
-    function create_main_ui()
-    {
-	main_ui = new_widget("main");
-    }
-
-    function parent_main_ui()
-    {
-	idoc.body.appendChild(main_ui);
-    }
-
     /***************************** Repaint logic ******************************/
 
     var repaint_ui_count = 0;
@@ -2340,6 +2399,10 @@ body			{ margin:0px; }  \n\
 /* main button */  \n\
 #main_button		{ direction:rtl; border-width: 2px; margin: 0; float: none; }   \n\
 #main_button img	{ width:18px; height:18px; } /* only works with img background: not content: */  \n\
+  \n\
+.autohide		{ visibility:hidden; }  \n\
+:hover .autohide	{ visibility:visible }  \n\
+  \n\
   \n\
 /*************************************************************************************************************/  \n\
   \n\
@@ -2394,7 +2457,6 @@ img	{ width:1px; height:1px; vertical-align:middle; background-size:contain; }  
 .allowed_globally:hover img	{ visibility:visible; }   \n\
 .allowed_globally.visible img	{ visibility:visible; }  \n\
   \n\
-  \n\
 .menu {  \n\
 	padding: 1px 1px; text-align:left;  \n\
 	box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);  \n\
@@ -2434,7 +2496,7 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
   \n\
 #options_menu		{ min-width:250px; }  \n\
   \n\
-.separator	{ height: 1px; display: block; background-color: #555555; margin-left: auto; margin-right: auto; }  \n\
+.separator	{ height: 1px; display: block; background-color: #bbb; margin-left: auto; margin-right: auto; }  \n\
   \n\
 /* import file (make form and button look like a menuitem) */  \n\
 #import_form	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }  \n\
@@ -2451,10 +2513,11 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
       'host_table_row' : '<widget name="host_table_row"><table><tr  onclick><td width="1%"></td><td width="1%"><img/></td><td width="1%"><input type="checkbox" checked="true"></td><td width="1%" class="host_part">code.</td><td class="domain_part">jquery.com</td><td width="1%"><img/></td><td width="1%" class="allowed_globally"><img/></td><td width="1%" class="script_count">[1]</td></tr></table></widget>',
       'details_menu' : '<widget name="details_menu" init><div id="details_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Scripts</h1><ul id="menu_content"><li id="last_item" onclick="options_menu">Options…</li></ul></div></widget>',
       'script_detail' : '<widget name="script_detail" host script init><li><img/><a></a></li></widget>',
-      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><ul id="menu_content"><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes" 		     title="" 		     state="`show_ui_in_iframes" 		     callback="`toggle_show_ui_in_iframes"/></checkbox_item><li id="$id" onclick="edit_whitelist">Edit whitelist…</li><li id="$id" onclick="null">Reload method</li><li class="separator"></li><li id="$id" onclick="null">Load custom style…</li><li id="$id" onclick="null">Save current style…</li><li class="separator"></li><li id="$id" onclick="export_settings">Export Settings…</li><li><form id="import_form"><input type=file id=import_btn autocomplete=off onchange="load_file" >Import Settings...</form></li><li id="$id" onclick="reset_settings">Clear All Settings…</li><li class="separator"></li><li id="$id" onclick="go_to_help_page">Help</li><li id="$id" onclick="null">About</li></ul></div></widget>',
-      'select_iframe_logic' : '<widget name="select_iframe_logic" init><li id="iframe_logic">iframe logic<input type="radio" name="radio"/><label>Block all</label><input type="radio" name="radio"/><label>Ask parent</label><input type="radio" name="radio"/><label>Normal page</label></li></widget>',
+      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><ul id="menu_content"><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes" 		     title="" 		     state="`show_ui_in_iframes" 		     callback="`toggle_show_ui_in_iframes"/></checkbox_item><checkbox_item label="Auto-hide main button" 		     title="" 		     state="`autohide_main_button" 		     callback="`toggle_autohide_main_button"/></checkbox_item><select_menu_display_logic></select_menu_display_logic><li id="$id" onclick="edit_whitelist">Edit whitelist…</li><li id="$id" onclick="null">Reload method</li><li class="separator"></li><li id="$id" onclick="null">Load custom style…</li><li id="$id" onclick="null">Save current style…</li><li class="separator"></li><li id="$id" onclick="export_settings">Export Settings…</li><li><form id="import_form"><input type=file id=import_btn autocomplete=off onchange="load_file" >Import Settings...</form></li><li id="$id" onclick="reset_settings">Clear All Settings…</li><li class="separator"></li><li id="$id" onclick="go_to_help_page">Help</li><li id="$id" onclick="null">About</li></ul></div></widget>',
+      'select_iframe_logic' : '<widget name="select_iframe_logic" init><li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filtered: block if host not allowed in the menu. Normal Page: current mode applies.">Javascript in iframes:<input type="radio" name="radio"/><label>Block All</label><input type="radio" name="radio"/><label>Filtered</label><input type="radio" name="radio"/><label>Normal Page</label></li></widget>',
+      'select_menu_display_logic' : '<widget name="select_menu_display_logic" init><li id="menu_display"  class="inactive">Menu popup:<input type="radio" name="radio"/><label>Auto</label><input type="radio" name="radio"/><label>Delay</label><input type="radio" name="radio"/><label>Click</label></li></widget>',
       'whitelist_editor' : '<widget name="whitelist_editor" init><div class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Global Whitelist</h1><ul id="menu_content"><li><textarea spellcheck="false" id="whitelist"></textarea></li><li class="inactive"><button onclick="save_whitelist">Save</button><button onclick="close_menu">Cancel</button></li></ul></div></widget>',
-      'checkbox_item' : '<widget name="checkbox_item" id title label state callback init><li title="title"><input type="checkbox"/></li></widget>',
+      'checkbox_item' : '<widget name="checkbox_item" id title label state callback init><li><input type="checkbox"/></li></widget>',
       'scope_widget' : '<widget name="scope_widget" init><li id="scope" class="inactive">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li></widget>',
       'block_all_settings' : '<widget name="block_all_settings" init><block_inline_scripts></block_inline_scripts><checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags" 		 title="Interpret noscript tags as if javascript was disabled in opera." 		 state="`handle_noscript_tags" 		 callback="`toggle_handle_noscript_tags"/></checkbox_item></widget>',
       'block_inline_scripts' : '<widget name="block_inline_scripts" ><li id="block_inline_scripts"><input type="checkbox"/>Block Inline Scripts<div class="right_item">[-2k]</div></li></widget>'

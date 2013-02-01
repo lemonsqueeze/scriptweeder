@@ -8,6 +8,10 @@ body			{ margin:0px; }
 #main_button		{ direction:rtl; border-width: 2px; margin: 0; float: none; } 
 #main_button img	{ width:18px; height:18px; } /* only works with img background: not content: */
 
+.autohide		{ visibility:hidden; }
+:hover .autohide	{ visibility:visible }
+
+
 /*************************************************************************************************************/
 
 /* host table */
@@ -61,7 +65,6 @@ img	{ width:1px; height:1px; vertical-align:middle; background-size:contain; }
 .allowed_globally:hover img	{ visibility:visible; } 
 .allowed_globally.visible img	{ visibility:visible; }
 
-
 .menu {
 	padding: 1px 1px; text-align:left;
 	box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);
@@ -101,7 +104,7 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;
 
 #options_menu		{ min-width:250px; }
 
-.separator	{ height: 1px; display: block; background-color: #555555; margin-left: auto; margin-right: auto; }
+.separator	{ height: 1px; display: block; background-color: #bbb; margin-left: auto; margin-right: auto; }
 
 /* import file (make form and button look like a menuitem) */
 #import_form	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }

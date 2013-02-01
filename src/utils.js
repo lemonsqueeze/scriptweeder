@@ -16,8 +16,7 @@ function(){   // fake line, keep_editor_happy
 	    return idoc.getElementById(id);
 
 	// unparented, do it by hand ...
-	if (!parent)
-	    my_alert("parent is null !!");
+	assert(parent, "get_by_id(): parent is null !!");
 	if (parent.id == id)
 	    return parent;
 	l = parent.getElementsByTagName("*");
@@ -32,6 +31,7 @@ function(){   // fake line, keep_editor_happy
     // for parented nodes idoc.querySelector('css selector') is very nice !
     function find_element(parent, class_name)
     {
+	assert(class_name, "find_element(): null class_name !");
 	if (parent == null)
 	    parent = idoc.body;
 	return _find_element(parent, class_name, false, "find_element");
@@ -47,16 +47,8 @@ function(){   // fake line, keep_editor_happy
 	var l = getElementsByClassName(parent, class_name);
 	if (l.length == 1)
 	    return l[0];
-	if (!l.length)
-	{
-	    my_alert(fname +"(" + class_name + "):\n couldn't find element by that name !");
-	    return null;
-	}
-	if (unique)	// should be unique ?
-	{
-	    my_alert(fname +"(" + class_name + "): multiple matches !");
-	    return null;
-	}
+	assert(l.length, fname +"(" + class_name + "):\n couldn't find element by that name !");
+	assert(!unique, fname +"(" + class_name + "): multiple matches !");
 	return l[0];	// return first match.
     }
 
