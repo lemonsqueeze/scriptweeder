@@ -50,8 +50,8 @@
     // as if javascript was disabled in opera
     var default_handle_noscript_tags = true;
 
-    // 0: block all   1: ask parent   2: normal page
-    var default_iframe_logic = 1;
+    // 'block_all'   'ask_parent'   'normal_page'
+    var default_iframe_logic = 'ask_parent';
 
     
     /********************************* Globals *********************************/
@@ -63,7 +63,6 @@
     var handle_noscript_tags = false;
 
     var iframe_logic;
-    var parent_host;
     var there_is_work_todo = false;    
             
     /************************** Deferred events handling  *****************************/    
@@ -150,9 +149,9 @@
 
     function core_init()
     {
+	init_handlers();
 	check_script_storage();
 	load_global_settings();
-	init_handlers();
     }
 	
     function load_global_settings()
@@ -564,57 +563,82 @@
     
     /***************************** filtering js in iframes **************************/
 
-    var show_ui_in_iframes;
+    var show_ui_in_iframes;    
+    var iframe_message_header;
     
     function init_iframe_logic()
     {
 	show_ui_in_iframes = global_bool_setting("iframe_ui", default_iframe_ui);
+	iframe_message_header = "jsarmor lost iframe rescue channel:";    
 	
 	iframe_logic = global_setting('iframe');
-	if (iframe_logic == '')
-	    iframe_logic = default_iframe_logic; 
+	if (iframe_logic != 'block_all' && iframe_logic != 'ask_parent' && iframe_logic != 'normal_page')
+	    iframe_logic = default_iframe_logic;
+
+	// handles messages from both parent and iframes.
+	if (iframe_logic == 'ask_parent')
+	    window.addEventListener('message',	message_handler,	false);	    
 	
-	if (window == window.top) // not running in iframe
+	if (window == window.top) // not running in iframe ?
 	    return;
 	
 	// switch mode depending on iframe_logic
 	// TODO: add way to override with page setting *only*, which should be safe enough
 	
-	if (iframe_logic != 1)
+	if (iframe_logic != 'ask_parent')
 	{
-	    if (iframe_logic == 0)  // block all	    
+	    if (iframe_logic == 'block_all')
 		set_mode_no_update('block_all');
-	    // (iframe_logic == 2) treat as normal page. nothing to do. easy.
+	    // 'normal_page' -> treat as normal page, nothing to do.
 	    return;
 	}
 	
-	// (iframe_logic == 1)  ask parent
-	// use parent's settings to know if we're allowed to run.
+	// 'ask_parent' logic: use parent's settings to decide if we're allowed to run.
 	// for that we need our parent's hostname, but because of cross-domain restrictions
-	// we can't find out on our own. So wait for our parent to tell us its hostname.
-	async_init_request = true; 
-	return;	   
+	// we can't find out on our own. Ask for help ...
+	async_init_request = true;
+	window.parent.postMessage(iframe_message_header + location.href, '*');  // who is my parent ? this is my url.
+	return;
     }
 
     function message_handler(e)
     {
-	var m = e.data;	
-	// console.log("little iframe from " + current_host + " says:\n" +
-	//             "oh, someone sent me a message:\n" + m);
-	if (!is_prefix(iframe_message_header, m))
-	    return;		// i only listen to my parent.
+	var m = e.data;
+	if (typeof(m) != "string" ||
+	    !is_prefix(iframe_message_header, m))
+	    return;		// i only care about my children/parent.
 	e.preventDefault();	// keep this conversation private.
 
-	parent_host = m.slice(m.indexOf(':') + 1);
-	// alert("parent_host: " + parent_host);
+	var content = m.slice(m.indexOf(':') + 1);
+	var source = e.source;	// WindowProxy of sender
+	// e.origin contains 'http://hostname' of the sender
+	if (source === parent.window)
+	    message_from_parent(e, content);
+	else
+	    message_from_iframe(e, content);
+    }
+    
+    function message_from_iframe(e, url)
+    {
+	// alert("message from iframe: host=" + url_hostname(url));	
+	e.source.postMessage(iframe_message_header + current_host, '*'); // little iframe, this is your parent.
+	add_iframe(url);						 // add to menu so we can block/allow it.
+	if (main_ui) // UIFIXME
+	    repaint_ui();	
+    }
+    
+    function message_from_parent(e, parent_host)
+    {
+	//alert("message from parent: host=" + host);
 	
 	// now that we know parent window's hostname we can decide what to do.
 	// does our parent allow us ?
 	load_global_context(parent_host);
-	var allowed = allowed_host(location.hostname);		
+	var allowed = allowed_host(location.hostname);
 	clear_domain_nodes();	// wipe out hosts nodes this will have created
 	load_global_context(location.hostname);
 	
+	// alert("iframe " + location.hostname + " allowed: " + allowed);
 	if (!allowed)
 	{
 	    // can't set_mode_no_update('block_all'), it would save the setting.
@@ -624,25 +648,7 @@
 	}
 	// else: allowed. treat it as a normal page: current mode applies.
 	
-	async_init_finished(); // happy now
-    }
-    
-    var iframe_message_header = "little iframe, this is your parent:";
-
-    function iframe_loaded_handler(e)
-    {
-	var iframe = e.event.target;
-	assert(iframe && iframe.tagName && element_tag_is(iframe, 'iframe'),
-	       "iframe_loaded_handler() called on non iframe, this is extremely strange");
-	if (iframe.src == "")
-	    return;
-	
-	// iframe instance needs our host to decide what to do, send message.
-	if (iframe_logic == 1) // ask_parent
-	{
-	    iframe.contentWindow.postMessage(iframe_message_header + current_host, '*');
-	    add_iframe(iframe.src);  // display in menu so we can block/allow it.
-	}
+	async_init_finished(); // happy now =)
     }
 
     function add_iframe(url)
@@ -659,11 +665,11 @@
 
     function need_iframe_parent_handling()
     {
-	return (iframe_logic == 1 &&
+	return (iframe_logic == 'ask_parent' &&
 		document.querySelector('iframe'));
     }
     
-    // TODO iframe placeholder ?
+    // TODO show iframe placeholder ?
     
     
     /***************************** Domain, url utils **************************/    
@@ -1122,11 +1128,7 @@
 	opera.addEventListener('BeforeEvent.load',               deferred(beforeload_handler, true),		false);
 	document.addEventListener('DOMContentLoaded',            deferred(domcontentloaded_handler, true),	false);
 
-	// iframe handling
-	if (iframe_logic == 1) // ask_parent
-	    opera.addEventListener('BeforeEvent.DOMFrameContentLoaded', iframe_loaded_handler,	false);
-	if (window != window.top) // running in iframe
-	    window.addEventListener('message',			message_handler,				false);
+	// message handler setup is in init_iframe_logic()
     }
     
     

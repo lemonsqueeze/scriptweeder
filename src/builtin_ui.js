@@ -134,14 +134,16 @@ function(){   // fake line, keep_editor_happy
     
     function select_iframe_logic_init(widget)
     {
+	var iframe_logic_values = ['block_all', 'ask_parent', 'normal_page'];
 	var set_iframe_logic = function (n)
 	{
-	    iframe_logic = n;
+	    iframe_logic = iframe_logic_values[n];
 	    set_global_setting('iframe', iframe_logic);
 	    need_reload = true;
 	};
-	
-	setup_radio_buttons(widget, iframe_logic, set_iframe_logic);
+
+	var index = iframe_logic_values.indexOf(iframe_logic);
+	setup_radio_buttons(widget, index, set_iframe_logic);
     }
 
     function toggle_show_ui_in_iframes(event)

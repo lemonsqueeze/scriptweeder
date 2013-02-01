@@ -86,7 +86,7 @@
     <menu_title title="Options"/>
     <ul id="menu_content">
       <select_iframe_logic></select_iframe_logic>
-      <checkbox_item label="Show jsarmor ui in iframes" id="show_ui_in_iframes"
+      <checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"
 		     title=""
 		     state="`show_ui_in_iframes"
 		     callback="`toggle_show_ui_in_iframes"/></checkbox_item>

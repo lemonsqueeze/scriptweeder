@@ -17,7 +17,7 @@ function(){   // fake line, keep_editor_happy
 
 	// unparented, do it by hand ...
 	if (!parent)
-	    alert("parent is null !!");
+	    my_alert("parent is null !!");
 	if (parent.id == id)
 	    return parent;
 	l = parent.getElementsByTagName("*");
@@ -212,6 +212,14 @@ function(){   // fake line, keep_editor_happy
     function function_exists(name)
     {
 	return eval("typeof " + name) == "function";
+    }
+
+    function log(msg)
+    {
+	var h = "jsarmor (main)  : ";
+	if (window != window.top)
+	    h = "jsarmor (iframe): ";
+	console.log(h + msg);
     }
     
     function my_alert(msg)
