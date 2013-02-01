@@ -48,18 +48,20 @@
 </widget>
 
 <widget name="host_table_row">
-  <tr  onclick>
-    <td width="1%"></td>
-    <td width="1%"><img></img></td>			<!-- not loaded -->
-    <td width="1%">
-      <input type="checkbox" checked="true">
-    </td>
-    <td width="1%" class="host_part">code.</td>
-    <td class="domain_part">jquery.com</td>
-    <td width="1%"><img></img></td>			<!-- iframe -->
-    <td width="1%" class="allowed_globally"><img></img></td>
-    <td width="1%" class="script_count">[1]</td>
-  </tr>
+  <table>      <!-- hack, opera 12 doesn't like to see tr without table -->
+    <tr  onclick>
+      <td width="1%"></td>
+      <td width="1%"><img/></td>			<!-- not loaded -->
+      <td width="1%">
+	<input type="checkbox" checked="true">
+      </td>
+      <td width="1%" class="host_part">code.</td>
+      <td class="domain_part">jquery.com</td>
+      <td width="1%"><img/></td>			<!-- iframe -->
+      <td width="1%" class="allowed_globally"><img/></td>
+      <td width="1%" class="script_count">[1]</td>
+    </tr>
+  </table>
 </widget>
 
 
@@ -74,7 +76,7 @@
 </widget>
 
 <widget name="script_detail" host script init>
-    <li><img><a></a></li>
+    <li><img/><a></a></li>
 </widget>
 
 

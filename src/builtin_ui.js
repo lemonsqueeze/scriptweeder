@@ -432,6 +432,7 @@ function(){   // fake line, keep_editor_happy
 	    var iframes = iframe_tooltip(hn);
 
 	    tr = new_widget("host_table_row");
+	    tr = tr.firstChild.firstChild; // skip dummy <table> and <tbody> tags
 	    tr.host = h;
 	    t.appendChild(tr);	    
 	    
