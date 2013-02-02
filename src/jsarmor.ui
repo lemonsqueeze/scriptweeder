@@ -100,12 +100,15 @@
       <select_reload_method></select_reload_method>
 
       <separator/>
-      <menu_item label="Load custom style…" onclick="null"/>
-      <menu_item label="Save current style…" onclick="null"/>
+      <load_custom_style/>
+      <menu_item label="Save current style…" onclick="save_current_style"/>
+      <menu_item label="Clear saved style" onclick="clear_saved_style"/>
+      <menu_item label="Rescue Mode" onclick="rescue_mode"/>
 
       <separator/>
-      <menu_item label="Save Settings…" onclick="export_settings"/>
       <import_settings/>
+      <menu_item label="Save Settings…" onclick="export_settings"/>
+      <menu_item label="View Settings…" onclick="view_settings"/>
       <menu_item label="Clear All Settings…" onclick="reset_settings"/>
       <separator/>
       <menu_item label="Help" onclick="go_to_help_page"/>
@@ -131,19 +134,22 @@
 </widget>
 
 <widget name="select_reload_method" init>
-  <li id="reload_method" class="inactive" title="Cache: reload from cache (fastest). Normal: slow but sure.">Reload method:
+  <li id="reload_method" class="inactive" title="Cache: reload from cache (fastest but…). Normal: slow but sure.">Reload method:
     <radio_button label="Cache"/>
     <radio_button label="Normal"/>
   </li>
 </widget>
 
 <def import_settings>
-  <li>
-    <form id="import_settings">
-      <input type=file id=import_btn autocomplete=off oninit="import_settings_init" >
-	Load Settings...
-    </form>
-  </li>
+  <li><form id="import_settings">
+      <input type="file" autocomplete="off" oninit="import_settings_init" >Load Settings…
+  </form></li>
+</def>
+
+<def load_custom_style>
+  <li><form id="load_custom_style">
+      <input type="file" autocomplete="off" oninit="load_custom_style_init" >Load custom style…
+  </form></li>
 </def>
 
 

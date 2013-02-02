@@ -180,7 +180,7 @@ function(){   // fake line, keep_editor_happy
     {
 	if (window != window.top)		// in iframe, no choice there.
 	    window.top.location.reload();
-
+	
 	// All of these reload from server ...
 	//   location.reload(false);
 	//   history.go(0);
@@ -703,8 +703,9 @@ function(){   // fake line, keep_editor_happy
 //UIFIXME    
     function domcontentloaded_handler(e, deferred_call)
     {
-        if (!there_is_work_todo &&		// no scripts ?
-	    !document.querySelector('iframe'))	// no iframes ?
+        if (!there_is_work_todo &&			// no scripts ?
+	    !document.querySelector('iframe') &&	// no iframes ?
+	    location.hash != '#jsarmor')		// rescue mode
             return;				// don't show ui.
 
 	if (block_inline_scripts)

@@ -316,6 +316,27 @@ function(){   // fake line, keep_editor_happy
 	throw("error: " + msg);
     }
 
+    function file_loader(callback)
+    {
+	return function(e) {
+	var files = e.target.files; // FileList object
+	var f = files[0];
+	var reader = new FileReader();
+	
+	reader.onload = function(e) { callback(e.target.result); };	
+	reader.readAsBinaryString(f);
+	//reader.readAsText(f);
+	}
+    }
+
+    function save_file(s, binary)
+    {
+	var url = "data:text/plain;base64,";
+	if (binary)
+	    url = "data:application/binary;base64,";
+	location.href = url + btoa(s);
+    }
+    
     // or use Object.keys(obj) if browser supports it.
     function get_keys(obj)
     {

@@ -199,7 +199,7 @@
     {
 	if (window != window.top)		// in iframe, no choice there.
 	    window.top.location.reload();
-
+	
 	// All of these reload from server ...
 	//   location.reload(false);
 	//   history.go(0);
@@ -722,8 +722,9 @@
 //UIFIXME    
     function domcontentloaded_handler(e, deferred_call)
     {
-        if (!there_is_work_todo &&		// no scripts ?
-	    !document.querySelector('iframe'))	// no iframes ?
+        if (!there_is_work_todo &&			// no scripts ?
+	    !document.querySelector('iframe') &&	// no iframes ?
+	    location.hash != '#jsarmor')		// rescue mode
             return;				// don't show ui.
 
 	if (block_inline_scripts)
@@ -975,11 +976,14 @@
 		    host_settings[host] = settings;
 		}		
 	    }
-	    settings[key] = scriptStorage.getItem(k);
+	    
+	    var val = scriptStorage.getItem(k);
+	    if (val.indexOf('\n') == -1)	// i refuse to save any setting with newlines in it.
+		settings[key] = val;
 	}
     }
     
-    function export_settings()
+    function export_settings(e, as_text)
     {
 	var glob = {};
 	var host_settings = {};
@@ -1000,8 +1004,7 @@
 		s += settings;
 	}
 
-	var url = "data:text/plain;base64," + btoa(s);
-	location.href = url;
+	save_file(s, !as_text);
     }
 
     // make sure file looks like a valid settings file
@@ -1042,32 +1045,21 @@
 	    }
 	    scriptStorage.setItem(name, val);
 	}
-    }
-    
-    function load_file(e)
+    }    
+	
+    function parse_settings_file(s)
     {
-	var files = e.target.files; // FileList object
-	var f = files[0];
-	var reader = new FileReader();
-	
-	reader.onload = function(e)
+	var a = s.split('\n');
+	if (!import_check_file(a))
 	{
-	    var s  = e.target.result;
-	    var a = s.split('\n');
-	    if (!import_check_file(a))
-	    {
-		my_alert("This file doesn't look like a valid settings file.");
-		return;
-	    }	    
-	    scriptStorage.clear();	// clear current settings.
-	    import_settings(a);
-	    my_alert("Loaded !");
-	};
-	
-	reader.readAsBinaryString(f);
-	//reader.readAsText(f);
+	    my_alert("This file doesn't look like a valid settings file.");
+	    return;
+	}	    
+	scriptStorage.clear();	// clear current settings.
+	import_settings(a);
+	alert("Loaded !");
     }
-
+	
     function reset_settings()
     {
 	if (!confirm("WARNING: All settings will be cleared !\n\nContinue ?"))
@@ -1084,9 +1076,8 @@
 
     var help_url = "https://github.com/lemonsqueeze/jsarmor/wiki";
 
-    // use stored custom style and layout ?
-    var enable_custom_style = false;
-    var enable_custom_layout = false;
+    // use stored custom style ?
+    var enable_custom_style = true;
 
     // load style from an external css.
     // *note* this only works locally, won't work on remote sites.
@@ -1138,11 +1129,7 @@
 	var n = widgets_layout;
 	for (var i in widgets_layout)
 	    n[i.toUpperCase()] = widgets_layout[i];
-	widgets_layout = n;
-	
-	// use custom layout ?
-	//var html = (enable_custom_layout ? global_setting('html') : '');
-	//html = (html != '' ? html : builtin_html);
+	widgets_layout = n;	
 	
 	// special classes
 	idoc.body.className = "body";
@@ -1385,7 +1372,8 @@
 	}
 
 	// use custom style ?
-	var style = (enable_custom_style ? global_setting('style') : '');
+	var use_custom = (enable_custom_style && location.hash != '#jsarmor'); // rescue mode
+	var style = (use_custom ? global_setting('style') : '');
 	style = (style == '' ? builtin_style : style);
 	new_style(style);
     }
@@ -1754,6 +1742,27 @@
 	throw("error: " + msg);
     }
 
+    function file_loader(callback)
+    {
+	return function(e) {
+	var files = e.target.files; // FileList object
+	var f = files[0];
+	var reader = new FileReader();
+	
+	reader.onload = function(e) { callback(e.target.result); };	
+	reader.readAsBinaryString(f);
+	//reader.readAsText(f);
+	}
+    }
+
+    function save_file(s, binary)
+    {
+	var url = "data:text/plain;base64,";
+	if (binary)
+	    url = "data:application/binary;base64,";
+	location.href = url + btoa(s);
+    }
+    
     // or use Object.keys(obj) if browser supports it.
     function get_keys(obj)
     {
@@ -1870,8 +1879,38 @@
     /***************************** Options menu *******************************/
 
     function import_settings_init()
+    {	this.onchange = file_loader(parse_settings_file); }
+
+    function view_settings()
+    {   export_settings(null, true);  }
+    
+    function load_custom_style_init()
     {
-	this.onchange = load_file;
+	var load_style = function(s)
+	{
+	    set_global_setting('style', s);
+	    alert("Loaded !");
+	    need_reload = true;
+	};
+	this.onchange = file_loader(load_style);
+    }
+
+    function save_current_style()
+    {	
+	save_file(builtin_style, true);
+    }
+
+    function clear_saved_style()
+    {	
+	set_global_setting('style', '');
+	alert("Cleared !");
+    }
+
+    function rescue_mode()
+    {
+	var url = location.href.replace(/#.*/, '');
+	location.href = url + '#jsarmor';
+	location.reload(false);
     }
     
     function edit_css_url()
@@ -2555,8 +2594,10 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
 .separator	{ height: 1px; display: block; background-color: #bbb; margin-left: auto; margin-right: auto; }  \n\
   \n\
 /* import file (make form and button look like a menuitem) */  \n\
-#import_settings	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }  \n\
-#import_settings input	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }  \n\
+#import_settings, #load_custom_style  \n\
+	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }  \n\
+#import_settings input, #load_custom_style input  \n\
+	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }  \n\
   \n\
 ";
 
@@ -2569,10 +2610,10 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
       'host_table_row' : '<widget name="host_table_row"><table><tr  onclick><td width="1%"></td><td width="1%" class="td_not_loaded"><img/></td><td width="1%" class="td_checkbox"><input type="checkbox"></td><td width="1%" class="td_host">code.</td><td class="td_domain">jquery.com</td><td width="1%" class="td_iframe"><img/></td><td width="1%" class="td_allowed_globally allowed_globally"><img/></td><td width="1%" class="td_script_count">[x]</td></tr></table></widget>',
       'details_menu' : '<widget name="details_menu" init><div id="details_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Scripts</h1><ul id="menu_content"><li id="last_item" onclick="options_menu">Options…</li></ul></div></widget>',
       'script_detail' : '<widget name="script_detail" host script init><li><img/><a></a></li></widget>',
-      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><ul id="menu_content"><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes" 		     title="" 		     state="`show_ui_in_iframes" 		     callback="`toggle_show_ui_in_iframes"/></checkbox_item><checkbox_item label="Auto-hide main button" 		     title="" 		     state="`autohide_main_button" 		     callback="`toggle_autohide_main_button"/></checkbox_item><select_menu_display_logic></select_menu_display_logic><li id="$id" onclick="edit_whitelist">Edit whitelist…</li><select_reload_method></select_reload_method><li class="separator"></li><li id="$id" onclick="null">Load custom style…</li><li id="$id" onclick="null">Save current style…</li><li class="separator"></li><li id="$id" onclick="export_settings">Save Settings…</li><li><form id="import_settings"><input type=file id=import_btn autocomplete=off oninit="import_settings_init" >Load Settings...</form></li><li id="$id" onclick="reset_settings">Clear All Settings…</li><li class="separator"></li><li id="$id" onclick="go_to_help_page">Help</li><li id="$id" onclick="null">About</li></ul></div></widget>',
+      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><ul id="menu_content"><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes" 		     title="" 		     state="`show_ui_in_iframes" 		     callback="`toggle_show_ui_in_iframes"/></checkbox_item><checkbox_item label="Auto-hide main button" 		     title="" 		     state="`autohide_main_button" 		     callback="`toggle_autohide_main_button"/></checkbox_item><select_menu_display_logic></select_menu_display_logic><li id="$id" onclick="edit_whitelist">Edit whitelist…</li><select_reload_method></select_reload_method><li class="separator"></li><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" >Load custom style…</form></li><li id="$id" onclick="save_current_style">Save current style…</li><li id="$id" onclick="clear_saved_style">Clear saved style</li><li id="$id" onclick="rescue_mode">Rescue Mode</li><li class="separator"></li><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" >Load Settings…</form></li><li id="$id" onclick="export_settings">Save Settings…</li><li id="$id" onclick="view_settings">View Settings…</li><li id="$id" onclick="reset_settings">Clear All Settings…</li><li class="separator"></li><li id="$id" onclick="go_to_help_page">Help</li><li id="$id" onclick="null">About</li></ul></div></widget>',
       'select_iframe_logic' : '<widget name="select_iframe_logic" init><li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive here).">Scripts in iframes:<input type="radio" name="radio"/><label>Block All</label><input type="radio" name="radio"/><label>Filter</label><input type="radio" name="radio"/><label>Allow</label></li></widget>',
       'select_menu_display_logic' : '<widget name="select_menu_display_logic" init><li id="menu_display"  class="inactive">Menu popup:<input type="radio" name="radio"/><label>Auto</label><input type="radio" name="radio"/><label>Delay</label><input type="radio" name="radio"/><label>Click</label></li></widget>',
-      'select_reload_method' : '<widget name="select_reload_method" init><li id="reload_method" class="inactive" title="Cache: reload from cache (fastest), Normal: slow but sure.">Reload method:<input type="radio" name="radio"/><label>Cache</label><input type="radio" name="radio"/><label>Normal</label></li></widget>',
+      'select_reload_method' : '<widget name="select_reload_method" init><li id="reload_method" class="inactive" title="Cache: reload from cache (fastest but…). Normal: slow but sure.">Reload method:<input type="radio" name="radio"/><label>Cache</label><input type="radio" name="radio"/><label>Normal</label></li></widget>',
       'whitelist_editor' : '<widget name="whitelist_editor" init><div class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Global Whitelist</h1><ul id="menu_content"><li><textarea spellcheck="false" id="whitelist"></textarea></li><li class="inactive"><button onclick="save_whitelist">Save</button><button onclick="close_menu">Cancel</button></li></ul></div></widget>',
       'checkbox_item' : '<widget name="checkbox_item" id title label state callback init><li><input type="checkbox"/></li></widget>',
       'scope_widget' : '<widget name="scope_widget" init><li id="scope" class="inactive">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li></widget>',

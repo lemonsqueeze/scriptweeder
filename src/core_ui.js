@@ -7,9 +7,8 @@ function(){   // fake line, keep_editor_happy
 
     var help_url = "https://github.com/lemonsqueeze/jsarmor/wiki";
 
-    // use stored custom style and layout ?
-    var enable_custom_style = false;
-    var enable_custom_layout = false;
+    // use stored custom style ?
+    var enable_custom_style = true;
 
     // load style from an external css.
     // *note* this only works locally, won't work on remote sites.
@@ -61,11 +60,7 @@ function(){   // fake line, keep_editor_happy
 	var n = widgets_layout;
 	for (var i in widgets_layout)
 	    n[i.toUpperCase()] = widgets_layout[i];
-	widgets_layout = n;
-	
-	// use custom layout ?
-	//var html = (enable_custom_layout ? global_setting('html') : '');
-	//html = (html != '' ? html : builtin_html);
+	widgets_layout = n;	
 	
 	// special classes
 	idoc.body.className = "body";
@@ -308,7 +303,8 @@ function(){   // fake line, keep_editor_happy
 	}
 
 	// use custom style ?
-	var style = (enable_custom_style ? global_setting('style') : '');
+	var use_custom = (enable_custom_style && location.hash != '#jsarmor'); // rescue mode
+	var style = (use_custom ? global_setting('style') : '');
 	style = (style == '' ? builtin_style : style);
 	new_style(style);
     }

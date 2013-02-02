@@ -105,8 +105,39 @@ function(){   // fake line, keep_editor_happy
     /***************************** Options menu *******************************/
 
     function import_settings_init()
+    {	this.onchange = file_loader(parse_settings_file); }
+
+    function view_settings()
+    {   export_settings(null, true);  }
+    
+    function load_custom_style_init()
     {
-	this.onchange = load_file;
+	var load_style = function(s)
+	{
+	    set_global_setting('style', s);
+	    alert("Loaded !");
+	    need_reload = true;
+	};
+	this.onchange = file_loader(load_style);
+    }
+
+    function save_current_style()
+    {	
+	save_file(builtin_style, true);
+    }
+
+    function clear_saved_style()
+    {	
+	set_global_setting('style', '');
+	alert("Cleared !");
+	need_reload = true;
+    }
+
+    function rescue_mode()
+    {
+	var url = location.href.replace(/#.*/, '');
+	location.href = url + '#jsarmor';
+	location.reload(false);
     }
     
     function edit_css_url()

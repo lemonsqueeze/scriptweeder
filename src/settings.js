@@ -211,11 +211,14 @@ function(){   // fake line, keep_editor_happy
 		    host_settings[host] = settings;
 		}		
 	    }
-	    settings[key] = scriptStorage.getItem(k);
+	    
+	    var val = scriptStorage.getItem(k);
+	    if (val.indexOf('\n') == -1)	// i refuse to save any setting with newlines in it.
+		settings[key] = val;
 	}
     }
     
-    function export_settings()
+    function export_settings(e, as_text)
     {
 	var glob = {};
 	var host_settings = {};
@@ -236,8 +239,7 @@ function(){   // fake line, keep_editor_happy
 		s += settings;
 	}
 
-	var url = "data:text/plain;base64," + btoa(s);
-	location.href = url;
+	save_file(s, !as_text);
     }
 
     // make sure file looks like a valid settings file
@@ -278,32 +280,21 @@ function(){   // fake line, keep_editor_happy
 	    }
 	    scriptStorage.setItem(name, val);
 	}
-    }
-    
-    function load_file(e)
+    }    
+	
+    function parse_settings_file(s)
     {
-	var files = e.target.files; // FileList object
-	var f = files[0];
-	var reader = new FileReader();
-	
-	reader.onload = function(e)
+	var a = s.split('\n');
+	if (!import_check_file(a))
 	{
-	    var s  = e.target.result;
-	    var a = s.split('\n');
-	    if (!import_check_file(a))
-	    {
-		my_alert("This file doesn't look like a valid settings file.");
-		return;
-	    }	    
-	    scriptStorage.clear();	// clear current settings.
-	    import_settings(a);
-	    my_alert("Loaded !");
-	};
-	
-	reader.readAsBinaryString(f);
-	//reader.readAsText(f);
+	    my_alert("This file doesn't look like a valid settings file.");
+	    return;
+	}	    
+	scriptStorage.clear();	// clear current settings.
+	import_settings(a);
+	alert("Loaded !");
     }
-
+	
     function reset_settings()
     {
 	if (!confirm("WARNING: All settings will be cleared !\n\nContinue ?"))
