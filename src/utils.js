@@ -1,5 +1,88 @@
 function(){   // fake line, keep_editor_happy
 
+    /***************************** Domain, url utils **************************/    
+    
+    function url_hostname(url)
+    {
+        var t = document.createElement('a');
+        t.href = url;
+        return t.hostname;
+    }
+
+    // strip http(s):// from url
+    function strip_http(u)
+    {
+	var i = u.indexOf('://');
+	if (i != -1)
+	    return u.slice(i+3);
+	return u;
+    }
+
+    // split url into [dir, file, tail]
+    function split_url(u)
+    {
+	// FIXME: can't we just use the builtin parser like url_hostname() ?
+	//        http://www.joezimjs.com/javascript/the-lazy-mans-url-parsing/
+	u = strip_http(u);
+	var a = u.match(/^([^/]*)\/([^/?&:]*)(.*)$/);
+	assert(a, "split_url(): shouldn't happen");
+	return a.slice(1);
+    }
+    
+    function strip_url_tail(u)
+    {
+	var a = split_url(u);
+	return a[0] + '/' + a[1]; // dir + file
+    }
+    
+    function get_domain(h)
+    {
+      var i = h.lastIndexOf(".");
+      var j = h.lastIndexOf(".", i-1);
+      if (i - j == 3 && h.length - i == 3) // .co.uk style domain
+	  j = h.lastIndexOf(".", j-1); 
+      if (j != -1)
+	  return h.slice(j+1);     
+      return h;
+    }
+    
+    // return true if d1 and d2 are "related domains"
+    // Ex: media-imdb.com is related to imdb.com
+    function related_domains(d1, d2)
+    {
+	if (d2.length > d1.length)
+	    return related_domains(d2, d1);
+	var name = d2.slice(0, d2.indexOf("."));
+	if (d1.indexOf(name) != -1)
+	    return true;
+	if (name.length > 2 &&
+	    d1.slice(0, 3) == name.slice(0, 3))
+	    return true;
+	return false;
+    }
+    
+    // googleapis
+    function helper_domain(d)
+    {
+	if (d.indexOf("apis") != -1 ||
+	    d.indexOf("cdn") != -1 ||
+	    d.indexOf("img") != -1 ||
+	    d == "google.com" ||
+	    d == "googlecode.com" ||
+	    d == "gstatic.com")
+	    return true;
+	return false;
+    }
+
+    function helper_host(h)
+    {
+	return (is_prefix("api.", h) ||
+		is_prefix("apis.", h) ||
+// too much crap gets in with this one (cdn.optimizely.com, cdn.demdex.com ...)
+//		is_prefix("cdn.", h) ||
+		is_prefix("code.", h));
+    }
+    
     /**************************** Node functions *******************************/
 
     function element_tag_is(el, tag)

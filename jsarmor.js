@@ -14,8 +14,10 @@
 
 // When running as userjs, document and window.document are the same,
 // but when running as an extension they're 2 different things, beware !
-(function(document, location, opera, scriptStorage) {    
+(function(document, location, opera, scriptStorage)
+{
     var version = 'jsarmor v1.5.0 (dev)';
+
 
     /************************* Default Settings *******************************/
     
@@ -67,6 +69,20 @@
             
     /************************** Deferred events handling  *****************************/    
 
+    // Sequence of events when loading a page goes:
+    // - userjs scripts are run so they have a chance to register events
+    // - Page scripts are run:
+    //   For each script:
+    //     - BeforeExternalScript fires before loading an external script
+    //     - BeforeScript fires before executing both inline and external scripts
+    //   Scripts which have not been blocked are run, they get a chance to register events.
+    // - [...] Page loads, all kinds of stuff can happen: load focus ... 
+    // * DOMContentLoaded fires: scripts can start messing with the DOM.
+    // - [...] iframes start loading
+    //         dynamic content added by scripts gets loaded
+    // - document load event fires: document is loaded, browser button stops spinning.
+    // - iframes finish loading anytime before or after that.
+    
     var async_init_request = false;
     var async_init = false;  // currently only used when running inside iframe
     var sync_init = false;
@@ -172,318 +188,6 @@
 	init_mode();
     }
 
-    
-    /************************* Loading/Saving Settings ************************/
-
-    function check_script_storage()
-    {
-	if (!scriptStorage)
-	{
-	    location.href = "opera:config#PersistentStorage|UserJSStorageQuota";
-	    alert("Welcome to jsarmor !\n\n" +
-		  "Script storage is currently disabled.\n" +
-		  "For jsarmor to work, set quota to\n" +
-		  "                 1000\n" +
-		  "on the following page.");
-	}
-    }
-    
-    function scoped_setting(scope, name)
-    {
-	// to view content -> opera:webstorage  
-	var o=scriptStorage.getItem(scoped_prefixes[scope] + name);
-	if (o == null)
-	    return '';
-	return o;
-    }
-
-    var timestamp;			// settings timestamp    
-    function set_scoped_setting(scope, name, value)
-    {
-	// don't bother if nothing actually changed.
-	if (scoped_setting(scope, name) == value)
-	    return;
-	scriptStorage.setItem(scoped_prefixes[scope] + name, value);
-	// update timestamp, so other instances can detect changes
-	timestamp = 0 + Date.now();
-	//alert("timestamp: " + timestamp);
-	scriptStorage.setItem(scoped_prefixes[scope] + 'time', timestamp);
-    }
-
-    var scope;				// scoped settings are either per
-					// page, site, domain, or global.
-					//  (0,     1,     2,      3)
-    
-    var scoped_prefixes;		// prefixes
-    
-    function init_scope()
-    {
-	scoped_prefixes =
-	[strip_url_tail(location.href) + ':', current_host + ':', current_domain + ':', ''];
-	
-	for (scope = 0; scope < 3; scope++)
-	    if (setting('mode') != '')
-		break;
-	timestamp = setting('time');
-    }
-
-    var scoped_settings = ['mode', 'inline', 'nstags', 'hosts'];
-    
-    // copy settings over and change scope.
-    function change_scope(new_scope)
-    {
-	if (scope == new_scope)
-	    return;
-	var old_scope = scope;
-	for (var i = 0; i < scoped_settings.length; i++)
-	{
-	    scope = old_scope;
-	    var s = setting(scoped_settings[i]);
-	    // FIXME: should we remove them all ?
-	    //        for (; scope < new_scope; scope++) 
-	    if (new_scope > scope) // remove more specific setting
-		set_setting(scoped_settings[i], '');
-	    scope = new_scope;
-	    set_setting(scoped_settings[i], s);
-	}
-    }
-
-    function check_changed_settings()
-    {
-	var t = setting('time');
-	if (t == timestamp)
-	    return;		// nothing changed
-	timestamp = t;
-	load_global_settings(); // reload settings
-	if (main_ui) //UIFIXME
-	    repaint_ui_now();
-	// FIXME: could reload page to use new settings if user wants to.
-    }
-
-    // Settings api
-    function setting(name)
-    {
-	if (name == 'hosts' && scope == 3)
-	    return scoped_setting(1, name);
-	return scoped_setting(scope, name);
-    }
-
-    function set_setting(name, value)
-    {	
-	if (name == 'hosts' && scope == 3)
-	    set_scoped_setting(1, name, value);
-	else
-	    set_scoped_setting(scope, name, value);
-    }
-
-    function global_setting(name, default_value)
-    {
-	var v = scoped_setting(3, name);
-	if (default_value)
-	    return (v != '' ? v : default_value);
-	return v;
-    }
-
-    function set_global_setting(name, value)
-    {
-	set_scoped_setting(3, name, value);
-    }
-
-    function global_bool_setting(name, default_value)
-    {
-	var c = global_setting(name);
-	return (c != '' ? c == 'y' : default_value);
-    }
-
-    function set_global_bool_setting(name, val)
-    {
-	set_global_setting(name, (val ? 'y' : 'n'));	
-    }
-    
-    function bool_setting(name, default_value)
-    {
-	var c = setting(name);
-	c = (c == '' ? default_value : c == 'y');
-	return c;
-    }
-
-    function set_bool_setting(name, val)
-    {
-	set_setting(name, (val ? 'y' : 'n'));	
-    }
-    
-    // all hosts settings should be accessed through these so default val get translated
-    function hosts_setting()
-    {
-       var hosts = setting('hosts');
-       if (hosts == '') // current host allowed by default in filtered mode
-           hosts = '. ' + current_host;
-       return hosts;
-    }
-    
-    function set_hosts_setting(hosts)
-    {
-       if (hosts == '. ' + current_host)
-           hosts = '';
-       set_setting('hosts', hosts);
-    }
-
-    /**************************** Import/export settings *************************/
-    
-    function is_default_bool_setting(k, val)
-    {
-	var check = function(c, default_value)
-	{
-	    c = (c == '' ? default_value : c == 'y');
-	    return (c == default_value);
-	};
-	
-	return ((k == 'inline' && check(val, default_block_inline_scripts)) ||
-		(k == 'nstags' && check(val, default_handle_noscript_tags)));
-    }
-
-    
-    // old settings names, not used anymore but could still be around after upgrade.
-    function is_old_setting(k)
-    {
-	return (k == 'time' ||
-		k === 'timestamp' ||
-		is_prefix("noscript_", k));
-    }
-    
-    function print_setting(host, settings)
-    {
-	var s = "";
-	var prefix = (host == '' ? "" : host + ":");
-	for (k in settings)
-	{
-	    var val = settings[k];
-	    if (!is_old_setting(k) &&			// old names, not used anymore.
-		!(host != '' && val == '') &&		// empty host setting
-		!is_default_bool_setting(k, val)	// don't bother with default values
-	       )
-		s += (prefix + k + ":" + val + "\n");
-	}
-	return s;
-    }
-
-    function get_all_settings_by_host(glob, host_settings)
-    {
-	for (k in scriptStorage)
-	{
-	    var key = k;
-	    var settings = glob;
-	    if (key.indexOf(':') != -1)
-	    {   // host:key format
-		var host = k.slice(0, k.indexOf(':'));
-		key = k.slice(k.indexOf(':') + 1);
-		settings = host_settings[host];
-		if (!settings)
-		{
-		    settings = {};
-		    host_settings[host] = settings;
-		}		
-	    }
-	    settings[key] = scriptStorage.getItem(k);
-	}
-    }
-    
-    function export_settings()
-    {
-	var glob = {};
-	var host_settings = {};
-	var s = "";
-	get_all_settings_by_host(glob, host_settings)
-
-	s += version + "\n\n";
-	s += print_setting('', glob);
-	s += "\nhost settings:\n";
-	
-	var hosts = get_keys(host_settings).sort();
-	for (var i in hosts)
-	{
-	    var host = hosts[i];
-	    var settings = print_setting(host, host_settings[host]);
-	    // if there are still old settings lingering, we could end up with an empty string.
-	    if (settings != "") 
-		s += settings;
-	}
-
-	var url = "data:text/plain;base64," + btoa(s);
-	location.href = url;
-    }
-
-    // make sure file looks like a valid settings file
-    function import_check_file(a)
-    {
-	if (!is_prefix("jsarmor", a[0]))
-	    return false;
-	for (var i = 1; i < a.length; i++)
-	{
-	    if (a[i] != '' &&
-	        a[i].indexOf(':') == -1)
-		return false;
-	}
-	return true;
-    }
-
-    function import_settings(a)
-    {
-	var hosts_section = false;
-	for (var i = 1; i < a.length; i++)
-	{
-	    var s = a[i];
-	    if (s == 'host settings:')
-	    {
-		hosts_section = true;
-		continue;
-	    }
-	    var j = s.indexOf(':');
-	    if (j == -1)
-		continue;
-	    var parts = s.split(':');
-	    var name = parts[0];
-	    var val = parts[1];
-	    if (hosts_section)
-	    {
-		name = parts[0] + ':' + parts[1];
-		val = parts[2];
-	    }
-	    scriptStorage.setItem(name, val);
-	}
-    }
-    
-    function load_file(e)
-    {
-	var files = e.target.files; // FileList object
-	var f = files[0];
-	var reader = new FileReader();
-	
-	reader.onload = function(e)
-	{
-	    var s  = e.target.result;
-	    var a = s.split('\n');
-	    if (!import_check_file(a))
-	    {
-		alert("jsarmor:\n\nThis file doesn't look like a valid settings file.");
-		return;
-	    }
-	    // clear settings.
-	    scriptStorage.clear();
-	    import_settings(a);
-	    alert("jsarmor:\n\nLoaded !");
-	};
-	
-	reader.readAsBinaryString(f);
-	//reader.readAsText(f);
-    }
-
-    function reset_settings()
-    {
-	if (!confirm("WARNING: All settings will be cleared !\n\nContinue ?"))
-	    return;
-	scriptStorage.clear();
-    }
     
     /**************************** Mode and page stuff *************************/
     
@@ -672,91 +376,7 @@
     }
     
     // TODO show iframe placeholder ?
-    
-    
-    /***************************** Domain, url utils **************************/    
-    
-    function url_hostname(url)
-    {
-        var t = document.createElement('a');
-        t.href = url;
-        return t.hostname;
-    }
-
-    // strip http(s):// from url
-    function strip_http(u)
-    {
-	var i = u.indexOf('://');
-	if (i != -1)
-	    return u.slice(i+3);
-	return u;
-    }
-
-    // split url into [dir, file, tail]
-    function split_url(u)
-    {
-	// FIXME: can't we just use the builtin parser like url_hostname() ?
-	//        http://www.joezimjs.com/javascript/the-lazy-mans-url-parsing/
-	u = strip_http(u);
-	var a = u.match(/^([^/]*)\/([^/?&:]*)(.*)$/);
-	assert(a, "split_url(): shouldn't happen");
-	return a.slice(1);
-    }
-    
-    function strip_url_tail(u)
-    {
-	var a = split_url(u);
-	return a[0] + '/' + a[1]; // dir + file
-    }
-    
-    function get_domain(h)
-    {
-      var i = h.lastIndexOf(".");
-      var j = h.lastIndexOf(".", i-1);
-      if (i - j == 3 && h.length - i == 3) // .co.uk style domain
-	  j = h.lastIndexOf(".", j-1); 
-      if (j != -1)
-	  return h.slice(j+1);     
-      return h;
-    }
-    
-    // return true if d1 and d2 are "related domains"
-    // Ex: media-imdb.com is related to imdb.com
-    function related_domains(d1, d2)
-    {
-	if (d2.length > d1.length)
-	    return related_domains(d2, d1);
-	var name = d2.slice(0, d2.indexOf("."));
-	if (d1.indexOf(name) != -1)
-	    return true;
-	if (name.length > 2 &&
-	    d1.slice(0, 3) == name.slice(0, 3))
-	    return true;
-	return false;
-    }
-    
-    // googleapis
-    function helper_domain(d)
-    {
-	if (d.indexOf("apis") != -1 ||
-	    d.indexOf("cdn") != -1 ||
-	    d.indexOf("img") != -1 ||
-	    d == "google.com" ||
-	    d == "googlecode.com" ||
-	    d == "gstatic.com")
-	    return true;
-	return false;
-    }
-
-    function helper_host(h)
-    {
-	return (is_prefix("api.", h) ||
-		is_prefix("apis.", h) ||
-// too much crap gets in with this one (cdn.optimizely.com, cdn.demdex.com ...)
-//		is_prefix("cdn.", h) ||
-		is_prefix("code.", h));
-    }
-    
+        
     /***************************** Host filtering *****************************/    
     
     function allow_host(host)
@@ -1133,7 +753,319 @@
 	// message handler setup is in init_iframe_logic()
     }
     
+
+    /************************* Loading/Saving Settings ************************/
+
+    function check_script_storage()
+    {
+	if (!scriptStorage)
+	{
+	    location.href = "opera:config#PersistentStorage|UserJSStorageQuota";
+	    alert("Welcome to jsarmor !\n\n" +
+		  "Script storage is currently disabled.\n" +
+		  "For jsarmor to work, set quota to\n" +
+		  "                 1000\n" +
+		  "on the following page.");
+	}
+    }
     
+    function scoped_setting(scope, name)
+    {
+	// to view content -> opera:webstorage  
+	var o=scriptStorage.getItem(scoped_prefixes[scope] + name);
+	if (o == null)
+	    return '';
+	return o;
+    }
+
+    var timestamp;			// settings timestamp    
+    function set_scoped_setting(scope, name, value)
+    {
+	// don't bother if nothing actually changed.
+	if (scoped_setting(scope, name) == value)
+	    return;
+	scriptStorage.setItem(scoped_prefixes[scope] + name, value);
+	// update timestamp, so other instances can detect changes
+	timestamp = 0 + Date.now();
+	//alert("timestamp: " + timestamp);
+	scriptStorage.setItem(scoped_prefixes[scope] + 'time', timestamp);
+    }
+
+    var scope;				// scoped settings are either per
+					// page, site, domain, or global.
+					//  (0,     1,     2,      3)
+    
+    var scoped_prefixes;		// prefixes
+    
+    function init_scope()
+    {
+	scoped_prefixes =
+	[strip_url_tail(location.href) + ':', current_host + ':', current_domain + ':', ''];
+	
+	for (scope = 0; scope < 3; scope++)
+	    if (setting('mode') != '')
+		break;
+	timestamp = setting('time');
+    }
+
+    var scoped_settings = ['mode', 'inline', 'nstags', 'hosts'];
+    
+    // copy settings over and change scope.
+    function change_scope(new_scope)
+    {
+	if (scope == new_scope)
+	    return;
+	var old_scope = scope;
+	for (var i = 0; i < scoped_settings.length; i++)
+	{
+	    scope = old_scope;
+	    var s = setting(scoped_settings[i]);
+	    // FIXME: should we remove them all ?
+	    //        for (; scope < new_scope; scope++) 
+	    if (new_scope > scope) // remove more specific setting
+		set_setting(scoped_settings[i], '');
+	    scope = new_scope;
+	    set_setting(scoped_settings[i], s);
+	}
+    }
+
+    function check_changed_settings()
+    {
+	var t = setting('time');
+	if (t == timestamp)
+	    return;		// nothing changed
+	timestamp = t;
+	load_global_settings(); // reload settings
+	if (main_ui) //UIFIXME
+	    repaint_ui_now();
+	// FIXME: could reload page to use new settings if user wants to.
+    }
+
+    // Settings api
+    function setting(name)
+    {
+	if (name == 'hosts' && scope == 3)
+	    return scoped_setting(1, name);
+	return scoped_setting(scope, name);
+    }
+
+    function set_setting(name, value)
+    {	
+	if (name == 'hosts' && scope == 3)
+	    set_scoped_setting(1, name, value);
+	else
+	    set_scoped_setting(scope, name, value);
+    }
+
+    function global_setting(name, default_value)
+    {
+	var v = scoped_setting(3, name);
+	if (default_value)
+	    return (v != '' ? v : default_value);
+	return v;
+    }
+
+    function set_global_setting(name, value)
+    {
+	set_scoped_setting(3, name, value);
+    }
+
+    function global_bool_setting(name, default_value)
+    {
+	var c = global_setting(name);
+	return (c != '' ? c == 'y' : default_value);
+    }
+
+    function set_global_bool_setting(name, val)
+    {
+	set_global_setting(name, (val ? 'y' : 'n'));	
+    }
+    
+    function bool_setting(name, default_value)
+    {
+	var c = setting(name);
+	c = (c == '' ? default_value : c == 'y');
+	return c;
+    }
+
+    function set_bool_setting(name, val)
+    {
+	set_setting(name, (val ? 'y' : 'n'));	
+    }
+    
+    // all hosts settings should be accessed through these so default val get translated
+    function hosts_setting()
+    {
+       var hosts = setting('hosts');
+       if (hosts == '') // current host allowed by default in filtered mode
+           hosts = '. ' + current_host;
+       return hosts;
+    }
+    
+    function set_hosts_setting(hosts)
+    {
+       if (hosts == '. ' + current_host)
+           hosts = '';
+       set_setting('hosts', hosts);
+    }
+
+    /**************************** Import/export settings *************************/
+    
+    function is_default_bool_setting(k, val)
+    {
+	var check = function(c, default_value)
+	{
+	    c = (c == '' ? default_value : c == 'y');
+	    return (c == default_value);
+	};
+	
+	return ((k == 'inline' && check(val, default_block_inline_scripts)) ||
+		(k == 'nstags' && check(val, default_handle_noscript_tags)));
+    }
+
+    
+    // old settings names, not used anymore but could still be around after upgrade.
+    function is_old_setting(k)
+    {
+	return (k == 'time' ||
+		k === 'timestamp' ||
+		is_prefix("noscript_", k));
+    }
+    
+    function print_setting(host, settings)
+    {
+	var s = "";
+	var prefix = (host == '' ? "" : host + ":");
+	for (k in settings)
+	{
+	    var val = settings[k];
+	    if (!is_old_setting(k) &&			// old names, not used anymore.
+		!(host != '' && val == '') &&		// empty host setting
+		!is_default_bool_setting(k, val)	// don't bother with default values
+	       )
+		s += (prefix + k + ":" + val + "\n");
+	}
+	return s;
+    }
+
+    function get_all_settings_by_host(glob, host_settings)
+    {
+	for (k in scriptStorage)
+	{
+	    var key = k;
+	    var settings = glob;
+	    if (key.indexOf(':') != -1)
+	    {   // host:key format
+		var host = k.slice(0, k.indexOf(':'));
+		key = k.slice(k.indexOf(':') + 1);
+		settings = host_settings[host];
+		if (!settings)
+		{
+		    settings = {};
+		    host_settings[host] = settings;
+		}		
+	    }
+	    settings[key] = scriptStorage.getItem(k);
+	}
+    }
+    
+    function export_settings()
+    {
+	var glob = {};
+	var host_settings = {};
+	var s = "";
+	get_all_settings_by_host(glob, host_settings)
+
+	s += version + "\n\n";
+	s += print_setting('', glob);
+	s += "\nhost settings:\n";
+	
+	var hosts = get_keys(host_settings).sort();
+	for (var i in hosts)
+	{
+	    var host = hosts[i];
+	    var settings = print_setting(host, host_settings[host]);
+	    // if there are still old settings lingering, we could end up with an empty string.
+	    if (settings != "") 
+		s += settings;
+	}
+
+	var url = "data:text/plain;base64," + btoa(s);
+	location.href = url;
+    }
+
+    // make sure file looks like a valid settings file
+    function import_check_file(a)
+    {
+	if (!is_prefix("jsarmor", a[0]))
+	    return false;
+	for (var i = 1; i < a.length; i++)
+	{
+	    if (a[i] != '' &&
+	        a[i].indexOf(':') == -1)
+		return false;
+	}
+	return true;
+    }
+
+    function import_settings(a)
+    {
+	var hosts_section = false;
+	for (var i = 1; i < a.length; i++)
+	{
+	    var s = a[i];
+	    if (s == 'host settings:')
+	    {
+		hosts_section = true;
+		continue;
+	    }
+	    var j = s.indexOf(':');
+	    if (j == -1)
+		continue;
+	    var parts = s.split(':');
+	    var name = parts[0];
+	    var val = parts[1];
+	    if (hosts_section)
+	    {
+		name = parts[0] + ':' + parts[1];
+		val = parts[2];
+	    }
+	    scriptStorage.setItem(name, val);
+	}
+    }
+    
+    function load_file(e)
+    {
+	var files = e.target.files; // FileList object
+	var f = files[0];
+	var reader = new FileReader();
+	
+	reader.onload = function(e)
+	{
+	    var s  = e.target.result;
+	    var a = s.split('\n');
+	    if (!import_check_file(a))
+	    {
+		my_alert("This file doesn't look like a valid settings file.");
+		return;
+	    }	    
+	    scriptStorage.clear();	// clear current settings.
+	    import_settings(a);
+	    my_alert("Loaded !");
+	};
+	
+	reader.readAsBinaryString(f);
+	//reader.readAsText(f);
+    }
+
+    function reset_settings()
+    {
+	if (!confirm("WARNING: All settings will be cleared !\n\nContinue ?"))
+	    return;
+	scriptStorage.clear();
+    }
+
+
 
     /********************************* Core ui *********************************/
 
@@ -1493,6 +1425,89 @@
     }
 
 
+    /***************************** Domain, url utils **************************/    
+    
+    function url_hostname(url)
+    {
+        var t = document.createElement('a');
+        t.href = url;
+        return t.hostname;
+    }
+
+    // strip http(s):// from url
+    function strip_http(u)
+    {
+	var i = u.indexOf('://');
+	if (i != -1)
+	    return u.slice(i+3);
+	return u;
+    }
+
+    // split url into [dir, file, tail]
+    function split_url(u)
+    {
+	// FIXME: can't we just use the builtin parser like url_hostname() ?
+	//        http://www.joezimjs.com/javascript/the-lazy-mans-url-parsing/
+	u = strip_http(u);
+	var a = u.match(/^([^/]*)\/([^/?&:]*)(.*)$/);
+	assert(a, "split_url(): shouldn't happen");
+	return a.slice(1);
+    }
+    
+    function strip_url_tail(u)
+    {
+	var a = split_url(u);
+	return a[0] + '/' + a[1]; // dir + file
+    }
+    
+    function get_domain(h)
+    {
+      var i = h.lastIndexOf(".");
+      var j = h.lastIndexOf(".", i-1);
+      if (i - j == 3 && h.length - i == 3) // .co.uk style domain
+	  j = h.lastIndexOf(".", j-1); 
+      if (j != -1)
+	  return h.slice(j+1);     
+      return h;
+    }
+    
+    // return true if d1 and d2 are "related domains"
+    // Ex: media-imdb.com is related to imdb.com
+    function related_domains(d1, d2)
+    {
+	if (d2.length > d1.length)
+	    return related_domains(d2, d1);
+	var name = d2.slice(0, d2.indexOf("."));
+	if (d1.indexOf(name) != -1)
+	    return true;
+	if (name.length > 2 &&
+	    d1.slice(0, 3) == name.slice(0, 3))
+	    return true;
+	return false;
+    }
+    
+    // googleapis
+    function helper_domain(d)
+    {
+	if (d.indexOf("apis") != -1 ||
+	    d.indexOf("cdn") != -1 ||
+	    d.indexOf("img") != -1 ||
+	    d == "google.com" ||
+	    d == "googlecode.com" ||
+	    d == "gstatic.com")
+	    return true;
+	return false;
+    }
+
+    function helper_host(h)
+    {
+	return (is_prefix("api.", h) ||
+		is_prefix("apis.", h) ||
+// too much crap gets in with this one (cdn.optimizely.com, cdn.demdex.com ...)
+//		is_prefix("cdn.", h) ||
+		is_prefix("code.", h));
+    }
+    
     /**************************** Node functions *******************************/
 
     function element_tag_is(el, tag)
@@ -1835,6 +1850,11 @@
 
     /***************************** Options menu *******************************/
 
+    function import_settings_init()
+    {
+	this.onchange = load_file;
+    }
+    
     function edit_css_url()
     {
 /*	
@@ -2499,8 +2519,8 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
 .separator	{ height: 1px; display: block; background-color: #bbb; margin-left: auto; margin-right: auto; }  \n\
   \n\
 /* import file (make form and button look like a menuitem) */  \n\
-#import_form	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }  \n\
-#import_btn	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }  \n\
+#import_settings	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }  \n\
+#import_settings input	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }  \n\
   \n\
 ";
 
@@ -2513,7 +2533,7 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
       'host_table_row' : '<widget name="host_table_row"><table><tr  onclick><td width="1%"></td><td width="1%"><img/></td><td width="1%"><input type="checkbox" checked="true"></td><td width="1%" class="host_part">code.</td><td class="domain_part">jquery.com</td><td width="1%"><img/></td><td width="1%" class="allowed_globally"><img/></td><td width="1%" class="script_count">[1]</td></tr></table></widget>',
       'details_menu' : '<widget name="details_menu" init><div id="details_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Scripts</h1><ul id="menu_content"><li id="last_item" onclick="options_menu">Options…</li></ul></div></widget>',
       'script_detail' : '<widget name="script_detail" host script init><li><img/><a></a></li></widget>',
-      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><ul id="menu_content"><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes" 		     title="" 		     state="`show_ui_in_iframes" 		     callback="`toggle_show_ui_in_iframes"/></checkbox_item><checkbox_item label="Auto-hide main button" 		     title="" 		     state="`autohide_main_button" 		     callback="`toggle_autohide_main_button"/></checkbox_item><select_menu_display_logic></select_menu_display_logic><li id="$id" onclick="edit_whitelist">Edit whitelist…</li><li id="$id" onclick="null">Reload method</li><li class="separator"></li><li id="$id" onclick="null">Load custom style…</li><li id="$id" onclick="null">Save current style…</li><li class="separator"></li><li id="$id" onclick="export_settings">Export Settings…</li><li><form id="import_form"><input type=file id=import_btn autocomplete=off onchange="load_file" >Import Settings...</form></li><li id="$id" onclick="reset_settings">Clear All Settings…</li><li class="separator"></li><li id="$id" onclick="go_to_help_page">Help</li><li id="$id" onclick="null">About</li></ul></div></widget>',
+      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><ul id="menu_content"><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes" 		     title="" 		     state="`show_ui_in_iframes" 		     callback="`toggle_show_ui_in_iframes"/></checkbox_item><checkbox_item label="Auto-hide main button" 		     title="" 		     state="`autohide_main_button" 		     callback="`toggle_autohide_main_button"/></checkbox_item><select_menu_display_logic></select_menu_display_logic><li id="$id" onclick="edit_whitelist">Edit whitelist…</li><li id="$id" onclick="null">Reload method</li><li class="separator"></li><li id="$id" onclick="null">Load custom style…</li><li id="$id" onclick="null">Save current style…</li><li class="separator"></li><li id="$id" onclick="export_settings">Save Settings…</li><li><form id="import_settings"><input type=file id=import_btn autocomplete=off oninit="import_settings_init" >Load Settings...</form></li><li id="$id" onclick="reset_settings">Clear All Settings…</li><li class="separator"></li><li id="$id" onclick="go_to_help_page">Help</li><li id="$id" onclick="null">About</li></ul></div></widget>',
       'select_iframe_logic' : '<widget name="select_iframe_logic" init><li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filtered: block if host not allowed in the menu. Normal Page: current mode applies.">Javascript in iframes:<input type="radio" name="radio"/><label>Block All</label><input type="radio" name="radio"/><label>Filtered</label><input type="radio" name="radio"/><label>Normal Page</label></li></widget>',
       'select_menu_display_logic' : '<widget name="select_menu_display_logic" init><li id="menu_display"  class="inactive">Menu popup:<input type="radio" name="radio"/><label>Auto</label><input type="radio" name="radio"/><label>Delay</label><input type="radio" name="radio"/><label>Click</label></li></widget>',
       'whitelist_editor' : '<widget name="whitelist_editor" init><div class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Global Whitelist</h1><ul id="menu_content"><li><textarea spellcheck="false" id="whitelist"></textarea></li><li class="inactive"><button onclick="save_whitelist">Save</button><button onclick="close_menu">Cancel</button></li></ul></div></widget>',
@@ -2553,5 +2573,4 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
 
 
     
-})(window.document, window.location, window.opera, window.opera.scriptStorage);	// last_line_tag
-
+})(window.document, window.location, window.opera, window.opera.scriptStorage);

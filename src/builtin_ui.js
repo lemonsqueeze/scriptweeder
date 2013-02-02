@@ -98,6 +98,11 @@ function(){   // fake line, keep_editor_happy
 
     /***************************** Options menu *******************************/
 
+    function import_settings_init()
+    {
+	this.onchange = load_file;
+    }
+    
     function edit_css_url()
     {
 /*	

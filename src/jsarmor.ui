@@ -104,7 +104,7 @@
       <menu_item label="Save current style…" onclick="null"/>
 
       <separator/>
-      <menu_item label="Export Settings…" onclick="export_settings"/>
+      <menu_item label="Save Settings…" onclick="export_settings"/>
       <import_settings/>
       <menu_item label="Clear All Settings…" onclick="reset_settings"/>
       <separator/>
@@ -132,9 +132,9 @@
 
 <def import_settings>
   <li>
-    <form id="import_form">
-      <input type=file id=import_btn autocomplete=off onchange="load_file" >
-	Import Settings...
+    <form id="import_settings">
+      <input type=file id=import_btn autocomplete=off oninit="import_settings_init" >
+	Load Settings...
     </form>
   </li>
 </def>

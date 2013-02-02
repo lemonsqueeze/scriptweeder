@@ -107,6 +107,6 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;
 .separator	{ height: 1px; display: block; background-color: #bbb; margin-left: auto; margin-right: auto; }
 
 /* import file (make form and button look like a menuitem) */
-#import_form	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }
-#import_btn	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }
+#import_settings	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }
+#import_settings input	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }
 

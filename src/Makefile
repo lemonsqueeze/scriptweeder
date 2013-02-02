@@ -1,6 +1,6 @@
 
 NAME	= jsarmor.js
-SRC	= core.js utils.js core_ui.js builtin_ui.js
+SRC	= main.js core.js settings.js utils.js core_ui.js builtin_ui.js
 GEN_SRC	= jsarmor_style.js jsarmor_widgets.js
 TMPFILES= jsarmor.xml 
 ALLSRC	= $(SRC) $(GEN_SRC)
@@ -14,7 +14,7 @@ clean:
 	-rm $(NAME) $(GEN_SRC) $(TMPFILES) *~
 
 jsarmor.js: $(ALLSRC)
-	$(TOOLS)/jpp core.js > $@
+	$(TOOLS)/jpp $<  > $@
 
 jsarmor_style.js: jsarmor.css
 	@echo generating $@ from $<
@@ -24,12 +24,10 @@ jsarmor_style.js: jsarmor.css
 	@echo '";' >> $@
 
 
-#
-# layout generation pipeline
-#
-# 1) we start with the interface description in jsarmor.ui ...
-# 2) then expand the xml macros in there to get jsarmor.xml
-# 3) and turn that into js object with the html for each widget.
+# layout generation pipeline:
+# - we start with the interface description in jsarmor.ui ...
+# - then expand the xml macros in there to get jsarmor.xml
+# - and turn that into js object with the html for each widget.
 
 jsarmor.xml: jsarmor.ui
 	@echo generating $@ from $<
