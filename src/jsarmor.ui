@@ -53,7 +53,7 @@
       <td width="1%"></td>
       <td width="1%"><img/></td>			<!-- not loaded -->
       <td width="1%">
-	<input type="checkbox" checked="true">
+	<input type="checkbox">
       </td>
       <td width="1%" class="host_part">code.</td>
       <td class="domain_part">jquery.com</td>
@@ -115,10 +115,10 @@
 </widget>
 
 <widget name="select_iframe_logic" init>
-  <li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filtered: block if host not allowed in the menu. Normal Page: current mode applies.">Javascript in iframes:
+  <li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive here).">Scripts in iframes:
     <radio_button label="Block All"/>
-    <radio_button label="Filtered"/>
-    <radio_button label="Normal Page"/>
+    <radio_button label="Filter"/>
+    <radio_button label="Allow"/>
   </li>
 </widget>
 
@@ -197,7 +197,7 @@
 <widget name="block_all_settings" init>
   <block_inline_scripts></block_inline_scripts>  
   <checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags"
-		 title="Interpret noscript tags as if javascript was disabled in opera."
+		 title="Treat noscript tags as if javascript was disabled in opera (useful to access the non-javascript version of websites)"
 		 state="`handle_noscript_tags"
 		 callback="`toggle_handle_noscript_tags"/></checkbox_item>
 </widget>

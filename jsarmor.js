@@ -52,8 +52,8 @@
     // as if javascript was disabled in opera
     var default_handle_noscript_tags = true;
 
-    // 'block_all'   'ask_parent'   'normal_page'
-    var default_iframe_logic = 'ask_parent';
+    // 'block_all'   'filter'   'allow'
+    var default_iframe_logic = 'filter';
 
     
     /********************************* Globals *********************************/
@@ -190,7 +190,8 @@
 
     
     /**************************** Mode and page stuff *************************/
-    
+
+    // reload top window really: with 'filtered' iframe logic, iframes need parent to reload.
     function reload_page()
     {
 	// All of these reload from server ...
@@ -198,10 +199,12 @@
 	//   history.go(0);
 	//   location.href = location.href;
 
+	if (window != window.top)		// in iframe
+	    window.top.location.reload();
+	
 	// Hack: simulate click on a link to reload from cache !
 	var a = document.createElement('a');
 	a.href = location.href;
-	// a.innerText = 'this page';
 	document.body.appendChild(a);
 	
 	// simulateClick() from
@@ -274,36 +277,35 @@
     
     function init_iframe_logic()
     {
-	show_ui_in_iframes = global_bool_setting("iframe_ui", default_iframe_ui);
+	show_ui_in_iframes = global_bool_setting('show_ui_in_iframes', default_show_ui_in_iframes);
 	iframe_message_header = "jsarmor lost iframe rescue channel:";    
 	
-	iframe_logic = global_setting('iframe');
-	if (iframe_logic != 'block_all' && iframe_logic != 'ask_parent' && iframe_logic != 'normal_page')
+	iframe_logic = global_setting('iframe_logic');
+	if (iframe_logic != 'block_all' && iframe_logic != 'filter' && iframe_logic != 'allow')
 	    iframe_logic = default_iframe_logic;
-
-	// handles messages from both parent and iframes.
-	if (iframe_logic == 'ask_parent')
-	    window.addEventListener('message',	message_handler,	false);	    
 	
 	if (window == window.top) // not running in iframe ?
 	    return;
+
+	// tell parent about us so it can display our host in the menu.
+	// for 'filter' iframe_logic, this is also asking for its hostname.
+	window.top.postMessage(iframe_message_header + location.href, '*');
 	
 	// switch mode depending on iframe_logic
 	// TODO: add way to override with page setting *only*, which should be safe enough
 	
-	if (iframe_logic != 'ask_parent')
+	if (iframe_logic != 'filter')
 	{
 	    if (iframe_logic == 'block_all')
-		set_mode_no_update('block_all');
-	    // 'normal_page' -> treat as normal page, nothing to do.
+		iframe_block_all_mode();
+	    // 'allow' -> treat as normal page, nothing to do.
 	    return;
 	}
 	
-	// 'ask_parent' logic: use parent's settings to decide if we're allowed to run.
-	// for that we need our parent's hostname, but because of cross-domain restrictions
-	// we can't find out on our own. Ask for help ...
+	// 'filter' logic uses parent window's settings to decide what to do with page scripts.
+	// for that we need parent's hostname, but because of cross-domain restrictions we can't
+	// find out on our own. Wait for msg from parent.
 	async_init_request = true;
-	window.parent.postMessage(iframe_message_header + location.href, '*');  // who is my parent ? this is my url.
 	return;
     }
 
@@ -323,12 +325,14 @@
 	else
 	    message_from_iframe(e, content);
     }
-    
+
+    // iframe instance making itself known to us. (works for nested iframes unlike DOM harvesting)
     function message_from_iframe(e, url)
     {
-	// alert("message from iframe: host=" + url_hostname(url));	
-	e.source.postMessage(iframe_message_header + current_host, '*'); // little iframe, this is your parent.
-	add_iframe(url);						 // add to menu so we can block/allow it.
+	// alert("message from iframe: host=" + url_hostname(url));
+	if (iframe_logic == 'filter') // it needs our hostname
+	    e.source.postMessage(iframe_message_header + current_host, '*');
+	add_iframe(url);			// add to menu so we can block/allow it.
 	if (main_ui) // UIFIXME
 	    repaint_ui();	
     }
@@ -346,17 +350,20 @@
 	
 	// alert("iframe " + location.hostname + " allowed: " + allowed);
 	if (!allowed)
-	{
-	    // can't set_mode_no_update('block_all'), it would save the setting.
-	    mode = 'block_all';
-	    block_inline_scripts = true;
-	    handle_noscript_tags = true;
-	}
+	    iframe_block_all_mode();
 	// else: allowed. treat it as a normal page: current mode applies.
 	
 	async_init_finished(); // happy now =)
     }
 
+    // can't use set_mode_no_update('block_all'), it would save the setting.
+    function iframe_block_all_mode()
+    {
+	mode = 'block_all';
+	block_inline_scripts = true;
+	handle_noscript_tags = true;
+    }
+    
     function add_iframe(url)
     {
 	var host = url_hostname(url);
@@ -367,12 +374,6 @@
 	var host_node = get_host_node(host, domain_node, true);
 	host_node.iframes.push(i);
 	return i;
-    }
-
-    function need_iframe_parent_handling()
-    {
-	return (iframe_logic == 'ask_parent' &&
-		document.querySelector('iframe'));
     }
     
     // TODO show iframe placeholder ?
@@ -716,9 +717,9 @@
 //UIFIXME    
     function domcontentloaded_handler(e, deferred_call)
     {
-        if (!there_is_work_todo &&
-	    !need_iframe_parent_handling())
-            return;  // no scripts ? exit.
+        if (!there_is_work_todo &&		// no scripts ?
+	    !document.querySelector('iframe'))	// no iframes ?
+            return;				// don't show ui.
 
 	if (block_inline_scripts)
 	    check_handle_noscript_tags();
@@ -750,7 +751,9 @@
 	opera.addEventListener('BeforeEvent.load',               deferred(beforeload_handler, true),		false);
 	document.addEventListener('DOMContentLoaded',            deferred(domcontentloaded_handler, true),	false);
 
-	// message handler setup is in init_iframe_logic()
+	// messaging between top window and iframes.
+	// FIXME need to make sure page isn't seeing our messages	
+	window.addEventListener('message',	message_handler,	false);	
     }
     
 
@@ -1070,7 +1073,7 @@
     /********************************* Core ui *********************************/
 
     // whether to show jsarmor ui inside frames / iframes
-    var default_iframe_ui = false;
+    var default_show_ui_in_iframes = false;
 
     var help_url = "https://github.com/lemonsqueeze/jsarmor/wiki";
 
@@ -1774,8 +1777,8 @@
     // called only once.
     function ui_init()
     {
-	autohide_main_button = global_bool_setting("autohide_main_button", default_autohide_main_button);
-	menu_display_logic = global_setting("menu_display_logic", default_menu_display_logic);	
+	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
+	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);	
 	if (menu_display_logic == 'click')
 	    window.addEventListener('click',  function (e) { close_menu(); }, false);	
     }
@@ -1809,16 +1812,17 @@
 
     function scope_widget_init(widget)
     {	
-	setup_radio_buttons(widget, scope, change_scope);
+	setup_radio_buttons(widget, "scope", scope, change_scope);
     }
 
-    function setup_radio_buttons(widget, current, f)
+    function setup_radio_buttons(widget, name, current, f)
     {
 	var l = widget.getElementsByTagName('input');
 
 	for (var i = 0; i < l.length; i++)
 	{
 	    var radio = l[i];
+	    radio.name = name; // radio group
 	    radio.checked = (current == i);
 	    radio.number = i;
 	    radio.onclick = function() { f(this.number); };
@@ -1915,15 +1919,15 @@
     
     function select_iframe_logic_init(widget)
     {
-	var iframe_logic_values = ['block_all', 'ask_parent', 'normal_page'];
+	var iframe_logic_values = ['block_all', 'filter', 'allow'];
 	var f = function (n)
 	{
-	    set_global_setting('iframe', iframe_logic_values[n]);
+	    set_global_setting('iframe_logic', iframe_logic_values[n]);
 	    need_reload = true;
 	};
 
 	var index = iframe_logic_values.indexOf(iframe_logic);
-	setup_radio_buttons(widget, index, f);
+	setup_radio_buttons(widget, "iframe_logic", index, f);
     }
 
     function select_menu_display_logic_init(widget)
@@ -1936,13 +1940,13 @@
 	};
 
 	var index = menu_display_logic_values.indexOf(menu_display_logic);
-	setup_radio_buttons(widget, index, f);
+	setup_radio_buttons(widget, "menu_display_logic", index, f);
     }
 
     function toggle_show_ui_in_iframes(event)
     {
-	var new_val = !global_bool_setting("iframe_ui", default_iframe_ui);
-	set_global_bool_setting("iframe_ui", new_val);
+	var new_val = !global_bool_setting('show_ui_in_iframes', default_show_ui_in_iframes);
+	set_global_bool_setting('show_ui_in_iframes', new_val);
 	// update ui
 	this.checkbox.checked = new_val;
 	need_reload = true;
@@ -1950,8 +1954,8 @@
 
     function toggle_autohide_main_button(event)
     {
-	var new_val = !global_bool_setting("autohide_main_button", default_autohide_main_button);
-	set_global_bool_setting("autohide_main_button", new_val);
+	var new_val = !global_bool_setting('autohide_main_button', default_autohide_main_button);
+	set_global_bool_setting('autohide_main_button', new_val);
 	// update ui
 	this.checkbox.checked = new_val;
 	need_repaint = true;
@@ -2038,7 +2042,7 @@
     function close_menu(keep_menu)
     {
 	show_hide_menu(false);
-	if (!keep_menu)
+	if (keep_menu != true) // explicit comparison, guard against weird calls
 	    switch_menu(null);
 	
 	if (need_reload)
@@ -2198,15 +2202,20 @@
 	repaint_ui_now();
     };
 
-    function iframe_tooltip(hn)
+    function iframe_info(hn, allowed)
     {
 	if (!hn.iframes || !hn.iframes.length)
 	    return null;
-
 	var n = hn.iframes.length;
 	var title = n + " iframe" + (n>1 ? "s" : "");
-	//icon.title += " See details.";
-	return title;
+	if (iframe_logic != 'filter')
+	    title += ". use 'filter' iframe setting to block/allow in the menu.";
+	
+	if (iframe_logic == 'block_all')
+	    allowed = false;
+	if (iframe_logic == 'allowed')
+	    allowed = true;
+	return {title: title, allowed: allowed};
     }
 
     function not_loaded_tooltip(hn, allowed)
@@ -2242,11 +2251,12 @@
 	{
 	    var d = dn.name;
 	    var h = hn.name;
+	    var allowed = allowed_host(h);
 	    var host_part = h.slice(0, h.length - d.length);
-	    var not_loaded = not_loaded_tooltip(hn, allowed_host(h));
+	    var not_loaded = not_loaded_tooltip(hn, allowed);
 	    var count = "[" + hn.scripts.length + "]";
 	    var helper = hn.helper_host;
-	    var iframes = iframe_tooltip(hn);
+	    var iframes = iframe_info(hn, allowed);
 
 	    tr = new_widget("host_table_row");
 	    tr = tr.firstChild.firstChild; // skip dummy <table> and <tbody> tags
@@ -2258,15 +2268,16 @@
 		tr.childNodes[1].className += " not_loaded";
 		tr.childNodes[1].title = not_loaded;
 	    }
-	    tr.childNodes[2].firstChild.checked = allowed_host(h);
+	    tr.childNodes[2].firstChild.checked = allowed;
 	    tr.childNodes[3].innerText = host_part;
 	    tr.childNodes[4].innerText = d;
 	    if (helper)
 		tr.childNodes[4].className += " helper";
 	    if (iframes)
 	    {
-		tr.childNodes[5].className += " iframe";
-		tr.childNodes[5].title = iframes;
+		var c = (iframes.allowed ? 'iframe' : 'blocked_iframe');
+		tr.childNodes[5].className += " " + c;
+		tr.childNodes[5].title = iframes.title;
 	    }
 	    if (host_allowed_globally(h))
 		tr.childNodes[6].className += " visible";
@@ -2469,6 +2480,7 @@ img	{ width:1px; height:1px; vertical-align:middle; background-size:contain; }  
 .blocked img		{ content:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNAay06AAAAAVdEVYdENyZWF0aW9uIFRpbWUAMTkvNS8wOcYlgL0AAAEHSURBVDiNpZNBagIxFIa/iAfoIRSKLXRc1YUL3XXRCwjCFC9QjzK9gOiqV+huNm66Mou2COMhPIB56aImTTIwgvND4OUlf/K/lz/KWksbdFqxga4LlFI+eViMX4BXIDunNPDWW23Xbo9TrnygFIfF+AYoA2IKDUx7q+3R8brhqjXSROa8VgJDl/A9qOajHCMZRrgwsmo+yms9sCdZhlf13z+jq6vZYzhdApv4ACNN0rFG0lISBfGGSwd4/PvAiI5qTRH3QdcVnKQA1m6+f35oElS4IPLBz9P9juZnBNCDj6+h48VWNjKplZJKNzIJKZECh+/pbc7fU4VWLu7K/caXnFr5WrT+jb97bZAgYc+wFgAAAABJRU5ErkJggg==') }  \n\
 .not_loaded img		{ content:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQBAMAAADt3eJSAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAADBQTFRFAAAA////AAAAAAAAAAAAAAAAAAAAAAAAkAAAlwAAtAAAvgAAyAAA0QAA2AAA3QAA7lpb0AAAAAh0Uk5TAAAMEx4wP0EqzeGOAAAAQElEQVQIW2MShAImBigAMT7JQxk2Rz5AGP8/KUAZH6FS/z/gZJzaBxO5+wDCMAtiQDPnzH2oCM9eqBrG9wIMDABr1Bip1wrS4AAAAABJRU5ErkJggg==') }  \n\
 .iframe	img		{ content:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNAay06AAAAAVdEVYdENyZWF0aW9uIFRpbWUAMTkvNS8wOcYlgL0AAAJdSURBVDiNpZPNS1RRGMZ/Zz69M+rAmFY6BZph9ClB1E6tRWGQGwkK+gOEwFlGIAy4yVUjBP0BUeHSIGlVuhAqQ5QKElMhVGYcZ3Q+79xz7tzbYuyO6dIDZ/M+5/2d9zw8R9i2zVGW52Chf3StF4iGGvwDWl1VLukmuYIxCcSnRtqn958X+yfoH12Ln2gODnd1NOH3ubGsat0lwFAVllbTJFLF8amR9ughwJ3YcvxiV8twS1OQggH5ss3Kt/cAdF67S0OdoN4Pye0iP5a2xj/EzkYdwM0nC73Hmxs/XT7XRipvo6sq9OUjDYChVzoCCPgF4aDg+68Nkqlc38dn3dMuAKmXoh2nwqTzimxRIqVCSuU8TUqFIRU7eUkmr2iPhJF6KeqYWOdnQAjB1o6BtWdJavUrfUM7ALRduu3AthVEmjz4fQw4ALcApUzKRu3W59FbnI/4ALgfT9SmAQxp43HtGQygpI40zP/209dbtaYDmpIVlNRrOdhNZzBNE8s0Ma3Dwdrvh8ctsCqC3XSmNkEqsTGZzxWo91soqZCGIrk86zQll2eRRrUe9FrksgVSiY1JByDLxfji/Bya18bvtjCkYmJs0AFMjA1iSIXmtQn4bBbn55DlYtzJAUD4+kj86o2e4ZNtp8mVKmTyCmlWNZ9XEG7wEgq42Vz/w/znmfHMl9FakIQQASASuvI41nqm+0HXhW40TaOyF2W3C3RdZ+nnApsrC2+ziy9iwLpt26V/ADfQCmjBjnu93lDnw8ZjkR4tUA+AXiqQ216fUdnfb4qr76YBHdi0bbsijvqd/wLzRz8kxE0gIwAAAABJRU5ErkJggg==') }  \n\
+.blocked_iframe img	{ content:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEgAACxIB0t1+/AAAAAd0SU1FB90CAg8VBIk5W4oAAAI2SURBVDjLpZOxTxsxFIc/u76g5JZDQAURDEgwIQa2bKUbW1jb/wBFgmxs2dkCUljZ2hWY2EqZwpKFIRJEYgBVkQCdBHfnnH3HdWmOpIxYeov9/Pn93u9ZZFnGR5b6f6PVaq0Dddd1q4VCAYA4jomi6ARo1mq189F8MVpBq9VqTk5O7iwsLOA4DsMzIQTWWu7u7vB9f79Wq9XfAQ4ODpqLi4s7nudhjCGOYy4vLwGoVCpMTExQKBTwfZ/b29v97e3teg7Y29tbn5qa+rW0tEQYhlhrAdjc3ATg+PgYIQSO41Aqlej1ejw9PX3d3d09lwCDwaBeLpcJgoAoirDW5hAAay3GGMIwJAgC5ubmGAwG9byJSqmqEILn5+dc9/X1dS5hbW0thyVJgud5KKWqOUBKibWWOI7zxK2tLWZnZwE4Ojoac8oYg5QSADm0aVj2ME5PT8ckjEaSJPljCsD3fZIkIU1TXl9f3w3LaD+klKRpiu/7bxX0+/2TIAhwHCdvWLfbzS91u12MMRhjcByHl5cX+v3+SQ7QWjc7nQ5KKaSUGGNoNBo5oNFoYIxBKYVSik6ng9a6OTZIGxsbzUqlsjM/P4/WmjAMSZKEfy7hui7FYpH7+3va7fb+2dnZm41CiBJwqLX+vLy8/G1lZQXP88ZGWWtNu93m5ubm58XFxaEQopRlWSSyLEMI8QkoA8XV1dX16enp7zMzM19c1wUgDEMeHh5+Pz4+/ri6ujoHNPAny7JUfPQ7/wU6Sj1iFxnCnwAAAABJRU5ErkJggg==') }  \n\
   \n\
 /* 'script allowed globally' icon */  \n\
 .allowed_globally img		{ visibility:hidden; padding: 0px 3px; width:14px; height:14px; vertical-align:middle;  \n\
@@ -2530,16 +2542,16 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
       'main_button' : '<widget name="main_button" init><div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>',
       'main_menu' : '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout ><h1 id="menu_title" >JSArmor</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img>Filtered</li><li class="relaxed" formode="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img>Allow All</li><li id="details_item" onclick="show_details">Details…</li></ul></div></widget>',
       'host_table' : '<widget name="host_table"><table id="host_table"></table></widget>',
-      'host_table_row' : '<widget name="host_table_row"><table><tr  onclick><td width="1%"></td><td width="1%"><img/></td><td width="1%"><input type="checkbox" checked="true"></td><td width="1%" class="host_part">code.</td><td class="domain_part">jquery.com</td><td width="1%"><img/></td><td width="1%" class="allowed_globally"><img/></td><td width="1%" class="script_count">[1]</td></tr></table></widget>',
+      'host_table_row' : '<widget name="host_table_row"><table><tr  onclick><td width="1%"></td><td width="1%"><img/></td><td width="1%"><input type="checkbox"></td><td width="1%" class="host_part">code.</td><td class="domain_part">jquery.com</td><td width="1%"><img/></td><td width="1%" class="allowed_globally"><img/></td><td width="1%" class="script_count">[1]</td></tr></table></widget>',
       'details_menu' : '<widget name="details_menu" init><div id="details_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Scripts</h1><ul id="menu_content"><li id="last_item" onclick="options_menu">Options…</li></ul></div></widget>',
       'script_detail' : '<widget name="script_detail" host script init><li><img/><a></a></li></widget>',
       'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><ul id="menu_content"><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes" 		     title="" 		     state="`show_ui_in_iframes" 		     callback="`toggle_show_ui_in_iframes"/></checkbox_item><checkbox_item label="Auto-hide main button" 		     title="" 		     state="`autohide_main_button" 		     callback="`toggle_autohide_main_button"/></checkbox_item><select_menu_display_logic></select_menu_display_logic><li id="$id" onclick="edit_whitelist">Edit whitelist…</li><li id="$id" onclick="null">Reload method</li><li class="separator"></li><li id="$id" onclick="null">Load custom style…</li><li id="$id" onclick="null">Save current style…</li><li class="separator"></li><li id="$id" onclick="export_settings">Save Settings…</li><li><form id="import_settings"><input type=file id=import_btn autocomplete=off oninit="import_settings_init" >Load Settings...</form></li><li id="$id" onclick="reset_settings">Clear All Settings…</li><li class="separator"></li><li id="$id" onclick="go_to_help_page">Help</li><li id="$id" onclick="null">About</li></ul></div></widget>',
-      'select_iframe_logic' : '<widget name="select_iframe_logic" init><li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filtered: block if host not allowed in the menu. Normal Page: current mode applies.">Javascript in iframes:<input type="radio" name="radio"/><label>Block All</label><input type="radio" name="radio"/><label>Filtered</label><input type="radio" name="radio"/><label>Normal Page</label></li></widget>',
+      'select_iframe_logic' : '<widget name="select_iframe_logic" init><li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive here).">Scripts in iframes:<input type="radio" name="radio"/><label>Block All</label><input type="radio" name="radio"/><label>Filter</label><input type="radio" name="radio"/><label>Allow</label></li></widget>',
       'select_menu_display_logic' : '<widget name="select_menu_display_logic" init><li id="menu_display"  class="inactive">Menu popup:<input type="radio" name="radio"/><label>Auto</label><input type="radio" name="radio"/><label>Delay</label><input type="radio" name="radio"/><label>Click</label></li></widget>',
       'whitelist_editor' : '<widget name="whitelist_editor" init><div class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Global Whitelist</h1><ul id="menu_content"><li><textarea spellcheck="false" id="whitelist"></textarea></li><li class="inactive"><button onclick="save_whitelist">Save</button><button onclick="close_menu">Cancel</button></li></ul></div></widget>',
       'checkbox_item' : '<widget name="checkbox_item" id title label state callback init><li><input type="checkbox"/></li></widget>',
       'scope_widget' : '<widget name="scope_widget" init><li id="scope" class="inactive">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li></widget>',
-      'block_all_settings' : '<widget name="block_all_settings" init><block_inline_scripts></block_inline_scripts><checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags" 		 title="Interpret noscript tags as if javascript was disabled in opera." 		 state="`handle_noscript_tags" 		 callback="`toggle_handle_noscript_tags"/></checkbox_item></widget>',
+      'block_all_settings' : '<widget name="block_all_settings" init><block_inline_scripts></block_inline_scripts><checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags" 		 title="Treat noscript tags as if javascript was disabled in opera (useful to access the non-javascript version of websites)" 		 state="`handle_noscript_tags" 		 callback="`toggle_handle_noscript_tags"/></checkbox_item></widget>',
       'block_inline_scripts' : '<widget name="block_inline_scripts" ><li id="block_inline_scripts"><input type="checkbox"/>Block Inline Scripts<div class="right_item">[-2k]</div></li></widget>'
     };
 

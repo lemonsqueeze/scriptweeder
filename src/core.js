@@ -33,8 +33,8 @@ function(){   // fake line, keep_editor_happy
     // as if javascript was disabled in opera
     var default_handle_noscript_tags = true;
 
-    // 'block_all'   'ask_parent'   'normal_page'
-    var default_iframe_logic = 'ask_parent';
+    // 'block_all'   'filter'   'allow'
+    var default_iframe_logic = 'filter';
 
     
     /********************************* Globals *********************************/
@@ -171,7 +171,8 @@ function(){   // fake line, keep_editor_happy
 
     
     /**************************** Mode and page stuff *************************/
-    
+
+    // reload top window really: with 'filtered' iframe logic, iframes need parent to reload.
     function reload_page()
     {
 	// All of these reload from server ...
@@ -179,10 +180,12 @@ function(){   // fake line, keep_editor_happy
 	//   history.go(0);
 	//   location.href = location.href;
 
+	if (window != window.top)		// in iframe
+	    window.top.location.reload();
+	
 	// Hack: simulate click on a link to reload from cache !
 	var a = document.createElement('a');
 	a.href = location.href;
-	// a.innerText = 'this page';
 	document.body.appendChild(a);
 	
 	// simulateClick() from
@@ -255,36 +258,35 @@ function(){   // fake line, keep_editor_happy
     
     function init_iframe_logic()
     {
-	show_ui_in_iframes = global_bool_setting("iframe_ui", default_iframe_ui);
+	show_ui_in_iframes = global_bool_setting('show_ui_in_iframes', default_show_ui_in_iframes);
 	iframe_message_header = "jsarmor lost iframe rescue channel:";    
 	
-	iframe_logic = global_setting('iframe');
-	if (iframe_logic != 'block_all' && iframe_logic != 'ask_parent' && iframe_logic != 'normal_page')
+	iframe_logic = global_setting('iframe_logic');
+	if (iframe_logic != 'block_all' && iframe_logic != 'filter' && iframe_logic != 'allow')
 	    iframe_logic = default_iframe_logic;
-
-	// handles messages from both parent and iframes.
-	if (iframe_logic == 'ask_parent')
-	    window.addEventListener('message',	message_handler,	false);	    
 	
 	if (window == window.top) // not running in iframe ?
 	    return;
+
+	// tell parent about us so it can display our host in the menu.
+	// for 'filter' iframe_logic, this is also asking for its hostname.
+	window.top.postMessage(iframe_message_header + location.href, '*');
 	
 	// switch mode depending on iframe_logic
 	// TODO: add way to override with page setting *only*, which should be safe enough
 	
-	if (iframe_logic != 'ask_parent')
+	if (iframe_logic != 'filter')
 	{
 	    if (iframe_logic == 'block_all')
-		set_mode_no_update('block_all');
-	    // 'normal_page' -> treat as normal page, nothing to do.
+		iframe_block_all_mode();
+	    // 'allow' -> treat as normal page, nothing to do.
 	    return;
 	}
 	
-	// 'ask_parent' logic: use parent's settings to decide if we're allowed to run.
-	// for that we need our parent's hostname, but because of cross-domain restrictions
-	// we can't find out on our own. Ask for help ...
+	// 'filter' logic uses parent window's settings to decide what to do with page scripts.
+	// for that we need parent's hostname, but because of cross-domain restrictions we can't
+	// find out on our own. Wait for msg from parent.
 	async_init_request = true;
-	window.parent.postMessage(iframe_message_header + location.href, '*');  // who is my parent ? this is my url.
 	return;
     }
 
@@ -304,12 +306,14 @@ function(){   // fake line, keep_editor_happy
 	else
 	    message_from_iframe(e, content);
     }
-    
+
+    // iframe instance making itself known to us. (works for nested iframes unlike DOM harvesting)
     function message_from_iframe(e, url)
     {
-	// alert("message from iframe: host=" + url_hostname(url));	
-	e.source.postMessage(iframe_message_header + current_host, '*'); // little iframe, this is your parent.
-	add_iframe(url);						 // add to menu so we can block/allow it.
+	// alert("message from iframe: host=" + url_hostname(url));
+	if (iframe_logic == 'filter') // it needs our hostname
+	    e.source.postMessage(iframe_message_header + current_host, '*');
+	add_iframe(url);			// add to menu so we can block/allow it.
 	if (main_ui) // UIFIXME
 	    repaint_ui();	
     }
@@ -327,17 +331,20 @@ function(){   // fake line, keep_editor_happy
 	
 	// alert("iframe " + location.hostname + " allowed: " + allowed);
 	if (!allowed)
-	{
-	    // can't set_mode_no_update('block_all'), it would save the setting.
-	    mode = 'block_all';
-	    block_inline_scripts = true;
-	    handle_noscript_tags = true;
-	}
+	    iframe_block_all_mode();
 	// else: allowed. treat it as a normal page: current mode applies.
 	
 	async_init_finished(); // happy now =)
     }
 
+    // can't use set_mode_no_update('block_all'), it would save the setting.
+    function iframe_block_all_mode()
+    {
+	mode = 'block_all';
+	block_inline_scripts = true;
+	handle_noscript_tags = true;
+    }
+    
     function add_iframe(url)
     {
 	var host = url_hostname(url);
@@ -348,12 +355,6 @@ function(){   // fake line, keep_editor_happy
 	var host_node = get_host_node(host, domain_node, true);
 	host_node.iframes.push(i);
 	return i;
-    }
-
-    function need_iframe_parent_handling()
-    {
-	return (iframe_logic == 'ask_parent' &&
-		document.querySelector('iframe'));
     }
     
     // TODO show iframe placeholder ?
@@ -697,9 +698,9 @@ function(){   // fake line, keep_editor_happy
 //UIFIXME    
     function domcontentloaded_handler(e, deferred_call)
     {
-        if (!there_is_work_todo &&
-	    !need_iframe_parent_handling())
-            return;  // no scripts ? exit.
+        if (!there_is_work_todo &&		// no scripts ?
+	    !document.querySelector('iframe'))	// no iframes ?
+            return;				// don't show ui.
 
 	if (block_inline_scripts)
 	    check_handle_noscript_tags();
@@ -731,7 +732,9 @@ function(){   // fake line, keep_editor_happy
 	opera.addEventListener('BeforeEvent.load',               deferred(beforeload_handler, true),		false);
 	document.addEventListener('DOMContentLoaded',            deferred(domcontentloaded_handler, true),	false);
 
-	// message handler setup is in init_iframe_logic()
+	// messaging between top window and iframes.
+	// FIXME need to make sure page isn't seeing our messages	
+	window.addEventListener('message',	message_handler,	false);	
     }
     
 }   // keep_editor_happy

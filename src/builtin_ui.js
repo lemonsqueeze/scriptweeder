@@ -21,8 +21,8 @@ function(){   // fake line, keep_editor_happy
     // called only once.
     function ui_init()
     {
-	autohide_main_button = global_bool_setting("autohide_main_button", default_autohide_main_button);
-	menu_display_logic = global_setting("menu_display_logic", default_menu_display_logic);	
+	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
+	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);	
 	if (menu_display_logic == 'click')
 	    window.addEventListener('click',  function (e) { close_menu(); }, false);	
     }
@@ -56,16 +56,17 @@ function(){   // fake line, keep_editor_happy
 
     function scope_widget_init(widget)
     {	
-	setup_radio_buttons(widget, scope, change_scope);
+	setup_radio_buttons(widget, "scope", scope, change_scope);
     }
 
-    function setup_radio_buttons(widget, current, f)
+    function setup_radio_buttons(widget, name, current, f)
     {
 	var l = widget.getElementsByTagName('input');
 
 	for (var i = 0; i < l.length; i++)
 	{
 	    var radio = l[i];
+	    radio.name = name; // radio group
 	    radio.checked = (current == i);
 	    radio.number = i;
 	    radio.onclick = function() { f(this.number); };
@@ -162,15 +163,15 @@ function(){   // fake line, keep_editor_happy
     
     function select_iframe_logic_init(widget)
     {
-	var iframe_logic_values = ['block_all', 'ask_parent', 'normal_page'];
+	var iframe_logic_values = ['block_all', 'filter', 'allow'];
 	var f = function (n)
 	{
-	    set_global_setting('iframe', iframe_logic_values[n]);
+	    set_global_setting('iframe_logic', iframe_logic_values[n]);
 	    need_reload = true;
 	};
 
 	var index = iframe_logic_values.indexOf(iframe_logic);
-	setup_radio_buttons(widget, index, f);
+	setup_radio_buttons(widget, "iframe_logic", index, f);
     }
 
     function select_menu_display_logic_init(widget)
@@ -183,13 +184,13 @@ function(){   // fake line, keep_editor_happy
 	};
 
 	var index = menu_display_logic_values.indexOf(menu_display_logic);
-	setup_radio_buttons(widget, index, f);
+	setup_radio_buttons(widget, "menu_display_logic", index, f);
     }
 
     function toggle_show_ui_in_iframes(event)
     {
-	var new_val = !global_bool_setting("iframe_ui", default_iframe_ui);
-	set_global_bool_setting("iframe_ui", new_val);
+	var new_val = !global_bool_setting('show_ui_in_iframes', default_show_ui_in_iframes);
+	set_global_bool_setting('show_ui_in_iframes', new_val);
 	// update ui
 	this.checkbox.checked = new_val;
 	need_reload = true;
@@ -197,8 +198,8 @@ function(){   // fake line, keep_editor_happy
 
     function toggle_autohide_main_button(event)
     {
-	var new_val = !global_bool_setting("autohide_main_button", default_autohide_main_button);
-	set_global_bool_setting("autohide_main_button", new_val);
+	var new_val = !global_bool_setting('autohide_main_button', default_autohide_main_button);
+	set_global_bool_setting('autohide_main_button', new_val);
 	// update ui
 	this.checkbox.checked = new_val;
 	need_repaint = true;
@@ -445,15 +446,20 @@ function(){   // fake line, keep_editor_happy
 	repaint_ui_now();
     };
 
-    function iframe_tooltip(hn)
+    function iframe_info(hn, allowed)
     {
 	if (!hn.iframes || !hn.iframes.length)
 	    return null;
-
 	var n = hn.iframes.length;
 	var title = n + " iframe" + (n>1 ? "s" : "");
-	//icon.title += " See details.";
-	return title;
+	if (iframe_logic != 'filter')
+	    title += ". use 'filter' iframe setting to block/allow in the menu.";
+	
+	if (iframe_logic == 'block_all')
+	    allowed = false;
+	if (iframe_logic == 'allowed')
+	    allowed = true;
+	return {title: title, allowed: allowed};
     }
 
     function not_loaded_tooltip(hn, allowed)
@@ -489,11 +495,12 @@ function(){   // fake line, keep_editor_happy
 	{
 	    var d = dn.name;
 	    var h = hn.name;
+	    var allowed = allowed_host(h);
 	    var host_part = h.slice(0, h.length - d.length);
-	    var not_loaded = not_loaded_tooltip(hn, allowed_host(h));
+	    var not_loaded = not_loaded_tooltip(hn, allowed);
 	    var count = "[" + hn.scripts.length + "]";
 	    var helper = hn.helper_host;
-	    var iframes = iframe_tooltip(hn);
+	    var iframes = iframe_info(hn, allowed);
 
 	    tr = new_widget("host_table_row");
 	    tr = tr.firstChild.firstChild; // skip dummy <table> and <tbody> tags
@@ -505,15 +512,16 @@ function(){   // fake line, keep_editor_happy
 		tr.childNodes[1].className += " not_loaded";
 		tr.childNodes[1].title = not_loaded;
 	    }
-	    tr.childNodes[2].firstChild.checked = allowed_host(h);
+	    tr.childNodes[2].firstChild.checked = allowed;
 	    tr.childNodes[3].innerText = host_part;
 	    tr.childNodes[4].innerText = d;
 	    if (helper)
 		tr.childNodes[4].className += " helper";
 	    if (iframes)
 	    {
-		tr.childNodes[5].className += " iframe";
-		tr.childNodes[5].title = iframes;
+		var c = (iframes.allowed ? 'iframe' : 'blocked_iframe');
+		tr.childNodes[5].className += " " + c;
+		tr.childNodes[5].title = iframes.title;
 	    }
 	    if (host_allowed_globally(h))
 		tr.childNodes[6].className += " visible";

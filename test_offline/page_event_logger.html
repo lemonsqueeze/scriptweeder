@@ -1,0 +1,118 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" href="../src/jsarmor.css" type="text/css" />
+</head>
+<body>
+
+<script type="text/javascript">
+(function()
+{
+// http://www.opera.com/docs/userjs/examples/
+
+    //   running in frame
+    if (window != window.top)
+    {
+	var desc = location.href;
+	if (window.name == 'noscript_iframe')
+	{
+	    desc = "noscript iframe";
+	    log("not logging frame events (" + desc + ")");
+	    return;
+	}
+    }
+
+    function log(msg)
+    {
+        var h = "page logger: ";
+	var s =  "main  : ";
+	if (window != window.top)
+	    s = "iframe: ";
+	console.log(h + s + msg);
+    }
+
+    function handler(event)
+    {
+	//if (e.event.target && e.event.target.tagName &&
+	//e.event.target.tagName.toLowerCase() != "iframe")
+	//return;
+
+	if (event.target && event.target.tagName)
+	    log("event: " + event.type + "<" + event.target.tagName + ">");
+	else
+	    log("event: " + event.type);
+	// e.preventDefault();
+    }
+
+    var events = ['mousemove', 'mouseover', 'mouseout', 'mouseenter',
+		  'click', 'dblclick',
+		  'keydown', 'keyup', 'keypress',
+		  'blur', 'DOMFocusOut', 'DOMFocusIn', 'focusout', 'focusin',
+		  'error', 'resize',
+		  'load', 'readystatechange',
+ 		  'DOMContentLoaded', 'DOMFrameContentLoaded'];
+    for (var i = 0; i < events.length; i++)
+	document.addEventListener(events[i], handler, false);
+    log("started");
+    
+})();
+</script>
+
+<h1>Page event logger</h1>
+Log of events -> console.
+<br>
+<br>
+
+
+<div id="main">
+<div id="main_menu" class="menu" onmouseout="" style="display: inline-block">
+<h1 id="menu_title" title="jsarmor v1.5.0 (dev)">JSArmor</h1>
+<ul>
+<li id="scope" class="inactive">
+Set for:
+<input type="radio" name="radio"/>
+<label>Page</label>
+<input type="radio" name="radio"/>
+<label>Site</label>
+<input type="radio" name="radio"/>
+<label>Domain</label>
+<input type="radio" name="radio"/>
+<label>Global</label>
+</li>
+<li class="block_all selected" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit">
+<img/>
+Block All
+</li>
+<li id="block_inline_scripts">
+<input type="checkbox"/>
+Block Inline Scripts
+<div class="right_item"> [1.4k]</div>
+</li>
+<li id="handle_noscript_tags">
+<input type="checkbox"/>
+Pretend Javascript Disabled
+</li>
+<li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit">
+<img/>
+Filtered
+</li>
+<li class="relaxed" formode="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit">
+<img/>
+Relaxed
+</li>
+<li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit">
+<img/>
+Allow All
+</li>
+<li id="details_item" onclick="show_details">Details…</li>
+</ul>
+</div>
+<div id="main_button" class="main_menu_sibling block_all" onmouseover="" onclick="" onmouseout="" title="[Inline scripts] 1 blocked (1.4k), [localhost] 0 blocked, [Other hosts] 0 blocked">
+<button>
+<img id="main_button_image"/>
+</button>
+</div>
+</div>
+
+</body></html>
