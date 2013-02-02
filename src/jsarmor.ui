@@ -51,15 +51,15 @@
   <table>      <!-- hack, opera 12 doesn't like to see tr without table -->
     <tr  onclick>
       <td width="1%"></td>
-      <td width="1%"><img/></td>			<!-- not loaded -->
-      <td width="1%">
+      <td width="1%" class="td_not_loaded"><img/></td>		<!-- not loaded -->
+      <td width="1%" class="td_checkbox">
 	<input type="checkbox">
       </td>
-      <td width="1%" class="host_part">code.</td>
-      <td class="domain_part">jquery.com</td>
-      <td width="1%"><img/></td>			<!-- iframe -->
-      <td width="1%" class="allowed_globally"><img/></td>
-      <td width="1%" class="script_count">[1]</td>
+      <td width="1%" class="td_host">code.</td>
+      <td class="td_domain">jquery.com</td>
+      <td width="1%" class="td_iframe"><img/></td>		<!-- iframe -->
+      <td width="1%" class="td_allowed_globally allowed_globally"><img/></td>
+      <td width="1%" class="td_script_count">[x]</td>
     </tr>
   </table>
 </widget>
@@ -97,7 +97,7 @@
       <select_menu_display_logic></select_menu_display_logic>
 
       <menu_item label="Edit whitelist…" onclick="edit_whitelist"/>
-      <menu_item label="Reload method" onclick="null"/>
+      <select_reload_method></select_reload_method>
 
       <separator/>
       <menu_item label="Load custom style…" onclick="null"/>
@@ -127,6 +127,13 @@
     <radio_button label="Auto"/>
     <radio_button label="Delay"/>
     <radio_button label="Click"/>
+  </li>
+</widget>
+
+<widget name="select_reload_method" init>
+  <li id="reload_method" class="inactive" title="Cache: reload from cache (fastest). Normal: slow but sure.">Reload method:
+    <radio_button label="Cache"/>
+    <radio_button label="Normal"/>
   </li>
 </widget>
 
@@ -197,7 +204,7 @@
 <widget name="block_all_settings" init>
   <block_inline_scripts></block_inline_scripts>  
   <checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags"
-		 title="Treat noscript tags as if javascript was disabled in opera (useful to access the non-javascript version of websites)"
+		 title="Treat noscript tags as if javascript was disabled in opera. Useful to access the non-javascript version of websites."
 		 state="`handle_noscript_tags"
 		 callback="`toggle_handle_noscript_tags"/></checkbox_item>
 </widget>

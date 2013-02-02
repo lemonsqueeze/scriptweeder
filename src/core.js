@@ -39,11 +39,13 @@ function(){   // fake line, keep_editor_happy
     
     /********************************* Globals *********************************/
 
-    /** stuff load_global_settings() takes care of **/
+    /* stuff load_global_settings() takes care of */
     var current_host;
     var current_domain;    
     var block_inline_scripts = false;
     var handle_noscript_tags = false;
+    var reload_method;
+    /* end */
 
     var iframe_logic;
     var there_is_work_todo = false;    
@@ -155,6 +157,7 @@ function(){   // fake line, keep_editor_happy
     {
 	load_global_context(location.hostname);
 	init_iframe_logic();
+	reload_method = global_setting('reload_method', 'cache');
     }
     
     // can be used to check on another page's settings.
@@ -175,21 +178,22 @@ function(){   // fake line, keep_editor_happy
     // reload top window really: with 'filtered' iframe logic, iframes need parent to reload.
     function reload_page()
     {
+	if (window != window.top)		// in iframe, no choice there.
+	    window.top.location.reload();
+
 	// All of these reload from server ...
 	//   location.reload(false);
 	//   history.go(0);
-	//   location.href = location.href;
-
-	if (window != window.top)		// in iframe
-	    window.top.location.reload();
+	//   location.href = location.href;	
+	if (reload_method != 'cache')
+	    location.reload(false);		// no need to return i presume.
 	
-	// Hack: simulate click on a link to reload from cache !
+	// hack! simulate click on a link to reload from cache !
 	var a = document.createElement('a');
 	a.href = location.href;
 	document.body.appendChild(a);
 	
-	// simulateClick() from
-	// https://developer.mozilla.org/samples/domref/dispatchEvent.html
+	// simulateClick() from https://developer.mozilla.org/samples/domref/dispatchEvent.html
 	var evt = document.createEvent("MouseEvents");
 	evt.initMouseEvent("click", true, true, window,
 			   0, 0, 0, 0, 0, false, false, false, false, 0, null);
@@ -290,13 +294,14 @@ function(){   // fake line, keep_editor_happy
 	return;
     }
 
-    function message_handler(e)
+    function before_message_handler(before_event)
     {
+	var e = before_event.event;
 	var m = e.data;
 	if (typeof(m) != "string" ||
 	    !is_prefix(iframe_message_header, m))
-	    return;		// i only care about my children/parent.
-	e.preventDefault();	// keep this conversation private.
+	    return;			// i only care about my children/parent.
+	before_event.preventDefault();	// keep this conversation private.
 
 	var content = m.slice(m.indexOf(':') + 1);
 	var source = e.source;	// WindowProxy of sender
@@ -310,7 +315,7 @@ function(){   // fake line, keep_editor_happy
     // iframe instance making itself known to us. (works for nested iframes unlike DOM harvesting)
     function message_from_iframe(e, url)
     {
-	// alert("message from iframe: host=" + url_hostname(url));
+	// log("message from iframe: host=" + url_hostname(url));
 	if (iframe_logic == 'filter') // it needs our hostname
 	    e.source.postMessage(iframe_message_header + current_host, '*');
 	add_iframe(url);			// add to menu so we can block/allow it.
@@ -320,7 +325,7 @@ function(){   // fake line, keep_editor_happy
     
     function message_from_parent(e, parent_host)
     {
-	//alert("message from parent: host=" + host);
+	// log("message from parent: host=" + parent_host);
 	
 	// now that we know parent window's hostname we can decide what to do.
 	// does our parent allow us ?
@@ -734,7 +739,9 @@ function(){   // fake line, keep_editor_happy
 
 	// messaging between top window and iframes.
 	// FIXME need to make sure page isn't seeing our messages	
-	window.addEventListener('message',	message_handler,	false);	
+	//window.addEventListener('message',	message_handler,	false);
+	opera.addEventListener('BeforeEvent.message',			before_message_handler,		false);	
     }
-    
+
+
 }   // keep_editor_happy

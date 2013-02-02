@@ -163,14 +163,16 @@ function(){   // fake line, keep_editor_happy
     // if the page's scripts have such a handler and we didn't define one, now it'd get called !
     function init_widget(wrap, content, name, init_proxy)
     {
-	content = (content ? content : wrap);
+	var widget = (content ? content : wrap);
+	if (wrap.children.length > 1) // call init on the wrapper for forest widgets.
+	    widget = wrap;
 	
 	if (!wrap.hasAttribute('init'))
 	    return;
 	if (init_proxy)
-	    init_proxy(content);
+	    init_proxy(widget);
 	else // no proxy ? widget_init() takes no args then, call it directly.
-	    (eval(name + "_init"))(content);
+	    (eval(name + "_init"))(widget);
     }
 
     function call_oninit_handlers(widget)

@@ -24,7 +24,7 @@ function(){   // fake line, keep_editor_happy
 	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
 	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);	
 	if (menu_display_logic == 'click')
-	    window.addEventListener('click',  function (e) { close_menu(); }, false);	
+	    window.addEventListener('click',  function (e) { close_menu(); }, false);
     }
     
     function create_main_ui()
@@ -42,6 +42,7 @@ function(){   // fake line, keep_editor_happy
     function checkbox_item_init(li, id, title, label, state, callback)
     {
 	li.id = id;
+	li.title = title;
 	li.innerHTML += label; // hack
 	setup_checkbox_item(li, state, callback);
     }
@@ -83,7 +84,7 @@ function(){   // fake line, keep_editor_happy
 	    }
 	}
     }
-
+    
     function toggle_allow_inline(event)
     {
       block_inline_scripts = !block_inline_scripts;
@@ -187,22 +188,38 @@ function(){   // fake line, keep_editor_happy
 	setup_radio_buttons(widget, "menu_display_logic", index, f);
     }
 
+    function select_reload_method_init(widget)
+    {
+	var reload_method_values = ['cache', 'normal'];
+	var f = function (n)
+	{
+	   reload_method = reload_method_values[n];
+	   set_global_setting('reload_method', reload_method);
+	};
+
+	var index = reload_method_values.indexOf(reload_method);
+	setup_radio_buttons(widget, "reload_method", index, f);
+    }
+    
+    // returns toggled value, sets setting and updates this.checkbox
+    function toggle_global_setting(w, value, setting)
+    {
+	value = !value;
+	w.checkbox.checked = value;	// update ui
+	set_global_bool_setting(setting, value);
+	return value;
+    }
+    
     function toggle_show_ui_in_iframes(event)
     {
-	var new_val = !global_bool_setting('show_ui_in_iframes', default_show_ui_in_iframes);
-	set_global_bool_setting('show_ui_in_iframes', new_val);
-	// update ui
-	this.checkbox.checked = new_val;
+	show_ui_in_iframes = toggle_global_setting(this, show_ui_in_iframes, 'show_ui_in_iframes');
 	need_reload = true;
     }
 
     function toggle_autohide_main_button(event)
     {
-	var new_val = !global_bool_setting('autohide_main_button', default_autohide_main_button);
-	set_global_bool_setting('autohide_main_button', new_val);
-	// update ui
-	this.checkbox.checked = new_val;
-	need_repaint = true;
+	autohide_main_button = toggle_global_setting(this, autohide_main_button, 'autohide_main_button');
+	need_reload = true;
     }
 
     function go_to_help_page()
