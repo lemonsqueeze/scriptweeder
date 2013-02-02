@@ -1389,7 +1389,8 @@
 	idoc.close();
 
 	init_style();
-	init_layout();	
+	init_layout();
+	ui_init();
 	create_main_ui();
 	parent_main_ui();
 	resize_iframe();
@@ -1769,21 +1770,25 @@
     var autohide_main_button;
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
-    
-    function create_main_ui()
+
+    // called only once.
+    function ui_init()
     {
 	autohide_main_button = global_bool_setting("autohide_main_button", default_autohide_main_button);
 	menu_display_logic = global_setting("menu_display_logic", default_menu_display_logic);	
-	main_ui = new_widget("main");
 	if (menu_display_logic == 'click')
-	    window.addEventListener('click', window_onclick, false);
+	    window.addEventListener('click',  function (e) { close_menu(); }, false);	
+    }
+    
+    function create_main_ui()
+    {
+	main_ui = new_widget("main");
     }
 
     function parent_main_ui()
     {
 	idoc.body.appendChild(main_ui);
-    }
-    
+    }    
 
     /****************************** widget handlers *****************************/
 
@@ -2027,16 +2032,15 @@
 	if (!mouseout_leaving_menu(e, nsmenu) ||
 	    menu_display_logic == 'click')
 	    return false;
-	show_hide_menu(false);
-	if (need_reload)
-	    reload_page();
 	return true;
     }
 
-    // hide menu on clickout for menu_display_logic == 'click'
-    function window_onclick()
+    function close_menu(keep_menu)
     {
-	close_menu();
+	show_hide_menu(false);
+	if (!keep_menu)
+	    switch_menu(null);
+	
 	if (need_reload)
 	    reload_page();
 	if (need_repaint)
@@ -2045,7 +2049,9 @@
     
     function main_menu_onmouseout(e)
     {
-	really_leaving_menu(e);
+	if (!really_leaving_menu(e))
+	    return;
+	close_menu(true);
     }
 
     function menu_onmouseout(e)
@@ -2053,17 +2059,16 @@
 	if (!really_leaving_menu(e))
 	    return;
 	close_menu();
-	if (need_repaint)
-	    repaint_ui_now();
     }
-
+    
     function mouseout_leaving_menu(e, menu)
     {
 	var reltg = e.relatedTarget;
 	if (reltg)
 	{
-  	    if (reltg.id == 'jsarmor_button')
-		return false; // moving back to button, doesn't count
+	    // don't think we need this anymore ...
+  	    //if (reltg.id == 'main_button')
+	    //	return false; // moving back to button, doesn't count
 	    while (reltg != menu && reltg.nodeName != 'HTML')
 		reltg = reltg.parentNode;
 	    if (reltg == menu)
@@ -2072,11 +2077,6 @@
 	return true;
     }    
 
-    function close_menu()
-    {
-	switch_menu(null);
-    }
-    
     function switch_menu(menu)
     {
 	show_hide_menu(false);

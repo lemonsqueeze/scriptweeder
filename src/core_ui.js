@@ -322,7 +322,8 @@ function(){   // fake line, keep_editor_happy
 	idoc.close();
 
 	init_style();
-	init_layout();	
+	init_layout();
+	ui_init();
 	create_main_ui();
 	parent_main_ui();
 	resize_iframe();
