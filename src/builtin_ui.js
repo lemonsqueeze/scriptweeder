@@ -7,6 +7,7 @@ function(){   // fake line, keep_editor_happy
 
     var default_autohide_main_button = false;
     var default_menu_display_logic = 'auto';
+    var default_show_scripts_in_main_menu = false; // for now.
     
     // can be used to display stuff in jsarmor menu from outside scripts.
     var enable_plugin_api = false;
@@ -17,6 +18,8 @@ function(){   // fake line, keep_editor_happy
     var autohide_main_button;
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
+    var show_scripts_in_main_menu;
+    
     var menu_request = false;		// external api request while not ready yet (opera button ...)
     
     // called on script startup, no ui available at this stage.
@@ -31,7 +34,9 @@ function(){   // fake line, keep_editor_happy
     function start_ui()
     {
 	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
-	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);	
+	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);
+	show_scripts_in_main_menu = global_bool_setting('show_scripts_in_main_menu', default_show_scripts_in_main_menu);
+	
 	if (menu_display_logic == 'click')
 	    window.addEventListener('click',  function (e) { close_menu(); }, false);
 	
@@ -268,6 +273,14 @@ function(){   // fake line, keep_editor_happy
 	set_global_bool_setting(setting, value);
 	return value;
     }
+
+    function toggle_show_scripts_in_main_menu(event)
+    {
+	show_scripts_in_main_menu = toggle_global_setting(this, show_scripts_in_main_menu, 'show_scripts_in_main_menu');
+	// FIXME !! need_repaint should work there !!
+	// need_repaint = true;
+	need_reload = true;
+    }    
     
     function toggle_show_ui_in_iframes(event)
     {
@@ -294,7 +307,7 @@ function(){   // fake line, keep_editor_happy
     
     /***************************** Details menu *******************************/
 
-    function script_detail_init(w, h, s)
+    function script_detail_init(w, h, s, file_only)
     {
 	var img = w.firstChild;
 	var link = img.nextSibling;
@@ -303,6 +316,12 @@ function(){   // fake line, keep_editor_happy
 	var max_item_length = 60;	// truncate displayed url if too long        
         if (label.length > max_item_length) { label = label.slice(0, max_item_length) + "…"; }
 
+	if (file_only)
+	{
+	    var a = split_url(s.url);
+	    label = a[2];
+	}
+	
 	link.innerText = label;
 	link.href = s.url;
 	var status = "blocked";
@@ -338,7 +357,7 @@ function(){   // fake line, keep_editor_happy
 	  sort_scripts(s);
 	  for (var j = 0; j < s.length; j++)
 	  {
-	      var w = new_script_detail(h, s[j]);
+	      var w = new_script_detail(h, s[j], false);
 	      menu.insertBefore(w, last);
 	  }
 	});	
@@ -353,7 +372,7 @@ function(){   // fake line, keep_editor_happy
 
     function really_leaving_menu(e)
     {
-	if (!mouseout_leaving_menu(e, nsmenu) ||
+	if (!mouseout_leaving_menu(e) ||
 	    menu_display_logic == 'click')
 	    return false;
 	return true;
@@ -362,6 +381,7 @@ function(){   // fake line, keep_editor_happy
     function close_menu(keep_menu)
     {
 	show_hide_menu(false);
+	switch_submenu(null);
 	if (keep_menu != true) // explicit comparison, guard against weird calls
 	    switch_menu(null);
 	
@@ -384,20 +404,26 @@ function(){   // fake line, keep_editor_happy
 	    return;
 	close_menu();
     }
-    
-    function mouseout_leaving_menu(e, menu)
+
+    function mouseout_menu_target(e, main_target, other_target)
     {
 	var reltg = e.relatedTarget;
-	if (reltg)
-	{
-	    // don't think we need this anymore ...
-  	    //if (reltg.id == 'main_button')
-	    //	return false; // moving back to button, doesn't count
-	    while (reltg != menu && reltg.nodeName != 'HTML')
-		reltg = reltg.parentNode;
-	    if (reltg == menu)
-		return false; // moving out of the div into a child layer
-	}
+	if (!reltg)
+	    return null;
+	
+	if (reltg.id == 'main_button')
+	    return main_target; // moving back to button, doesn't count
+	while (reltg != main_target && reltg != other_target &&
+	       reltg.nodeName != 'HTML')
+	    reltg = reltg.parentNode;
+	return reltg;
+    }
+    
+    function mouseout_leaving_menu(e)
+    {
+	var reltg = mouseout_menu_target(e, nsmenu, submenu)
+	if (reltg == nsmenu || (submenu && reltg == submenu))
+	    return false; // moving out of the div into a child layer
 	return true;
     }    
 
@@ -488,6 +514,78 @@ function(){   // fake line, keep_editor_happy
 	var w = find_element(main_ui, "main_menu_sibling");
 	w.parentNode.insertBefore(nsmenu, w);
     }
+
+    var submenu = null;		// there can be only one.
+    function switch_submenu(sub, position)
+    {
+	if (submenu)
+	    submenu.parentNode.removeChild(submenu);
+	submenu = sub;
+	if (sub)
+	{
+	    idoc.body.appendChild(sub);	    
+	    position_submenu(sub, position);
+	}
+	resize_iframe();	
+    }
+    
+    function position_submenu(sub, position)
+    {
+	var tr = position.getBoundingClientRect();
+	//var left = nsmenu.offsetWidth;
+	var left = -sub.offsetWidth;
+	var top = tr.top;  // tr's top
+	if (top + sub.offsetHeight > main_ui.offsetHeight)
+	    top = main_ui.offsetHeight - sub.offsetHeight;
+	
+	sub.style = "left:" + left + 'px;' +
+	            "top:" + top + 'px;';	
+    }
+
+    // TODO: show iframes as well ?
+    function host_table_row_onmouseover(event)
+    {
+	if (!show_scripts_in_main_menu)
+	    return;
+	var tr = this;
+	if (!this.host_node.scripts.length)
+	    return;
+	if (!this.timer)
+	    this.timer = setTimeout(function(){ scripts_submenu(tr) }, 600);
+    }
+    
+    function scripts_submenu(tr)
+    {	
+	var sub = new_widget("submenu");
+	var menu = find_element(sub, "menu_content");
+	var host = tr.host;
+	var host_node = tr.host_node;
+	var h = host_node.name;
+	var s = host_node.scripts;
+	
+	sort_scripts(s);
+	for (var j = 0; j < s.length; j++)
+	{
+	    var w = new_script_detail(h, s[j], true);
+	    menu.appendChild(w);
+	}
+	
+	switch_submenu(sub, tr);
+    }    
+
+    function host_table_row_onmouseout(e)
+    {
+	var target = mouseout_menu_target(e, this, submenu);
+	if (target == submenu || target == this)
+	    return;
+	if (this.timer)
+	{
+	    clearTimeout(this.timer);
+	    this.timer = null;
+	}
+	if (submenu)
+	    switch_submenu(null);
+    }    
 
     function host_table_row_onclick(event)
     {
@@ -582,6 +680,8 @@ function(){   // fake line, keep_editor_happy
 	    tr = new_widget("host_table_row");
 	    tr = tr.firstChild.firstChild; // skip dummy <table> and <tbody> tags
 	    tr.host = h;
+	    tr.domain_node = dn;
+	    tr.host_node = hn;
 	    t.appendChild(tr);	    
 	    
 	    if (not_loaded)
@@ -729,7 +829,7 @@ function(){   // fake line, keep_editor_happy
 	// menu logic slightly more complicated than just calling
 	// show_hide_menu() at the end -> no flickering at all this way!!
 	var menu_shown = menu_request || (nsmenu && nsmenu.style.display != 'none');
-	menu_request = false;
+	menu_request = false;	// external api menu request (opera button ...)
 	
 	create_main_ui();
 	if (menu_shown)

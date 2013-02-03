@@ -49,7 +49,7 @@
 
 <widget name="host_table_row">
   <table>      <!-- hack, opera 12 doesn't like to see tr without table -->
-    <tr  onclick>
+    <tr  onclick onmouseover onmouseout>
       <td width="1%"></td>
       <td width="1%" class="td_not_loaded"><img/></td>		<!-- not loaded -->
       <td width="1%" class="td_checkbox">
@@ -64,6 +64,14 @@
   </table>
 </widget>
 
+<!-- submenu -->
+<widget name="submenu" >
+  <div class="submenu menu" onmouseout="menu_onmouseout" >
+    <ul id="menu_content">
+    </ul>
+  </div>
+</widget>
+
 
 <!-- details menu -->
 <widget name="details_menu" init>
@@ -75,7 +83,7 @@
   </div>
 </widget>
 
-<widget name="script_detail" host script init>
+<widget name="script_detail" host script file_only init>
     <li><img/><a></a></li>
 </widget>
 
@@ -86,6 +94,10 @@
     <menu_title title="Options"/>
     <ul id="menu_content">
       <select_iframe_logic></select_iframe_logic>
+      <checkbox_item label="Script display in main menu" id="show_scripts_in_main_menu"
+		     title="!! experimental !!"
+		     state="`show_scripts_in_main_menu"
+		     callback="`toggle_show_scripts_in_main_menu"/></checkbox_item>
       <checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"
 		     title=""
 		     state="`show_ui_in_iframes"

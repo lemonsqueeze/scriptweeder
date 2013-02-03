@@ -1417,10 +1417,29 @@
     function resize_iframe()
     {
 	var content = idoc.body.firstChild;
-	//iframe.style.width = content.clientWidth + 'px';
-	//iframe.style.height = content.clientHeight + 'px';
-	iframe.style.width = content.scrollWidth + 'px';
-	iframe.style.height = content.scrollHeight + 'px';
+	var width = content.scrollWidth;
+	var height = content.scrollHeight;
+	
+	// submenu uses absolute positioning, need to take it into account.
+	if (submenu)
+	{
+	    var e = submenu;	    
+	    if (e.offsetLeft < 0)
+	    {
+		width += -e.offsetLeft;
+		e.style.left = 0;
+	    }
+	    width = max(width, e.offsetLeft + e.offsetWidth);
+	    if (e.offsetTop < 0)
+	    {
+		height += -e.offsetTop;
+		e.style.top = 0;
+	    }
+	    height = max(height, e.offsetTop + e.offsetHeight);
+	}
+	
+	iframe.style.width = width + 'px';
+	iframe.style.height = height + 'px';
     }    	    
     
     var iframe = null;
@@ -1462,13 +1481,13 @@
 	return u;
     }
 
-    // split url into [dir, file, tail]
+    // split url into [host, dir, file, tail]
     function split_url(u)
     {
 	// FIXME: can't we just use the builtin parser like url_hostname() ?
 	//        http://www.joezimjs.com/javascript/the-lazy-mans-url-parsing/
 	u = strip_http(u);
-	var a = u.match(/^([^/]*)\/([^/?&:]*)(.*)$/);
+	var a = u.match(/^([^/]*)(\/|\/.*\/)([^/?&:]*)([^/]*)$/);
 	assert(a, "split_url(): shouldn't happen");
 	return a.slice(1);
     }
@@ -1476,7 +1495,7 @@
     function strip_url_tail(u)
     {
 	var a = split_url(u);
-	return a[0] + '/' + a[1]; // dir + file
+	return a[0] + a[1] + a[2]; // host + dir + file
     }
     
     function get_domain(h)
@@ -1719,6 +1738,9 @@
     
     /**************************** Misc utils *******************************/
 
+    function min(a, b) { return (a < b ? a : b); }
+    function max(a, b) { return (a > b ? a : b); }
+    
     function get_size_kb(x)
     {
 	var k = new String(x / 1000);
@@ -1799,6 +1821,7 @@
 
     var default_autohide_main_button = false;
     var default_menu_display_logic = 'auto';
+    var default_show_scripts_in_main_menu = false; // for now.
     
     // can be used to display stuff in jsarmor menu from outside scripts.
     var enable_plugin_api = false;
@@ -1809,6 +1832,8 @@
     var autohide_main_button;
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
+    var show_scripts_in_main_menu;
+    
     var menu_request = false;		// external api request while not ready yet (opera button ...)
     
     // called on script startup, no ui available at this stage.
@@ -1823,7 +1848,9 @@
     function start_ui()
     {
 	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
-	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);	
+	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);
+	show_scripts_in_main_menu = global_bool_setting('show_scripts_in_main_menu', default_show_scripts_in_main_menu);
+	
 	if (menu_display_logic == 'click')
 	    window.addEventListener('click',  function (e) { close_menu(); }, false);
 	
@@ -2060,6 +2087,14 @@
 	set_global_bool_setting(setting, value);
 	return value;
     }
+
+    function toggle_show_scripts_in_main_menu(event)
+    {
+	show_scripts_in_main_menu = toggle_global_setting(this, show_scripts_in_main_menu, 'show_scripts_in_main_menu');
+	// FIXME !! need_repaint should work there !!
+	// need_repaint = true;
+	need_reload = true;
+    }    
     
     function toggle_show_ui_in_iframes(event)
     {
@@ -2086,7 +2121,7 @@
     
     /***************************** Details menu *******************************/
 
-    function script_detail_init(w, h, s)
+    function script_detail_init(w, h, s, file_only)
     {
 	var img = w.firstChild;
 	var link = img.nextSibling;
@@ -2095,6 +2130,12 @@
 	var max_item_length = 60;	// truncate displayed url if too long        
         if (label.length > max_item_length) { label = label.slice(0, max_item_length) + "…"; }
 
+	if (file_only)
+	{
+	    var a = split_url(s.url);
+	    label = a[2];
+	}
+	
 	link.innerText = label;
 	link.href = s.url;
 	var status = "blocked";
@@ -2130,7 +2171,7 @@
 	  sort_scripts(s);
 	  for (var j = 0; j < s.length; j++)
 	  {
-	      var w = new_script_detail(h, s[j]);
+	      var w = new_script_detail(h, s[j], false);
 	      menu.insertBefore(w, last);
 	  }
 	});	
@@ -2145,7 +2186,7 @@
 
     function really_leaving_menu(e)
     {
-	if (!mouseout_leaving_menu(e, nsmenu) ||
+	if (!mouseout_leaving_menu(e) ||
 	    menu_display_logic == 'click')
 	    return false;
 	return true;
@@ -2154,6 +2195,7 @@
     function close_menu(keep_menu)
     {
 	show_hide_menu(false);
+	switch_submenu(null);
 	if (keep_menu != true) // explicit comparison, guard against weird calls
 	    switch_menu(null);
 	
@@ -2176,20 +2218,26 @@
 	    return;
 	close_menu();
     }
-    
-    function mouseout_leaving_menu(e, menu)
+
+    function mouseout_menu_target(e, main_target, other_target)
     {
 	var reltg = e.relatedTarget;
-	if (reltg)
-	{
-	    // don't think we need this anymore ...
-  	    //if (reltg.id == 'main_button')
-	    //	return false; // moving back to button, doesn't count
-	    while (reltg != menu && reltg.nodeName != 'HTML')
-		reltg = reltg.parentNode;
-	    if (reltg == menu)
-		return false; // moving out of the div into a child layer
-	}
+	if (!reltg)
+	    return null;
+	
+	if (reltg.id == 'main_button')
+	    return main_target; // moving back to button, doesn't count
+	while (reltg != main_target && reltg != other_target &&
+	       reltg.nodeName != 'HTML')
+	    reltg = reltg.parentNode;
+	return reltg;
+    }
+    
+    function mouseout_leaving_menu(e)
+    {
+	var reltg = mouseout_menu_target(e, nsmenu, submenu)
+	if (reltg == nsmenu || (submenu && reltg == submenu))
+	    return false; // moving out of the div into a child layer
 	return true;
     }    
 
@@ -2280,6 +2328,78 @@
 	var w = find_element(main_ui, "main_menu_sibling");
 	w.parentNode.insertBefore(nsmenu, w);
     }
+
+    var submenu = null;		// there can be only one.
+    function switch_submenu(sub, position)
+    {
+	if (submenu)
+	    submenu.parentNode.removeChild(submenu);
+	submenu = sub;
+	if (sub)
+	{
+	    idoc.body.appendChild(sub);	    
+	    position_submenu(sub, position);
+	}
+	resize_iframe();	
+    }
+    
+    function position_submenu(sub, position)
+    {
+	var tr = position.getBoundingClientRect();
+	//var left = nsmenu.offsetWidth;
+	var left = -sub.offsetWidth;
+	var top = tr.top;  // tr's top
+	if (top + sub.offsetHeight > main_ui.offsetHeight)
+	    top = main_ui.offsetHeight - sub.offsetHeight;
+	
+	sub.style = "left:" + left + 'px;' +
+	            "top:" + top + 'px;';	
+    }
+
+    // TODO: show iframes as well ?
+    function host_table_row_onmouseover(event)
+    {
+	if (!show_scripts_in_main_menu)
+	    return;
+	var tr = this;
+	if (!this.host_node.scripts.length)
+	    return;
+	if (!this.timer)
+	    this.timer = setTimeout(function(){ scripts_submenu(tr) }, 600);
+    }
+    
+    function scripts_submenu(tr)
+    {	
+	var sub = new_widget("submenu");
+	var menu = find_element(sub, "menu_content");
+	var host = tr.host;
+	var host_node = tr.host_node;
+	var h = host_node.name;
+	var s = host_node.scripts;
+	
+	sort_scripts(s);
+	for (var j = 0; j < s.length; j++)
+	{
+	    var w = new_script_detail(h, s[j], true);
+	    menu.appendChild(w);
+	}
+	
+	switch_submenu(sub, tr);
+    }    
+
+    function host_table_row_onmouseout(e)
+    {
+	var target = mouseout_menu_target(e, this, submenu);
+	if (target == submenu || target == this)
+	    return;
+	if (this.timer)
+	{
+	    clearTimeout(this.timer);
+	    this.timer = null;
+	}
+	if (submenu)
+	    switch_submenu(null);
+    }    
 
     function host_table_row_onclick(event)
     {
@@ -2374,6 +2494,8 @@
 	    tr = new_widget("host_table_row");
 	    tr = tr.firstChild.firstChild; // skip dummy <table> and <tbody> tags
 	    tr.host = h;
+	    tr.domain_node = dn;
+	    tr.host_node = hn;
 	    t.appendChild(tr);	    
 	    
 	    if (not_loaded)
@@ -2521,7 +2643,7 @@
 	// menu logic slightly more complicated than just calling
 	// show_hide_menu() at the end -> no flickering at all this way!!
 	var menu_shown = menu_request || (nsmenu && nsmenu.style.display != 'none');
-	menu_request = false;
+	menu_request = false;	// external api menu request (opera button ...)
 	
 	create_main_ui();
 	if (menu_shown)
@@ -2538,9 +2660,10 @@
 
     var builtin_style = 
 "/* jsarmor stylesheet */  \n\
-body			{ margin:0px; }  \n\
-#main			{ position:fixed; width:auto; height:auto; background:transparent;   \n\
-			  white-space:nowrap; z-index:99999999; direction:ltr; font-family:Ubuntu;  \n\
+body			{ margin:0px; direction:rtl}  \n\
+#main			{ position:absolute; bottom:0; /* bottom align */  \n\
+			  width:auto; height:auto; background:transparent;   \n\
+			  white-space:nowrap; z-index:999999; direction:ltr; font-family:Ubuntu;  \n\
 			  font-size:small;  margin-bottom:0px; }  \n\
   \n\
 /* main button */  \n\
@@ -2570,6 +2693,9 @@ body			{ margin:0px; }  \n\
 .td_allowed_globally:hover img		{ visibility:visible; }   \n\
 .td_allowed_globally.visible img	{ visibility:visible; }  \n\
 .td_script_count		{ text-align:right; }  \n\
+  \n\
+/* submenu */  \n\
+.submenu		{ position:absolute; z-index:0 }  \n\
   \n\
   \n\
 /*************************************************************************************************************/  \n\
@@ -2608,7 +2734,7 @@ img	{ width:1px; height:1px; vertical-align:middle; background-size:contain; }  
 .allowed_globally img		{ content:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABV0RVh0Q3JlYXRpb24gVGltZQAxOS81LzA5xiWAvQAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNAay06AAAAI4SURBVDiNlZNNSFRRGIafe+feuToqDWL5U4wmM+Mm0magsM20qEXSImgRhgTR376gTYtoWbQuMpcpuW0RrUIIwdCEMQO1CY0w/6AmlTv3zpyfFre8CVp44CzO4bzP974f5zNWHnUnXNfI+z5x9rAch2Ispjst1zXyhh2LJ44ksasd0Pq/4rJXZnWmEHddN2/5PoHY8NArcyA8YBeIYYLlEN3XyoGOJF8np+IWgF0VRS9PY195C4D+XkAvTaKmh9GbSyFAK6iU0D/miTYeBcD6c6/KIixUn8SoT2KmepAfhhETA9udCA9T6hCgpEYJjTdwBqMhReRwjkh7DqOuiUj2KkZzhvKrO2h/I4SoAGAC6N8A++wDzLYcojBCabCPyrugstlyjOj5xyiht7aWhAAlNVIoIgcz2F0XqbrwBOfcQ/ypl5Re3w8eNqSwjl9DCoUUCiXVdoASGm+0H7k6B0DkUIaay0NUFt7jjfYD4HRfh5rmwIXcIYI78pSfz3rZeH4D7W9iOLXEeu5RGhtC+5sARDO9O0UAJTTVp29T19ePkrD+4lbQ5UQWsyFNaWwwOLdmd3dQfeISdmuWWO4mfmEcsRzEsdOnKH+eCACNaZQMNKEDpVE6glgKBJXFmaAnH98EoqYOvE/j4X8yqrYcGDN3T+r6ljRUPMTaPLpc+uc8GE4NdmM70nIoLs5imUoW19e+xGv3t2EnOncV/oVAygobqwuYShYtS4lO4bv54rfZPY2zqWTRUrLrF4hoKuU62VtvAAAAAElFTkSuQmCC'); }  \n\
   \n\
 .menu {  \n\
-	padding: 1px 1px; text-align:left;  \n\
+	padding: 1px 1px; text-align:left; direction:ltr;  \n\
 	box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);  \n\
 	border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;  \n\
 	display:table; font-size:small; background: #ccc;   \n\
@@ -2658,10 +2784,11 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
       'main_button' : '<widget name="main_button" init><div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>',
       'main_menu' : '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout ><h1 id="menu_title" >JSArmor</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img>Filtered</li><li class="relaxed" formode="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img>Allow All</li><li id="details_item" onclick="show_details">Details…</li></ul></div></widget>',
       'host_table' : '<widget name="host_table"><table id="host_table"></table></widget>',
-      'host_table_row' : '<widget name="host_table_row"><table><tr  onclick><td width="1%"></td><td width="1%" class="td_not_loaded"><img/></td><td width="1%" class="td_checkbox"><input type="checkbox"></td><td width="1%" class="td_host">code.</td><td class="td_domain">jquery.com</td><td width="1%" class="td_iframe"><img/></td><td width="1%" class="td_allowed_globally allowed_globally"><img/></td><td width="1%" class="td_script_count">[x]</td></tr></table></widget>',
+      'host_table_row' : '<widget name="host_table_row"><table><tr  onclick onmouseover onmouseout><td width="1%"></td><td width="1%" class="td_not_loaded"><img/></td><td width="1%" class="td_checkbox"><input type="checkbox"></td><td width="1%" class="td_host">code.</td><td class="td_domain">jquery.com</td><td width="1%" class="td_iframe"><img/></td><td width="1%" class="td_allowed_globally allowed_globally"><img/></td><td width="1%" class="td_script_count">[x]</td></tr></table></widget>',
+      'submenu' : '<widget name="submenu" ><div class="submenu menu" onmouseout="menu_onmouseout" ><ul id="menu_content"></ul></div></widget>',
       'details_menu' : '<widget name="details_menu" init><div id="details_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Scripts</h1><ul id="menu_content"><li id="last_item" onclick="options_menu">Options…</li></ul></div></widget>',
-      'script_detail' : '<widget name="script_detail" host script init><li><img/><a></a></li></widget>',
-      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><ul id="menu_content"><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes" 		     title="" 		     state="`show_ui_in_iframes" 		     callback="`toggle_show_ui_in_iframes"/></checkbox_item><checkbox_item label="Auto-hide main button" 		     title="" 		     state="`autohide_main_button" 		     callback="`toggle_autohide_main_button"/></checkbox_item><select_menu_display_logic></select_menu_display_logic><li id="$id" onclick="edit_whitelist">Edit whitelist…</li><select_reload_method></select_reload_method><li class="separator"></li><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" >Load custom style…</form></li><li id="$id" onclick="save_current_style">Save current style…</li><li id="$id" onclick="clear_saved_style">Clear saved style</li><li id="$id" onclick="start_rescue_mode">Rescue Mode</li><li class="separator"></li><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" >Load Settings…</form></li><li id="$id" onclick="export_settings">Save Settings…</li><li id="$id" onclick="view_settings">View Settings…</li><li id="$id" onclick="reset_settings">Clear All Settings…</li><li class="separator"></li><li id="$id" onclick="go_to_help_page">Help</li><li id="$id" onclick="null">About</li></ul></div></widget>',
+      'script_detail' : '<widget name="script_detail" host script file_only init><li><img/><a></a></li></widget>',
+      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><ul id="menu_content"><select_iframe_logic></select_iframe_logic><checkbox_item label="Script display in main menu" id="show_scripts_in_main_menu" 		     title="!! experimental !!" 		     state="`show_scripts_in_main_menu" 		     callback="`toggle_show_scripts_in_main_menu"/></checkbox_item><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes" 		     title="" 		     state="`show_ui_in_iframes" 		     callback="`toggle_show_ui_in_iframes"/></checkbox_item><checkbox_item label="Auto-hide main button" 		     title="" 		     state="`autohide_main_button" 		     callback="`toggle_autohide_main_button"/></checkbox_item><select_menu_display_logic></select_menu_display_logic><li id="$id" onclick="edit_whitelist">Edit whitelist…</li><select_reload_method></select_reload_method><li class="separator"></li><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" >Load custom style…</form></li><li id="$id" onclick="save_current_style">Save current style…</li><li id="$id" onclick="clear_saved_style">Clear saved style</li><li id="$id" onclick="start_rescue_mode">Rescue Mode</li><li class="separator"></li><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" >Load Settings…</form></li><li id="$id" onclick="export_settings">Save Settings…</li><li id="$id" onclick="view_settings">View Settings…</li><li id="$id" onclick="reset_settings">Clear All Settings…</li><li class="separator"></li><li id="$id" onclick="go_to_help_page">Help</li><li id="$id" onclick="null">About</li></ul></div></widget>',
       'select_iframe_logic' : '<widget name="select_iframe_logic" init><li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive here).">Scripts in iframes:<input type="radio" name="radio"/><label>Block All</label><input type="radio" name="radio"/><label>Filter</label><input type="radio" name="radio"/><label>Allow</label></li></widget>',
       'select_menu_display_logic' : '<widget name="select_menu_display_logic" init><li id="menu_display"  class="inactive">Menu popup:<input type="radio" name="radio"/><label>Auto</label><input type="radio" name="radio"/><label>Delay</label><input type="radio" name="radio"/><label>Click</label></li></widget>',
       'select_reload_method' : '<widget name="select_reload_method" init><li id="reload_method" class="inactive" title="Cache: reload from cache (fastest but…). Normal: slow but sure.">Reload method:<input type="radio" name="radio"/><label>Cache</label><input type="radio" name="radio"/><label>Normal</label></li></widget>',
@@ -2675,7 +2802,7 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
     /* init proxies (internal use only) */
     function script_detail_init_proxy(w, ph)
     {
-        script_detail_init(w, ph.host, ph.script);
+        script_detail_init(w, ph.host, ph.script, ph.file_only);
     }
 
     function checkbox_item_init_proxy(w, ph)
@@ -2684,11 +2811,11 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
     }
 
     /* functions for creating widgets */
-    function new_script_detail(host, script)
+    function new_script_detail(host, script, file_only)
     {
       return new_widget("script_detail", function(w)
         {
-          script_detail_init(w, host, script);
+          script_detail_init(w, host, script, file_only);
         });
     }
 

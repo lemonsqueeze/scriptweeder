@@ -18,13 +18,13 @@ function(){   // fake line, keep_editor_happy
 	return u;
     }
 
-    // split url into [dir, file, tail]
+    // split url into [host, dir, file, tail]
     function split_url(u)
     {
 	// FIXME: can't we just use the builtin parser like url_hostname() ?
 	//        http://www.joezimjs.com/javascript/the-lazy-mans-url-parsing/
 	u = strip_http(u);
-	var a = u.match(/^([^/]*)\/([^/?&:]*)(.*)$/);
+	var a = u.match(/^([^/]*)(\/|\/.*\/)([^/?&:]*)([^/]*)$/);
 	assert(a, "split_url(): shouldn't happen");
 	return a.slice(1);
     }
@@ -32,7 +32,7 @@ function(){   // fake line, keep_editor_happy
     function strip_url_tail(u)
     {
 	var a = split_url(u);
-	return a[0] + '/' + a[1]; // dir + file
+	return a[0] + a[1] + a[2]; // host + dir + file
     }
     
     function get_domain(h)
@@ -275,6 +275,9 @@ function(){   // fake line, keep_editor_happy
     
     /**************************** Misc utils *******************************/
 
+    function min(a, b) { return (a < b ? a : b); }
+    function max(a, b) { return (a > b ? a : b); }
+    
     function get_size_kb(x)
     {
 	var k = new String(x / 1000);

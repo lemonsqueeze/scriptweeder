@@ -1,7 +1,8 @@
 /* jsarmor stylesheet */
-body			{ margin:0px; }
-#main			{ position:fixed; width:auto; height:auto; background:transparent; 
-			  white-space:nowrap; z-index:99999999; direction:ltr; font-family:Ubuntu;
+body			{ margin:0px; direction:rtl}
+#main			{ position:absolute; bottom:0; /* bottom align */
+			  width:auto; height:auto; background:transparent; 
+			  white-space:nowrap; z-index:999999; direction:ltr; font-family:Ubuntu;
 			  font-size:small;  margin-bottom:0px; }
 
 /* main button */
@@ -31,6 +32,9 @@ body			{ margin:0px; }
 .td_allowed_globally:hover img		{ visibility:visible; } 
 .td_allowed_globally.visible img	{ visibility:visible; }
 .td_script_count		{ text-align:right; }
+
+/* submenu */
+.submenu		{ position:absolute; z-index:0 }
 
 
 /*************************************************************************************************************/
@@ -69,7 +73,7 @@ img	{ width:1px; height:1px; vertical-align:middle; background-size:contain; }
 .allowed_globally img		{ content:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABV0RVh0Q3JlYXRpb24gVGltZQAxOS81LzA5xiWAvQAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNAay06AAAAI4SURBVDiNlZNNSFRRGIafe+feuToqDWL5U4wmM+Mm0magsM20qEXSImgRhgTR376gTYtoWbQuMpcpuW0RrUIIwdCEMQO1CY0w/6AmlTv3zpyfFre8CVp44CzO4bzP974f5zNWHnUnXNfI+z5x9rAch2Ispjst1zXyhh2LJ44ksasd0Pq/4rJXZnWmEHddN2/5PoHY8NArcyA8YBeIYYLlEN3XyoGOJF8np+IWgF0VRS9PY195C4D+XkAvTaKmh9GbSyFAK6iU0D/miTYeBcD6c6/KIixUn8SoT2KmepAfhhETA9udCA9T6hCgpEYJjTdwBqMhReRwjkh7DqOuiUj2KkZzhvKrO2h/I4SoAGAC6N8A++wDzLYcojBCabCPyrugstlyjOj5xyiht7aWhAAlNVIoIgcz2F0XqbrwBOfcQ/ypl5Re3w8eNqSwjl9DCoUUCiXVdoASGm+0H7k6B0DkUIaay0NUFt7jjfYD4HRfh5rmwIXcIYI78pSfz3rZeH4D7W9iOLXEeu5RGhtC+5sARDO9O0UAJTTVp29T19ePkrD+4lbQ5UQWsyFNaWwwOLdmd3dQfeISdmuWWO4mfmEcsRzEsdOnKH+eCACNaZQMNKEDpVE6glgKBJXFmaAnH98EoqYOvE/j4X8yqrYcGDN3T+r6ljRUPMTaPLpc+uc8GE4NdmM70nIoLs5imUoW19e+xGv3t2EnOncV/oVAygobqwuYShYtS4lO4bv54rfZPY2zqWTRUrLrF4hoKuU62VtvAAAAAElFTkSuQmCC'); }
 
 .menu {
-	padding: 1px 1px; text-align:left;
+	padding: 1px 1px; text-align:left; direction:ltr;
 	box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);
 	border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;
 	display:table; font-size:small; background: #ccc; 

@@ -327,10 +327,29 @@ function(){   // fake line, keep_editor_happy
     function resize_iframe()
     {
 	var content = idoc.body.firstChild;
-	//iframe.style.width = content.clientWidth + 'px';
-	//iframe.style.height = content.clientHeight + 'px';
-	iframe.style.width = content.scrollWidth + 'px';
-	iframe.style.height = content.scrollHeight + 'px';
+	var width = content.scrollWidth;
+	var height = content.scrollHeight;
+	
+	// submenu uses absolute positioning, need to take it into account.
+	if (submenu)
+	{
+	    var e = submenu;	    
+	    if (e.offsetLeft < 0)
+	    {
+		width += -e.offsetLeft;
+		e.style.left = 0;
+	    }
+	    width = max(width, e.offsetLeft + e.offsetWidth);
+	    if (e.offsetTop < 0)
+	    {
+		height += -e.offsetTop;
+		e.style.top = 0;
+	    }
+	    height = max(height, e.offsetTop + e.offsetHeight);
+	}
+	
+	iframe.style.width = width + 'px';
+	iframe.style.height = height + 'px';
     }    	    
     
     var iframe = null;
