@@ -103,7 +103,7 @@
       <load_custom_style/>
       <menu_item label="Save current style…" onclick="save_current_style"/>
       <menu_item label="Clear saved style" onclick="clear_saved_style"/>
-      <menu_item label="Rescue Mode" onclick="rescue_mode"/>
+      <menu_item label="Rescue Mode" onclick="start_rescue_mode"/>
 
       <separator/>
       <import_settings/>

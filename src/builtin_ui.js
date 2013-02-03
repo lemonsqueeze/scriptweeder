@@ -17,14 +17,27 @@ function(){   // fake line, keep_editor_happy
     var autohide_main_button;
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
-
-    // called only once.
-    function ui_init()
+    var menu_request = false;		// external api request while not ready yet (opera button ...)
+    
+    // called on script startup, no ui available at this stage.
+    function init_ui()
+    {
+	// window.opera.jsarmor.toggle_menu() api for opera buttons etc...
+	message_handlers['jsarmor_toggle_menu'] = api_toggle_menu;
+	window.opera.jsarmor.toggle_menu = function() { window.postMessage('jsarmor_toggle_menu', '*'); };
+    }
+    
+    // called only once when the injected iframe is ready to display stuff.
+    function start_ui()
     {
 	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
 	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);	
 	if (menu_display_logic == 'click')
 	    window.addEventListener('click',  function (e) { close_menu(); }, false);
+	
+	create_main_ui();
+	parent_main_ui();
+	resize_iframe();	
     }
     
     function create_main_ui()
@@ -36,6 +49,21 @@ function(){   // fake line, keep_editor_happy
     {
 	idoc.body.appendChild(main_ui);
     }    
+
+    /****************************** external api *****************************/
+
+    // FIXME why does it take forever to show up ?!
+    function api_toggle_menu()
+    {
+	// log("api_toggle_menu");
+	if (!main_ui)
+	{
+	    menu_request = true;
+	    return;
+	}	
+	show_hide_menu(true, true);	
+	// log("api_toggle_menu done");
+    }
 
     /****************************** widget handlers *****************************/
 
@@ -133,7 +161,7 @@ function(){   // fake line, keep_editor_happy
 	need_reload = true;
     }
 
-    function rescue_mode()
+    function start_rescue_mode()
     {
 	var url = location.href.replace(/#.*/, '');
 	location.href = url + '#jsarmor';
@@ -387,17 +415,18 @@ function(){   // fake line, keep_editor_happy
 
     function show_hide_menu(show, toggle)
     {
-      if (!nsmenu)
-      {
-	  create_menu();
-	  nsmenu.style.display = 'none';
-	  parent_menu();	  
-      }
-      var d = (show ? 'inline-block' : 'none');	
-      if (toggle)
-	  d = (nsmenu.style.display == 'none' ? 'inline-block' : 'none');
-      nsmenu.style.display = d;      
-      resize_iframe();
+	var create = !nsmenu;
+	if (create)
+	{
+	    create_menu();
+	    nsmenu.style.display = 'none';
+	    parent_menu();	  
+	}
+	var d = (show ? 'inline-block' : 'none');	
+	if (toggle)
+	    d = (create || nsmenu.style.display == 'none' ? 'inline-block' : 'none');
+	nsmenu.style.display = d;      
+	resize_iframe();
     }
 
     
@@ -638,7 +667,7 @@ function(){   // fake line, keep_editor_happy
 	div.title = tooltip;
 	div.className += " " + mode;
 
-	if (autohide_main_button)
+	if (autohide_main_button && !rescue_mode())
 	    div.className += " autohide";
 	
 	if (menu_display_logic == 'click')
@@ -699,11 +728,14 @@ function(){   // fake line, keep_editor_happy
 
 	// menu logic slightly more complicated than just calling
 	// show_hide_menu() at the end -> no flickering at all this way!!
-	var menu_shown = nsmenu && nsmenu.style.display != 'none';	
+	var menu_shown = menu_request || (nsmenu && nsmenu.style.display != 'none');
+	menu_request = false;
+	
 	create_main_ui();
 	if (menu_shown)
-	    create_menu();	
-	idoc.body.removeChild(idoc.body.lastChild); // remove main_ui
+	    create_menu();
+	if (idoc.body.lastChild)
+	    idoc.body.removeChild(idoc.body.lastChild); // remove main_ui
 	parent_main_ui();
 	if (menu_shown)
 	{

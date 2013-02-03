@@ -303,7 +303,7 @@ function(){   // fake line, keep_editor_happy
 	}
 
 	// use custom style ?
-	var use_custom = (enable_custom_style && location.hash != '#jsarmor'); // rescue mode
+	var use_custom = (enable_custom_style && !rescue_mode());
 	var style = (use_custom ? global_setting('style') : '');
 	style = (style == '' ? builtin_style : style);
 	new_style(style);
@@ -321,10 +321,7 @@ function(){   // fake line, keep_editor_happy
 
 	init_style();
 	init_layout();
-	ui_init();
-	create_main_ui();
-	parent_main_ui();
-	resize_iframe();
+	start_ui();
     }
 
     function resize_iframe()

@@ -47,6 +47,7 @@ function(){   // fake line, keep_editor_happy
     var reload_method;
     /* end */
 
+    var message_handlers = { };
     var iframe_logic;
     var there_is_work_todo = false;    
             
@@ -76,8 +77,10 @@ function(){   // fake line, keep_editor_happy
     function init()
     {
 	// sync_init, async_init both false
-	core_init();
+	init_core();
+	init_ui();
 	sync_init = true;
+	// sync_init set
 	
 	if (!async_init_request)
 	    async_init_finished();
@@ -126,9 +129,8 @@ function(){   // fake line, keep_editor_happy
     
     /********************************* Startup ************************************/    
     
-    // jsarmor ui's iframe, don't recurse !
-    if (window != window.top &&
-	window.name == 'jsarmor_iframe')
+    // jsarmor ui's iframe, don't run in there !
+    if (window != window.top &&	window.name == 'jsarmor_iframe') // FIXME better way of id ?
 	return;
 
     init();
@@ -146,11 +148,12 @@ function(){   // fake line, keep_editor_happy
 
     /******************************** Normal init *******************************/
 
-    function core_init()
+    function init_core()
     {
-	init_handlers();
+	setup_event_handlers();
 	check_script_storage();
 	load_global_settings();
+	window.opera.jsarmor = new Object();	// external api
     }
 	
     function load_global_settings()
@@ -175,6 +178,12 @@ function(){   // fake line, keep_editor_happy
     
     /**************************** Mode and page stuff *************************/
 
+    // running in rescue_mode ?
+    function rescue_mode()
+    {
+	return (location.hash == '#jsarmor');
+    }
+    
     // reload top window really: with 'filtered' iframe logic, iframes need parent to reload.
     function reload_page()
     {
@@ -263,7 +272,8 @@ function(){   // fake line, keep_editor_happy
     function init_iframe_logic()
     {
 	show_ui_in_iframes = global_bool_setting('show_ui_in_iframes', default_show_ui_in_iframes);
-	iframe_message_header = "jsarmor lost iframe rescue channel:";    
+	iframe_message_header = "jsarmor lost iframe rescue channel:";
+	message_handlers[iframe_message_header] = iframe_rescue_channel;
 	
 	iframe_logic = global_setting('iframe_logic');
 	if (iframe_logic != 'block_all' && iframe_logic != 'filter' && iframe_logic != 'allow')
@@ -293,20 +303,12 @@ function(){   // fake line, keep_editor_happy
 	async_init_request = true;
 	return;
     }
-
-    function before_message_handler(before_event)
+    
+    function iframe_rescue_channel(e, content)
     {
-	var e = before_event.event;
-	var m = e.data;
-	if (typeof(m) != "string" ||
-	    !is_prefix(iframe_message_header, m))
-	    return;			// i only care about my children/parent.
-	before_event.preventDefault();	// keep this conversation private.
-
-	var content = m.slice(m.indexOf(':') + 1);
 	var source = e.source;	// WindowProxy of sender
 	// e.origin contains 'http://hostname' of the sender
-	if (source === parent.window)
+	if (source === top.window)
 	    message_from_parent(e, content);
 	else
 	    message_from_iframe(e, content);
@@ -699,13 +701,13 @@ function(){   // fake line, keep_editor_happy
 	if (nsmenu)
 	    repaint_ui();
     }
-
+    
 //UIFIXME    
     function domcontentloaded_handler(e, deferred_call)
     {
         if (!there_is_work_todo &&			// no scripts ?
 	    !document.querySelector('iframe') &&	// no iframes ?
-	    location.hash != '#jsarmor')		// rescue mode
+	    !rescue_mode())				// rescue mode, always show ui
             return;				// don't show ui.
 
 	if (block_inline_scripts)
@@ -719,6 +721,25 @@ function(){   // fake line, keep_editor_happy
 	create_iframe();
     }
 
+    function before_message_handler(ujs_event)
+    {
+	var e = ujs_event.event;
+	var m = e.data;
+	if (typeof(m) != "string")
+	    return;
+	for (var h in message_handlers)
+	{
+	    if (is_prefix(h, m))
+	    {
+		ujs_event.preventDefault();	// keep this conversation private.
+		var content = m.slice(h.length);		
+		(message_handlers[h])(e, content);
+		return;
+	    }
+	}
+	// not for us then.
+    }
+    
     /**************************** Handlers setup ***************************/
 
     function work_todo(f)
@@ -730,7 +751,7 @@ function(){   // fake line, keep_editor_happy
 	}
     }
 
-    function init_handlers()
+    function setup_event_handlers()
     {
 	// deferred: events should be queued until we're initialized
     	opera.addEventListener('BeforeScript',	       work_todo(deferred(beforescript_handler)),		false);

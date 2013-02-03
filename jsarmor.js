@@ -66,6 +66,7 @@
     var reload_method;
     /* end */
 
+    var message_handlers = { };
     var iframe_logic;
     var there_is_work_todo = false;    
             
@@ -95,8 +96,10 @@
     function init()
     {
 	// sync_init, async_init both false
-	core_init();
+	init_core();
+	init_ui();
 	sync_init = true;
+	// sync_init set
 	
 	if (!async_init_request)
 	    async_init_finished();
@@ -145,9 +148,8 @@
     
     /********************************* Startup ************************************/    
     
-    // jsarmor ui's iframe, don't recurse !
-    if (window != window.top &&
-	window.name == 'jsarmor_iframe')
+    // jsarmor ui's iframe, don't run in there !
+    if (window != window.top &&	window.name == 'jsarmor_iframe') // FIXME better way of id ?
 	return;
 
     init();
@@ -165,11 +167,12 @@
 
     /******************************** Normal init *******************************/
 
-    function core_init()
+    function init_core()
     {
-	init_handlers();
+	setup_event_handlers();
 	check_script_storage();
 	load_global_settings();
+	window.opera.jsarmor = new Object();	// external api
     }
 	
     function load_global_settings()
@@ -194,6 +197,12 @@
     
     /**************************** Mode and page stuff *************************/
 
+    // running in rescue_mode ?
+    function rescue_mode()
+    {
+	return (location.hash == '#jsarmor');
+    }
+    
     // reload top window really: with 'filtered' iframe logic, iframes need parent to reload.
     function reload_page()
     {
@@ -282,7 +291,8 @@
     function init_iframe_logic()
     {
 	show_ui_in_iframes = global_bool_setting('show_ui_in_iframes', default_show_ui_in_iframes);
-	iframe_message_header = "jsarmor lost iframe rescue channel:";    
+	iframe_message_header = "jsarmor lost iframe rescue channel:";
+	message_handlers[iframe_message_header] = iframe_rescue_channel;
 	
 	iframe_logic = global_setting('iframe_logic');
 	if (iframe_logic != 'block_all' && iframe_logic != 'filter' && iframe_logic != 'allow')
@@ -312,20 +322,12 @@
 	async_init_request = true;
 	return;
     }
-
-    function before_message_handler(before_event)
+    
+    function iframe_rescue_channel(e, content)
     {
-	var e = before_event.event;
-	var m = e.data;
-	if (typeof(m) != "string" ||
-	    !is_prefix(iframe_message_header, m))
-	    return;			// i only care about my children/parent.
-	before_event.preventDefault();	// keep this conversation private.
-
-	var content = m.slice(m.indexOf(':') + 1);
 	var source = e.source;	// WindowProxy of sender
 	// e.origin contains 'http://hostname' of the sender
-	if (source === parent.window)
+	if (source === top.window)
 	    message_from_parent(e, content);
 	else
 	    message_from_iframe(e, content);
@@ -718,13 +720,13 @@
 	if (nsmenu)
 	    repaint_ui();
     }
-
+    
 //UIFIXME    
     function domcontentloaded_handler(e, deferred_call)
     {
         if (!there_is_work_todo &&			// no scripts ?
 	    !document.querySelector('iframe') &&	// no iframes ?
-	    location.hash != '#jsarmor')		// rescue mode
+	    !rescue_mode())				// rescue mode, always show ui
             return;				// don't show ui.
 
 	if (block_inline_scripts)
@@ -738,6 +740,25 @@
 	create_iframe();
     }
 
+    function before_message_handler(ujs_event)
+    {
+	var e = ujs_event.event;
+	var m = e.data;
+	if (typeof(m) != "string")
+	    return;
+	for (var h in message_handlers)
+	{
+	    if (is_prefix(h, m))
+	    {
+		ujs_event.preventDefault();	// keep this conversation private.
+		var content = m.slice(h.length);		
+		(message_handlers[h])(e, content);
+		return;
+	    }
+	}
+	// not for us then.
+    }
+    
     /**************************** Handlers setup ***************************/
 
     function work_todo(f)
@@ -749,7 +770,7 @@
 	}
     }
 
-    function init_handlers()
+    function setup_event_handlers()
     {
 	// deferred: events should be queued until we're initialized
     	opera.addEventListener('BeforeScript',	       work_todo(deferred(beforescript_handler)),		false);
@@ -1372,7 +1393,7 @@
 	}
 
 	// use custom style ?
-	var use_custom = (enable_custom_style && location.hash != '#jsarmor'); // rescue mode
+	var use_custom = (enable_custom_style && !rescue_mode());
 	var style = (use_custom ? global_setting('style') : '');
 	style = (style == '' ? builtin_style : style);
 	new_style(style);
@@ -1390,10 +1411,7 @@
 
 	init_style();
 	init_layout();
-	ui_init();
-	create_main_ui();
-	parent_main_ui();
-	resize_iframe();
+	start_ui();
     }
 
     function resize_iframe()
@@ -1791,14 +1809,27 @@
     var autohide_main_button;
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
-
-    // called only once.
-    function ui_init()
+    var menu_request = false;		// external api request while not ready yet (opera button ...)
+    
+    // called on script startup, no ui available at this stage.
+    function init_ui()
+    {
+	// window.opera.jsarmor.toggle_menu() api for opera buttons etc...
+	message_handlers['jsarmor_toggle_menu'] = api_toggle_menu;
+	window.opera.jsarmor.toggle_menu = function() { window.postMessage('jsarmor_toggle_menu', '*'); };
+    }
+    
+    // called only once when the injected iframe is ready to display stuff.
+    function start_ui()
     {
 	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
 	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);	
 	if (menu_display_logic == 'click')
 	    window.addEventListener('click',  function (e) { close_menu(); }, false);
+	
+	create_main_ui();
+	parent_main_ui();
+	resize_iframe();	
     }
     
     function create_main_ui()
@@ -1810,6 +1841,21 @@
     {
 	idoc.body.appendChild(main_ui);
     }    
+
+    /****************************** external api *****************************/
+
+    // FIXME why does it take forever to show up ?!
+    function api_toggle_menu()
+    {
+	// log("api_toggle_menu");
+	if (!main_ui)
+	{
+	    menu_request = true;
+	    return;
+	}	
+	show_hide_menu(true, true);	
+	// log("api_toggle_menu done");
+    }
 
     /****************************** widget handlers *****************************/
 
@@ -1904,9 +1950,10 @@
     {	
 	set_global_setting('style', '');
 	alert("Cleared !");
+	need_reload = true;
     }
 
-    function rescue_mode()
+    function start_rescue_mode()
     {
 	var url = location.href.replace(/#.*/, '');
 	location.href = url + '#jsarmor';
@@ -2160,17 +2207,18 @@
 
     function show_hide_menu(show, toggle)
     {
-      if (!nsmenu)
-      {
-	  create_menu();
-	  nsmenu.style.display = 'none';
-	  parent_menu();	  
-      }
-      var d = (show ? 'inline-block' : 'none');	
-      if (toggle)
-	  d = (nsmenu.style.display == 'none' ? 'inline-block' : 'none');
-      nsmenu.style.display = d;      
-      resize_iframe();
+	var create = !nsmenu;
+	if (create)
+	{
+	    create_menu();
+	    nsmenu.style.display = 'none';
+	    parent_menu();	  
+	}
+	var d = (show ? 'inline-block' : 'none');	
+	if (toggle)
+	    d = (create || nsmenu.style.display == 'none' ? 'inline-block' : 'none');
+	nsmenu.style.display = d;      
+	resize_iframe();
     }
 
     
@@ -2411,7 +2459,7 @@
 	div.title = tooltip;
 	div.className += " " + mode;
 
-	if (autohide_main_button)
+	if (autohide_main_button && !rescue_mode())
 	    div.className += " autohide";
 	
 	if (menu_display_logic == 'click')
@@ -2472,11 +2520,14 @@
 
 	// menu logic slightly more complicated than just calling
 	// show_hide_menu() at the end -> no flickering at all this way!!
-	var menu_shown = nsmenu && nsmenu.style.display != 'none';	
+	var menu_shown = menu_request || (nsmenu && nsmenu.style.display != 'none');
+	menu_request = false;
+	
 	create_main_ui();
 	if (menu_shown)
-	    create_menu();	
-	idoc.body.removeChild(idoc.body.lastChild); // remove main_ui
+	    create_menu();
+	if (idoc.body.lastChild)
+	    idoc.body.removeChild(idoc.body.lastChild); // remove main_ui
 	parent_main_ui();
 	if (menu_shown)
 	{
@@ -2610,7 +2661,7 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
       'host_table_row' : '<widget name="host_table_row"><table><tr  onclick><td width="1%"></td><td width="1%" class="td_not_loaded"><img/></td><td width="1%" class="td_checkbox"><input type="checkbox"></td><td width="1%" class="td_host">code.</td><td class="td_domain">jquery.com</td><td width="1%" class="td_iframe"><img/></td><td width="1%" class="td_allowed_globally allowed_globally"><img/></td><td width="1%" class="td_script_count">[x]</td></tr></table></widget>',
       'details_menu' : '<widget name="details_menu" init><div id="details_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Scripts</h1><ul id="menu_content"><li id="last_item" onclick="options_menu">Options…</li></ul></div></widget>',
       'script_detail' : '<widget name="script_detail" host script init><li><img/><a></a></li></widget>',
-      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><ul id="menu_content"><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes" 		     title="" 		     state="`show_ui_in_iframes" 		     callback="`toggle_show_ui_in_iframes"/></checkbox_item><checkbox_item label="Auto-hide main button" 		     title="" 		     state="`autohide_main_button" 		     callback="`toggle_autohide_main_button"/></checkbox_item><select_menu_display_logic></select_menu_display_logic><li id="$id" onclick="edit_whitelist">Edit whitelist…</li><select_reload_method></select_reload_method><li class="separator"></li><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" >Load custom style…</form></li><li id="$id" onclick="save_current_style">Save current style…</li><li id="$id" onclick="clear_saved_style">Clear saved style</li><li id="$id" onclick="rescue_mode">Rescue Mode</li><li class="separator"></li><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" >Load Settings…</form></li><li id="$id" onclick="export_settings">Save Settings…</li><li id="$id" onclick="view_settings">View Settings…</li><li id="$id" onclick="reset_settings">Clear All Settings…</li><li class="separator"></li><li id="$id" onclick="go_to_help_page">Help</li><li id="$id" onclick="null">About</li></ul></div></widget>',
+      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><ul id="menu_content"><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes" 		     title="" 		     state="`show_ui_in_iframes" 		     callback="`toggle_show_ui_in_iframes"/></checkbox_item><checkbox_item label="Auto-hide main button" 		     title="" 		     state="`autohide_main_button" 		     callback="`toggle_autohide_main_button"/></checkbox_item><select_menu_display_logic></select_menu_display_logic><li id="$id" onclick="edit_whitelist">Edit whitelist…</li><select_reload_method></select_reload_method><li class="separator"></li><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" >Load custom style…</form></li><li id="$id" onclick="save_current_style">Save current style…</li><li id="$id" onclick="clear_saved_style">Clear saved style</li><li id="$id" onclick="start_rescue_mode">Rescue Mode</li><li class="separator"></li><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" >Load Settings…</form></li><li id="$id" onclick="export_settings">Save Settings…</li><li id="$id" onclick="view_settings">View Settings…</li><li id="$id" onclick="reset_settings">Clear All Settings…</li><li class="separator"></li><li id="$id" onclick="go_to_help_page">Help</li><li id="$id" onclick="null">About</li></ul></div></widget>',
       'select_iframe_logic' : '<widget name="select_iframe_logic" init><li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive here).">Scripts in iframes:<input type="radio" name="radio"/><label>Block All</label><input type="radio" name="radio"/><label>Filter</label><input type="radio" name="radio"/><label>Allow</label></li></widget>',
       'select_menu_display_logic' : '<widget name="select_menu_display_logic" init><li id="menu_display"  class="inactive">Menu popup:<input type="radio" name="radio"/><label>Auto</label><input type="radio" name="radio"/><label>Delay</label><input type="radio" name="radio"/><label>Click</label></li></widget>',
       'select_reload_method' : '<widget name="select_reload_method" init><li id="reload_method" class="inactive" title="Cache: reload from cache (fastest but…). Normal: slow but sure.">Reload method:<input type="radio" name="radio"/><label>Cache</label><input type="radio" name="radio"/><label>Normal</label></li></widget>',
