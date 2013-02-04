@@ -6,6 +6,7 @@ function(){   // fake line, keep_editor_happy
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
 
     var default_autohide_main_button = false;
+    var default_transparent_main_button = true;
     var default_menu_display_logic = 'auto';
     var default_show_scripts_in_main_menu = false; // for now.
     
@@ -16,6 +17,7 @@ function(){   // fake line, keep_editor_happy
 
     var main_ui = null;
     var autohide_main_button;
+    var transparent_main_button;
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
     var show_scripts_in_main_menu;
@@ -34,6 +36,7 @@ function(){   // fake line, keep_editor_happy
     function start_ui()
     {
 	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
+	transparent_main_button = global_bool_setting('transparent_main_button', default_transparent_main_button);
 	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);
 	show_scripts_in_main_menu = global_bool_setting('show_scripts_in_main_menu', default_show_scripts_in_main_menu);
 	
@@ -303,6 +306,13 @@ function(){   // fake line, keep_editor_happy
 	need_reload = true;
     }
 
+    function toggle_transparent_main_button(event)
+    {
+	transparent_main_button = toggle_global_setting(this, transparent_main_button, 'transparent_main_button');
+	// need_repaint is all we need !
+	need_reload = true;
+    }
+    
     function options_menu()
     {
 	var w = new_widget("options_menu");
@@ -773,6 +783,9 @@ function(){   // fake line, keep_editor_happy
 
 	if (autohide_main_button && !rescue_mode())
 	    div.className += " autohide";
+
+	if (transparent_main_button)
+	    div.querySelector('button').className = "tbutton";
 	
 	if (menu_display_logic == 'click')
 	    div.onclick = function() { (nsmenu ? close_menu() : show_hide_menu(true)); }

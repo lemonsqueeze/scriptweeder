@@ -6,8 +6,10 @@ body			{ margin:0px; direction:rtl; }
 			  font-size:small;  margin-bottom:0px; }
 
 /* main button */
+
 #main_button		{ direction:rtl; border-width: 2px; margin: 0; float: none; } 
 #main_button img	{ width:18px; height:18px; } /* only works with img background: not content: */
+
 
 .autohide		{ visibility:hidden; }
 :hover .autohide	{ visibility:visible }
@@ -129,4 +131,35 @@ li.inactive:hover	{ background:inherit }
 #import_settings input, #load_custom_style input
 	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }
 
+
+/********************************************************************************************************** 
+ * transparent button 
+ * http://www.dreamtemplate.com/dreamcodes/documentation/buttons_transparent.html
+ */
+
+.tbutton {
+	border: 1px solid rgba(0,0,0,0.2); box-sizing: content-box !important; color: #f5f5f5; cursor: pointer;
+	display: inline-block; padding: 2px 10px; text-align: center; text-decoration: none; white-space: normal;
+	text-shadow: 0 0 5px rgba(0,0,0,0.2), 0 0 1px rgba(0,0,0,0.4); outline: none; 
+	-o-transition: all 200ms ease 0ms !important; 	/* Transition */
+	background: none repeat scroll 0 0 rgba(255,255,255,0.04); 	/* Background Color */
+	border-radius: 3px; 	/* Border Rounding */
+	background-clip: padding-box; 	/* Background Clipping */
+	box-shadow: 0 0 3px rgba(255,255,255,0.25) inset, 0 0 1px rgba(255,255,255,0.2), 0 10px 10px rgba(255,255,255,0.08) inset;
+	box-shadow: 0 0 3px rgba(255,255,255,0.25) inset, 0 0 1px rgba(255,255,255,0.2), 0 10px 10px rgba(255,255,255,0.08) inset;
+}
+
+
+/***** Hovered Button *****/
+.tbutton:hover {
+	color: #fff; text-shadow: 0 0 5px rgba(0,0,0,0.2), 0 0 1px rgba(0,0,0,0.4);	
+	box-shadow: 0 0 5px rgba(255,255,255,0.45) inset, 0 0 1px rgba(255,255,255,0.2), 0 10px 10px rgba(255,255,255,0.08) inset;
+ }
+
+
+/***** Clicked Button *****/
+.tbutton:active {
+	color: #eee;
+	box-shadow: 0 0 5px rgba(255,255,255,0.1) inset, 0 0 1px rgba(255,255,255,0.2), 0 0 4px rgba(0,0,0,0.4) inset, 0 10px 10px rgba(255,255,255,0.08) inset;
+ }
 

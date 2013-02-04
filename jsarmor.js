@@ -1818,6 +1818,7 @@
     // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
 
     var default_autohide_main_button = false;
+    var default_transparent_main_button = true;
     var default_menu_display_logic = 'auto';
     var default_show_scripts_in_main_menu = false; // for now.
     
@@ -1828,6 +1829,7 @@
 
     var main_ui = null;
     var autohide_main_button;
+    var transparent_main_button;
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
     var show_scripts_in_main_menu;
@@ -1846,6 +1848,7 @@
     function start_ui()
     {
 	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
+	transparent_main_button = global_bool_setting('transparent_main_button', default_transparent_main_button);
 	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);
 	show_scripts_in_main_menu = global_bool_setting('show_scripts_in_main_menu', default_show_scripts_in_main_menu);
 	
@@ -2115,6 +2118,13 @@
 	need_reload = true;
     }
 
+    function toggle_transparent_main_button(event)
+    {
+	transparent_main_button = toggle_global_setting(this, transparent_main_button, 'transparent_main_button');
+	// need_repaint is all we need !
+	need_reload = true;
+    }
+    
     function options_menu()
     {
 	var w = new_widget("options_menu");
@@ -2585,6 +2595,9 @@
 
 	if (autohide_main_button && !rescue_mode())
 	    div.className += " autohide";
+
+	if (transparent_main_button)
+	    div.querySelector('button').className = "tbutton";
 	
 	if (menu_display_logic == 'click')
 	    div.onclick = function() { (nsmenu ? close_menu() : show_hide_menu(true)); }
@@ -2669,8 +2682,10 @@ body			{ margin:0px; direction:rtl; }  \n\
 			  font-size:small;  margin-bottom:0px; }  \n\
   \n\
 /* main button */  \n\
+  \n\
 #main_button		{ direction:rtl; border-width: 2px; margin: 0; float: none; }   \n\
 #main_button img	{ width:18px; height:18px; } /* only works with img background: not content: */  \n\
+  \n\
   \n\
 .autohide		{ visibility:hidden; }  \n\
 :hover .autohide	{ visibility:visible }  \n\
@@ -2793,6 +2808,37 @@ li.inactive:hover	{ background:inherit }  \n\
 	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }  \n\
   \n\
   \n\
+/**********************************************************************************************************   \n\
+ * transparent button   \n\
+ * http://www.dreamtemplate.com/dreamcodes/documentation/buttons_transparent.html  \n\
+ */  \n\
+  \n\
+.tbutton {  \n\
+	border: 1px solid rgba(0,0,0,0.2); box-sizing: content-box !important; color: #f5f5f5; cursor: pointer;  \n\
+	display: inline-block; padding: 2px 10px; text-align: center; text-decoration: none; white-space: normal;  \n\
+	text-shadow: 0 0 5px rgba(0,0,0,0.2), 0 0 1px rgba(0,0,0,0.4); outline: none;   \n\
+	-o-transition: all 200ms ease 0ms !important; 	/* Transition */  \n\
+	background: none repeat scroll 0 0 rgba(255,255,255,0.04); 	/* Background Color */  \n\
+	border-radius: 3px; 	/* Border Rounding */  \n\
+	background-clip: padding-box; 	/* Background Clipping */  \n\
+	box-shadow: 0 0 3px rgba(255,255,255,0.25) inset, 0 0 1px rgba(255,255,255,0.2), 0 10px 10px rgba(255,255,255,0.08) inset;  \n\
+	box-shadow: 0 0 3px rgba(255,255,255,0.25) inset, 0 0 1px rgba(255,255,255,0.2), 0 10px 10px rgba(255,255,255,0.08) inset;  \n\
+}  \n\
+  \n\
+  \n\
+/***** Hovered Button *****/  \n\
+.tbutton:hover {  \n\
+	color: #fff; text-shadow: 0 0 5px rgba(0,0,0,0.2), 0 0 1px rgba(0,0,0,0.4);	  \n\
+	box-shadow: 0 0 5px rgba(255,255,255,0.45) inset, 0 0 1px rgba(255,255,255,0.2), 0 10px 10px rgba(255,255,255,0.08) inset;  \n\
+ }  \n\
+  \n\
+  \n\
+/***** Clicked Button *****/  \n\
+.tbutton:active {  \n\
+	color: #eee;  \n\
+	box-shadow: 0 0 5px rgba(255,255,255,0.1) inset, 0 0 1px rgba(255,255,255,0.2), 0 0 4px rgba(0,0,0,0.4) inset, 0 10px 10px rgba(255,255,255,0.08) inset;  \n\
+ }  \n\
+  \n\
 ";
 
     /* layout for each widget (generated from jsarmor.xml). */
@@ -2805,7 +2851,7 @@ li.inactive:hover	{ background:inherit }  \n\
       'submenu' : '<widget name="submenu" ><div class="submenu menu" onmouseout="menu_onmouseout" ><ul id="menu_content"></ul></div></widget>',
       'details_menu' : '<widget name="details_menu" init><div id="details_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Scripts</h1><ul id="menu_content"><li id="last_item" onclick="options_menu">Options…</li></ul></div></widget>',
       'script_detail' : '<widget name="script_detail" host script file_only init><li><img/><a></a></li></widget>',
-      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">User Interface</div><select_menu_display_logic></select_menu_display_logic><select_reload_method></select_reload_method><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu" 			 title="!! experimental !!" 			 state="`show_scripts_in_main_menu" 			 callback="`toggle_show_scripts_in_main_menu"></checkbox_item><checkbox_item label="Auto-hide main button" 			 title="" 			 state="`autohide_main_button" 			 callback="`toggle_autohide_main_button"></checkbox_item></div><div class="frame"><div class="frame_title">Iframes</div><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes" 			 title="" 			 state="`show_ui_in_iframes" 			 callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div class="frame"><div class="frame_title">Settings</div><button onclick="edit_whitelist">Edit whitelist…</button></div></td><td><div class="frame"><div class="frame_title">Style</div><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" ><button>Load custom…</button></form></li><button onclick="save_current_style">Save current…</button><br><button onclick="clear_saved_style" oninit="clear_saved_style_init">Back to default</button><br><a oninit="rescue_mode_link_init">Rescue mode</a></div><div class="frame"><div class="frame_title">Import/Export Settings</div><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" ><button>Load Settings…</button></form></li><button onclick="export_settings">Save Settings…</button><br><button onclick="view_settings">View Settings…</button><br><button onclick="reset_settings">Reset…</button><br></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/jsarmor">Help</a></div></td></tr></table></ul></div></widget>',
+      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" 			 title="" 			 state="`autohide_main_button" 			 callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" 			 title="" 			 state="`transparent_main_button" 			 callback="`toggle_transparent_main_button"></checkbox_item><select_menu_display_logic></select_menu_display_logic><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu" 			 title="!! experimental !!" 			 state="`show_scripts_in_main_menu" 			 callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_reload_method></select_reload_method></div><div class="frame"><div class="frame_title">Iframes</div><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes" 			 title="" 			 state="`show_ui_in_iframes" 			 callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div class="frame"><div class="frame_title">Settings</div><button onclick="edit_whitelist">Edit whitelist…</button></div></td><td><div class="frame"><div class="frame_title">Style</div><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" ><button>Load custom…</button></form></li><button onclick="save_current_style">Save current…</button><br><button onclick="clear_saved_style" oninit="clear_saved_style_init">Back to default</button><br><a oninit="rescue_mode_link_init">Rescue mode</a></div><div class="frame"><div class="frame_title">Import/Export Settings</div><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" ><button>Load Settings…</button></form></li><button onclick="export_settings">Save Settings…</button><br><button onclick="view_settings">View Settings…</button><br><button onclick="reset_settings">Reset…</button><br></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/jsarmor">Help</a></div></td></tr></table></ul></div></widget>',
       'select_iframe_logic' : '<widget name="select_iframe_logic" init><li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive).">Scripts in iframes:<select><option value="block_all">Block All</option><option value="filter">Filter</option><option value="allow">Allow</option></select></li></widget>',
       'select_menu_display_logic' : '<widget name="select_menu_display_logic" init><li id="menu_display"  class="inactive">Menu popup:<select><option value="auto">Auto</option><option value="delay">Delay</option><option value="click">Click</option></select></li></widget>',
       'select_reload_method' : '<widget name="select_reload_method" init><li id="reload_method" class="inactive" title="Cache: reload from cache (fastest but…). Normal: slow but sure.">Reload method:<select><option value="cache">Cache</option><option value="normal">Normal</option></select></li></widget>',
