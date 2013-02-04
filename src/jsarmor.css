@@ -1,5 +1,5 @@
 /* jsarmor stylesheet */
-body			{ margin:0px; direction:rtl}
+body			{ margin:0px; direction:rtl; }
 #main			{ position:absolute; bottom:0; /* bottom align */
 			  width:auto; height:auto; background:transparent; 
 			  white-space:nowrap; z-index:999999; direction:ltr; font-family:Ubuntu;
@@ -36,6 +36,11 @@ body			{ margin:0px; direction:rtl}
 /* submenu */
 .submenu		{ position:absolute; z-index:0 }
 
+#options_details table				{ width:100% }
+.details_item , .options_item			{ text-align:center; }
+.details_item label, .options_item label	{ display:block; width:92%;
+						  border-radius:6px; padding:1px 5px; text-decoration:none; }
+.details_item label:hover, .options_item label:hover	{ background:#ddd }
 
 /*************************************************************************************************************/
 /* generic stuff */
@@ -87,12 +92,12 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;
 /* menu item stuff */
 .right_item		{ float:right; }
 
-.menu ul			{ padding:0; margin:0 }
-.menu ul ul			{ margin-left:1em }
-.menu li			{ list-style:none }
+ul			{ padding:0; margin:0 }
+ul ul			{ margin-left:1em }
+li			{ list-style:none; border-radius:6px; }
 
-.menu > ul > li:hover		{ background:#ddd } /* items active by default */
-.menu > ul > li.inactive:hover	{ background:inherit }
+li:hover		{ background:#ddd } /* items active by default */
+li.inactive:hover	{ background:inherit }
 
 
 /* mode menu item */
@@ -106,12 +111,22 @@ h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;
 /* Options menu */
 
 #options_menu		{ min-width:250px; }
+#options_menu li:hover	{ background:inherit }
+/* how do we add cell spacing ??
+#options_menu table	{ cell-spacing: 5px; }
+*/
+#options_menu td	{ vertical-align:top; }
 
 .separator	{ height: 1px; display: block; background-color: #bbb; margin-left: auto; margin-right: auto; }
 
+.frame		{ border:1px solid #bbb; margin:10px; padding:9px; position:relative; min-width:200px; }
+.frame_title	{ position:absolute; top:-10px; background: #ccc; }
+
 /* import file (make form and button look like a menuitem) */
+
 #import_settings, #load_custom_style
 	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }
 #import_settings input, #load_custom_style input
 	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }
+
 

@@ -42,7 +42,10 @@ function(){   // fake line, keep_editor_happy
 	
 	create_main_ui();
 	parent_main_ui();
-	resize_iframe();	
+	resize_iframe();
+	
+	if (rescue_mode())
+	    my_alert("Running in rescue mode, custom style disabled.");
     }
     
     function create_main_ui()
@@ -159,6 +162,12 @@ function(){   // fake line, keep_editor_happy
 	save_file(builtin_style, true);
     }
 
+    function clear_saved_style_init()
+    {	
+	if (global_setting('style') == '')
+	    this.disabled = true;
+    }
+    
     function clear_saved_style()
     {	
 	set_global_setting('style', '');
@@ -166,12 +175,18 @@ function(){   // fake line, keep_editor_happy
 	need_reload = true;
     }
 
-    function start_rescue_mode()
+    function rescue_mode_link_init()
     {
-	var url = location.href.replace(/#.*/, '');
-	location.href = url + '#jsarmor';
-	location.reload(false);
-    }
+	var label = (!rescue_mode() ? 'Rescue mode' : 'Leave rescue mode');
+	var hash  = (!rescue_mode() ? '#jsarmor' : '#' );
+	this.href = location.href.replace(/#.*/, '') + hash;
+	this.innerText = label;	
+	this.onclick = function() // why do we need this ?!
+	{
+	   location.href = this.href;
+	   location.reload(false);
+	}
+    }    
     
     function edit_css_url()
     {
@@ -228,41 +243,35 @@ function(){   // fake line, keep_editor_happy
     
     function select_iframe_logic_init(widget)
     {
-	var iframe_logic_values = ['block_all', 'filter', 'allow'];
-	var f = function (n)
+	var select = widget.querySelector('select');
+	select.options.value = iframe_logic;
+	select.onchange = function(n)
 	{
-	    set_global_setting('iframe_logic', iframe_logic_values[n]);
+	    set_global_setting('iframe_logic', this.value);
 	    need_reload = true;
-	};
-
-	var index = iframe_logic_values.indexOf(iframe_logic);
-	setup_radio_buttons(widget, "iframe_logic", index, f);
+	};       
     }
 
     function select_menu_display_logic_init(widget)
     {
-	var menu_display_logic_values = ['auto', 'delay', 'click'];
-	var f = function (n)
+	var select = widget.querySelector('select');
+	select.options.value = menu_display_logic;
+	select.onchange = function(n)
 	{
-	    set_global_setting('menu_display_logic', menu_display_logic_values[n]);
+	    set_global_setting('menu_display_logic', this.value);
 	    need_reload = true;
 	};
-
-	var index = menu_display_logic_values.indexOf(menu_display_logic);
-	setup_radio_buttons(widget, "menu_display_logic", index, f);
     }
 
     function select_reload_method_init(widget)
     {
-	var reload_method_values = ['cache', 'normal'];
-	var f = function (n)
+	var select = widget.querySelector('select');
+	select.options.value = reload_method;
+	select.onchange = function(n)
 	{
-	   reload_method = reload_method_values[n];
+	   reload_method = this.value;
 	   set_global_setting('reload_method', reload_method);
-	};
-
-	var index = reload_method_values.indexOf(reload_method);
-	setup_radio_buttons(widget, "reload_method", index, f);
+	};	
     }
     
     // returns toggled value, sets setting and updates this.checkbox
@@ -293,11 +302,6 @@ function(){   // fake line, keep_editor_happy
 	autohide_main_button = toggle_global_setting(this, autohide_main_button, 'autohide_main_button');
 	need_reload = true;
     }
-
-    function go_to_help_page()
-    {
-	location.href = help_url;
-    }    
 
     function options_menu()
     {

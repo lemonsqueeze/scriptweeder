@@ -36,7 +36,7 @@
       <mode_menu_item mode="relaxed" label="Relaxed" 
 	      title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
       <mode_menu_item mode="allow_all" label="Allow All" title="Allow everything…" />
-      <menu_item id="details_item" label="Details…" onclick="show_details"/>
+      <options_details/>
       </ul>
   </div>
 </widget>
@@ -73,6 +73,15 @@
 </widget>
 
 
+<def macro="options_details">
+  <li id="options_details" class="inactive">
+    <table><tr>
+	<td class="options_item"><label onclick="options_menu">Options</label></td>
+	<td class="details_item"><label onclick="show_details">Details</label></td>
+    </tr></table>
+  </li>
+</def>
+
 <!-- details menu -->
 <widget name="details_menu" init>
   <div id="details_menu" class="menu" onmouseout="menu_onmouseout" >
@@ -89,78 +98,103 @@
 
 
 <!-- options menu -->
+<!-- FIXME! menu items using li inside of table !! -->
 <widget name="options_menu">
   <div id="options_menu" class="menu" onmouseout="menu_onmouseout" >
     <menu_title title="Options"/>
-    <ul id="menu_content">
-      <select_iframe_logic></select_iframe_logic>
-      <checkbox_item label="Script display in main menu" id="show_scripts_in_main_menu"
-		     title="!! experimental !!"
-		     state="`show_scripts_in_main_menu"
-		     callback="`toggle_show_scripts_in_main_menu"/></checkbox_item>
-      <checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"
-		     title=""
-		     state="`show_ui_in_iframes"
-		     callback="`toggle_show_ui_in_iframes"/></checkbox_item>
-      <checkbox_item label="Auto-hide main button"
-		     title=""
-		     state="`autohide_main_button"
-		     callback="`toggle_autohide_main_button"/></checkbox_item>
-      <select_menu_display_logic></select_menu_display_logic>
+    <table><tr>
+	<td>
+	  <frame title="User Interface">
+	  <select_menu_display_logic></select_menu_display_logic>
+	  <select_reload_method></select_reload_method>
+	  <checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"
+			 title="!! experimental !!"
+			 state="`show_scripts_in_main_menu"
+			 callback="`toggle_show_scripts_in_main_menu"></checkbox_item>
+	  <checkbox_item label="Auto-hide main button"
+			 title=""
+			 state="`autohide_main_button"
+			 callback="`toggle_autohide_main_button"></checkbox_item>
+	  </frame>
 
-      <menu_item label="Edit whitelist…" onclick="edit_whitelist"/>
-      <select_reload_method></select_reload_method>
+	  <frame title="Iframes">
+	  <select_iframe_logic></select_iframe_logic>
+	  <checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"
+			 title=""
+			 state="`show_ui_in_iframes"
+			 callback="`toggle_show_ui_in_iframes"></checkbox_item>
+	  </frame>
 
-      <separator/>
-      <load_custom_style/>
-      <menu_item label="Save current style…" onclick="save_current_style"/>
-      <menu_item label="Clear saved style" onclick="clear_saved_style"/>
-      <menu_item label="Rescue Mode" onclick="start_rescue_mode"/>
 
-      <separator/>
-      <import_settings/>
-      <menu_item label="Save Settings…" onclick="export_settings"/>
-      <menu_item label="View Settings…" onclick="view_settings"/>
-      <menu_item label="Clear All Settings…" onclick="reset_settings"/>
-      <separator/>
-      <menu_item label="Help" onclick="go_to_help_page"/>
-      <menu_item label="About" onclick="null"/>
+	  <frame title="Settings">
+	  <button onclick="edit_whitelist">Edit whitelist…</button>
+	  </frame>
+	  
+	</td>
+
+	<td>
+	  <frame title="Style">
+	    <load_custom_style/>
+	    <button onclick="save_current_style">Save current…</button><br>
+	    <button onclick="clear_saved_style" oninit="clear_saved_style_init">Back to default</button><br>
+	    <a oninit="rescue_mode_link_init">Rescue mode</a>
+	  </frame>
+
+	  <frame title="Import/Export Settings">
+	    <import_settings/>
+	    <button onclick="export_settings">Save Settings…</button><br>
+	    <button onclick="view_settings">View Settings…</button><br>
+	    <button onclick="reset_settings">Reset…</button><br>
+	  </frame>
+
+	  <frame title="">
+	    <a href="https://github.com/lemonsqueeze/jsarmor">Help</a>
+	  </frame>
+	</td>
+    </tr></table>
+
     </ul>
   </div>
 </widget>
 
 <widget name="select_iframe_logic" init>
-  <li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive here).">Scripts in iframes:
-    <radio_button label="Block All"/>
-    <radio_button label="Filter"/>
-    <radio_button label="Allow"/>
+  <li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive).">Scripts in iframes:
+    <select>
+      <option value="block_all">Block All</option>
+      <option value="filter">Filter</option>
+      <option value="allow">Allow</option>
+    </select>
   </li>
 </widget>
 
 <widget name="select_menu_display_logic" init>
-  <li id="menu_display"  class="inactive">Menu popup: 
-    <radio_button label="Auto"/>
-    <radio_button label="Delay"/>
-    <radio_button label="Click"/>
+  <li id="menu_display"  class="inactive">Menu popup:
+    <select>
+      <option value="auto">Auto</option>
+      <option value="delay">Delay</option>
+      <option value="click">Click</option>
+    </select>
   </li>
 </widget>
 
 <widget name="select_reload_method" init>
   <li id="reload_method" class="inactive" title="Cache: reload from cache (fastest but…). Normal: slow but sure.">Reload method:
-    <radio_button label="Cache"/>
-    <radio_button label="Normal"/>
+    <select>
+      <option value="cache">Cache</option>
+      <option value="normal">Normal</option>
+    </select>
   </li>
 </widget>
 
-<def import_settings>
+<def macro="import_settings">
   <li><form id="import_settings">
-      <input type="file" autocomplete="off" oninit="import_settings_init" >Load Settings…
+      <input type="file" autocomplete="off" oninit="import_settings_init" ><button>Load Settings…</button>
   </form></li>
 </def>
 
-<def load_custom_style>
+<def macro="load_custom_style">
   <li><form id="load_custom_style">
-      <input type="file" autocomplete="off" oninit="load_custom_style_init" >Load custom style…
+      <input type="file" autocomplete="off" oninit="load_custom_style_init" ><button>Load custom…</button>
   </form></li>
 </def>
 
@@ -189,23 +223,23 @@
 </widget>
 
  
-<def menu_title title>
+<def macro="menu_title" title>
   <h1 id="menu_title" >$title</h1>
 </def>
 
-<def menu_item id label onclick>
+<def macro="menu_item" id label onclick>
   <li id="$id" onclick="$onclick">$label</li>
 </def>
 
-<def mode_menu_item mode label title >
+<def macro="mode_menu_item" mode label title >
   <li class="$mode" formode="$mode" title="$title" oninit="mode_menu_item_oninit"><img>$label</li>
 </def>
 
-<def separator>
+<def macro="separator">
  <li class="separator"></li>
 </def>
 
-<def radio_button label >
+<def macro="radio_button" label >
   <input type="radio" name="radio"/>
   <label> $label </label>
 </def>
@@ -234,5 +268,13 @@
   </li>
 </widget>
 
+<def macro="frame" title>
+  <div class="frame">
+    <div class="frame_title">$title</div>
+</def>
+
+<def macro="/frame">
+  </div>
+</def>
 
 </widgets>

@@ -5,8 +5,6 @@ function(){   // fake line, keep_editor_happy
     // whether to show jsarmor ui inside frames / iframes
     var default_show_ui_in_iframes = false;
 
-    var help_url = "https://github.com/lemonsqueeze/jsarmor/wiki";
-
     // use stored custom style ?
     var enable_custom_style = true;
 

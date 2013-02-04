@@ -24,10 +24,12 @@ foreach my $s (@lines)
 	$macros{$def} .= $s;
 	next;
     }
-    if ($s =~ m|<def  *([\w]+)>|  )
-    {	 $def = $1;  }
-    if ($s =~ m|<def  *([\w]+) (.*)>|  )
-    {    $def = $1;  }
+    if ($s =~ m|<def .*>|  )
+    {   
+	if (!($s =~ m|<def  *macro="([^" ]+)".*>|  ))		# sanity check
+	{  die("${s}Couldn't parse this <def> tag, aborting."); }
+	$def = $1;
+    }
 
     if ($def eq "")
     {  push(@content, $s);  }
@@ -49,11 +51,29 @@ sub parse_args
     return %args;
 }
 
+sub defined_macro
+{
+    my ($name) = @_;
+    return $macros{$name} ne "";
+}
+
 sub replace_macro
 {
-    my ($name, $arg_str) = @_;
-    %args = parse_args($arg_str, $name);
+    my ($s, $name, $arg_str, $type) = @_;
 
+    if (!defined_macro($name))
+    { return $s; }
+
+    # tag closing sanity checks
+    if ($type eq "self_closing" && defined_macro("/$name"))
+    {  die("${s}This tag is self-closing, but /$name is defined !"); }
+    if ($type eq "open" && !defined_macro("/$name"))
+    {  die("${s}open <$name> tag found. should be <$name/>, aborting\n");  }
+
+    $did_something = 1;
+    print "replacing $name\n" if ($debug);
+    %args = parse_args($arg_str, $name);
+    
     my $s = $macros{$name};
     foreach my $arg (keys(%args))
     {
@@ -70,39 +90,28 @@ do
     my @tmp = ();
     foreach my $s (@content)
     {
-	if ($s =~ m|<([\w]+) (.*)/>|)
+	# self-closing macro tags
+	if ($s =~ m|<([^ ]+) (.*)/>|)
 	{
 	    my ($name, $args) = ($1, $2);
-	    if ($macros{$name} ne "")
-	    { 
-		$did_something = 1;
-		print "replacing $name\n" if ($debug);
-		$s = replace_macro($name, $args); 
-	    }
+	    $s = replace_macro($s, $name, $args, "self_closing");
 	}    
-	if ($s =~ m|<([\w]+) */>|)
+	if ($s =~ m|<([^ ]+) */>|)
 	{
 	    my $name = $1;
-	    if ($macros{$name} ne "")
-	    { 
-		$did_something = 1;
-		print "replacing $name\n" if ($debug);
-		$s = $macros{$name}; 
-	    }
+	    $s = replace_macro($s, $name, "", "self_closing");
 	}
 
-	# check for open tags ...
-	if ($s =~ m|<([\w]+) (.*)>|)
+	# open macro tags
+	if ($s =~ m|<([^ ]+) (.*[^/])>|)
 	{
 	    my ($name, $args) = ($1, $2);
-	    if ($macros{$name} ne "")
-	    {  die("open <$name> tag found. should be <$name/>, aborting\n");  }
+	    $s = replace_macro($s, $name, $args, "open");
 	}    
-	if ($s =~ m|<([\w]+) *>|)
+	if ($s =~ m|<([^ ]+) *>|)
 	{
 	    my $name = $1;
-	    if ($macros{$name} ne "")
-	    {  die("open <$name> tag found. should be <$name/>, aborting\n");  }
+	    $s = replace_macro($s, $name, "", "close");
 	}
 
 	push(@tmp, $s);
