@@ -266,14 +266,16 @@
     
     /***************************** filtering js in iframes **************************/
 
-    var show_ui_in_iframes;    
-    var iframe_message_header = "jsarmor lost iframe rescue channel:";
-    var iframe_message_frame_actually = "you're in a frame actually my dear";
+    var show_ui_in_iframes;
+    var iframe_rescue_channel_request = "who is my parent ??";
+    var iframe_rescue_channel_reply   = "here you go my child";
+    var msg_parents_cant_display = "your parents can't display !";
     
     function init_iframe_logic()
     {
 	show_ui_in_iframes = global_bool_setting('show_ui_in_iframes', default_show_ui_in_iframes);
-	message_handlers[iframe_message_header] = iframe_rescue_channel;
+	message_handlers[iframe_rescue_channel_request] = message_from_iframe;
+	message_handlers[iframe_rescue_channel_reply] = message_from_parent;
 	
 	iframe_logic = global_setting('iframe_logic');
 	if (iframe_logic != 'block_all' && iframe_logic != 'filter' && iframe_logic != 'allow')
@@ -284,7 +286,7 @@
 
 	// tell parent about us so it can display our host in the menu.
 	// for 'filter' iframe_logic, this is also asking for its hostname.
-	window.top.postMessage(iframe_message_header + location.href, '*');
+	post_message(window.parent, iframe_rescue_channel_request, location.href);
 	
 	// switch mode depending on iframe_logic
 	// TODO: add way to override with page setting *only*, which should be safe enough
@@ -303,7 +305,8 @@
 	async_init_request = true;
 	return;
     }
-    
+
+/*    
     function iframe_rescue_channel(e, content)
     {
 	var source = e.source;	// WindowProxy of sender
@@ -313,36 +316,50 @@
 	else
 	    message_from_iframe(e, content);
     }
+ */
 
     // iframe instance making itself known to us. (works for nested iframes unlike DOM harvesting)
-    function message_from_iframe(e, url)
+    
+    // for nested iframes, messages bubble up until they reach the top window or the frame below
+    // if it's a frameset. (can't show ui in a frameset ...). parent then answers the child directly
+    // using the original source contained in the message.
+    function message_from_iframe(e, m)
     {
 	// log("message from iframe: host=" + url_hostname(url));
-	assert(domcontentloaded, "received message from iframe before domcontentloaded, that shouldn't happen !!");
-	if (element_tag_is(document.body, 'frameset')) // crap, frames !
-	{
-	    e.source.postMessage(iframe_message_header + iframe_message_frame_actually, '*');
+	if (window != window.top && !parents_cant_display) // forward msg
+	{	    
+	    window.parent.postMessage(m, '*');
 	    return;
 	}
+
+	assert(domcontentloaded, "received message from iframe before domcontentloaded, that shouldn't happen !!");
+	if ((parents_cant_display || window == window.top) &&
+	    element_tag_is(document.body, 'frameset')) // i'm frameset myself, can't have ui !
+	{
+	    post_message(m.source, iframe_rescue_channel_reply, msg_parents_cant_display);
+	    return;
+	}
+	// i can display, i'll take care of you.
 	if (iframe_logic == 'filter') // it needs our hostname
-	    e.source.postMessage(iframe_message_header + current_host, '*');
+	    post_message(m.source, iframe_rescue_channel_reply, current_host);
+	var url = m.data;
 	add_iframe(url);			// add to menu so we can block/allow it.
 	if (main_ui) // UIFIXME
 	    repaint_ui();	
     }
 
-    var i_am_inside_a_frame = false;    
-    function message_from_parent(e, answer)
+    var parents_cant_display = false;	// means: must display ui myself
+    function message_from_parent(e, m)
     {
 	assert(!domcontentloaded, "received message from parent after domcontentloaded, that shouldn't happen !!");	
 	// log("message from parent: host=" + answer);
 
 	// crap, page uses frames. fall back to normal logic and show ui everywhere.	
-	if (answer == iframe_message_frame_actually)
-	    i_am_inside_a_frame = true;
+	if (m.data == msg_parents_cant_display)
+	    parents_cant_display = true;	
 	else
-	    decide_iframe_mode(answer);
-		
+	    decide_iframe_mode(m.data);
+	
 	async_init_finished(); // happy now =)
     }
 
@@ -737,26 +754,32 @@
 
 	// don't display ui in iframes
 	if (window != window.top &&
-	    !i_am_inside_a_frame &&
+	    !parents_cant_display &&
 	    !show_ui_in_iframes)
 	    return;
 	
 	init_ui();
     }
 
+    function post_message(dest, req, data)
+    {
+	dest.postMessage({magic:'jsarmor', request:req, data:data} ,'*');
+    }
+    
     function before_message_handler(ujs_event)
     {
 	var e = ujs_event.event;
 	var m = e.data;
-	if (typeof(m) != "string")
+	if (typeof(m) != "object" || !m.magic || m.magic != 'jsarmor')
 	    return;
 	for (var h in message_handlers)
 	{
-	    if (is_prefix(h, m))
+	    if (m.request && m.request == h)
 	    {
 		ujs_event.preventDefault();	// keep this conversation private.
-		var content = m.slice(h.length);		
-		(message_handlers[h])(e, content);
+		if (!m.source)
+		    m.source = e.source;	// so final destination can reply directly.
+		(message_handlers[h])(e, m);
 		return;
 	    }
 	}
