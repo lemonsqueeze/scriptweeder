@@ -78,7 +78,7 @@ function(){   // fake line, keep_editor_happy
     {
 	// sync_init, async_init both false
 	init_core();
-	init_ui();
+	register_ui();
 	sync_init = true;
 	// sync_init set
 	
@@ -702,9 +702,11 @@ function(){   // fake line, keep_editor_happy
 	    repaint_ui();
     }
     
-//UIFIXME    
+//UIFIXME
+    var domcontentloaded = false;
     function domcontentloaded_handler(e, deferred_call)
     {
+	domcontentloaded = true;
         if (!there_is_work_todo &&			// no scripts ?
 	    !document.querySelector('iframe') &&	// no iframes ?
 	    !rescue_mode())				// rescue mode, always show ui
@@ -718,7 +720,7 @@ function(){   // fake line, keep_editor_happy
 	    !show_ui_in_iframes)
 	    return;
 	
-	create_iframe();
+	init_ui();
     }
 
     function before_message_handler(ujs_event)

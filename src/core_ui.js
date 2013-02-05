@@ -126,8 +126,8 @@ function(){   // fake line, keep_editor_happy
 	    wrap.forest = true;
 
 	setup_widget_event_handlers(wrap, name);
-	call_oninit_handlers(wrap);
-	create_nested_widgets(wrap, false);	
+	create_nested_widgets(wrap, false);
+	call_oninit_handlers(wrap);	
 	init_widget(wrap, wrap.firstChild, name, init_proxy);
 	
 	// cached_widgets[id] = d.firstChild;
@@ -174,6 +174,7 @@ function(){   // fake line, keep_editor_happy
 	{
 	    if (node.oninit)
 		(node.oninit)(node);
+	    node.oninit = null;  // don't let it get called again.
 	});
     }    
     
@@ -356,11 +357,10 @@ function(){   // fake line, keep_editor_happy
     {
 	iframe = document.createElement('iframe');
 	iframe.id = 'jsarmor_iframe';
-	iframe.style = "position:fixed !important;width:auto !important;height:auto !important;background:transparent !important;white-space:nowrap !important;z-index:99999999 !important;direction:ltr !important;font-family:sans-serif !important; font-size:small !important; margin-bottom:0px !important;" +
-	
-// "width: 300px !important; height: 100px !important;"
+	iframe.style = "position:fixed !important;background:transparent !important;white-space:nowrap !important;z-index:99999999 !important;direction:ltr !important;font-family:sans-serif !important; font-size:small !important; margin-bottom:0px !important;" +
+ "width: 1px !important; height: 1px !important;"   +
 	"margin-top: 0px !important; margin-right: 0px !important; margin-bottom: 0px !important; margin-left: 0px !important; padding-top: 0px !important; padding-right: 0px !important; padding-bottom: 0px !important; padding-left: 0px !important; border-top-width: 0px !important; border-right-width: 0px !important; border-bottom-width: 0px !important; border-left-width: 0px !important; border-top-style: none !important; border-right-style: none !important; border-bottom-style: none !important; border-left-style: none !important; background-color: transparent !important; visibility: visible !important; content: normal !important; outline-width: medium !important; outline-style: none !important; background-image: none !important; min-width: 0px !important; min-height: 0px !important; " +
-	
+// useful for layout debugging
 //	"border: 1px solid #CCC !important; " +	
 	(cornerposition < 3 ? 'top': 'bottom') + ':1px !important;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px !important;';
 	iframe.scrolling="no";

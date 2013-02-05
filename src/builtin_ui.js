@@ -18,18 +18,41 @@ function(){   // fake line, keep_editor_happy
     var main_ui = null;
     var autohide_main_button;
     var transparent_main_button;
+    var disable_main_button;
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
     var show_scripts_in_main_menu;
     
     var menu_request = false;		// external api request while not ready yet (opera button ...)
+    var using_opera_button = false;	// seen external api request
     
     // called on script startup, no ui available at this stage.
-    function init_ui()
+    function register_ui()
     {
+	disable_main_button = global_bool_setting('disable_main_button', false);
+	
 	// window.opera.jsarmor.toggle_menu() api for opera buttons etc...
 	message_handlers['jsarmor_toggle_menu'] = api_toggle_menu;
 	window.opera.jsarmor.toggle_menu = function() { window.postMessage('jsarmor_toggle_menu', '*'); };
+    }
+
+    // normal case : called only once after domcontentloaded.
+    // however, can also be called from api_toggle_menu(). This could be anytime, do some checking.
+    var init_ui_done = false;
+    function init_ui(force)
+    {
+	if (!init_ui_needed())
+	    return;
+	create_iframe();	// calls start_ui() when ready
+	init_ui_done = true;
+    }
+
+    function init_ui_needed()
+    {
+	if (init_ui_done || !domcontentloaded)
+	    return false;
+	var not_needed = disable_main_button && !menu_request;	
+	return (rescue_mode() || !not_needed);
     }
     
     // called only once when the injected iframe is ready to display stuff.
@@ -43,8 +66,7 @@ function(){   // fake line, keep_editor_happy
 	if (menu_display_logic == 'click')
 	    window.addEventListener('click',  function (e) { close_menu(); }, false);
 	
-	create_main_ui();
-	parent_main_ui();
+	repaint_ui_now();
 	resize_iframe();
 	
 	if (rescue_mode())
@@ -53,7 +75,9 @@ function(){   // fake line, keep_editor_happy
     
     function create_main_ui()
     {
-	main_ui = new_widget("main");
+	main_ui = new_widget("main_ui");
+	if (!disable_main_button)
+	    wakeup_lazy_widgets(main_ui);
     }
 
     function parent_main_ui()
@@ -67,9 +91,11 @@ function(){   // fake line, keep_editor_happy
     function api_toggle_menu()
     {
 	// log("api_toggle_menu");
+	using_opera_button = true;
 	if (!main_ui)
 	{
-	    menu_request = true;
+	    menu_request = true;	    
+	    init_ui();	// safe to call multiple times
 	    return;
 	}	
 	show_hide_menu(true, true);	
@@ -78,12 +104,20 @@ function(){   // fake line, keep_editor_happy
 
     /****************************** widget handlers *****************************/
 
-    function checkbox_item_init(li, id, title, label, state, callback)
+    function checkbox_item_init(li, id, title, label, state, callback, klass)
     {
 	li.id = id;
+	if (klass)
+	    li.className += klass;
 	li.title = title;
 	li.innerHTML += label; // hack
 	setup_checkbox_item(li, state, callback);
+    }
+
+    function disable_checkbox(w)
+    {
+	w.querySelector('input').disabled = true;
+	w.onclick = null;
     }
     
     function setup_checkbox_item(widget, current, f)
@@ -312,6 +346,33 @@ function(){   // fake line, keep_editor_happy
 	// need_repaint is all we need !
 	need_reload = true;
     }
+
+    function toggle_disable_main_button(event)
+    {
+	disable_main_button = toggle_global_setting(this, disable_main_button, 'disable_main_button');
+	// need_repaint is all we need !
+	need_reload = true;
+    }
+
+    function disable_main_button_init(w)
+    {
+	if (using_opera_button)
+	{
+	    w.title = "";
+	    return;
+	}
+	disable_checkbox(w);
+    }
+    
+    function check_disable_button_ui_settings()
+    {
+	if (!disable_main_button)
+	    return;
+	// disable ui button settings then
+	foreach(getElementsByClassName(this, 'button_ui_setting'), function(n)
+		{   disable_checkbox(n);  });
+    }
+ 
     
     function options_menu()
     {
@@ -525,8 +586,10 @@ function(){   // fake line, keep_editor_happy
 
     function parent_menu()
     {
-	var w = find_element(main_ui, "main_menu_sibling");
-	w.parentNode.insertBefore(nsmenu, w);
+	if (!main_ui.firstChild) // no main button
+	    main_ui.appendChild(nsmenu);
+	else
+	    main_ui.insertBefore(nsmenu, main_ui.lastChild);
     }
 
     var submenu = null;		// there can be only one.

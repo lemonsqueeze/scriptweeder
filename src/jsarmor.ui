@@ -9,10 +9,10 @@
 <widgets>
 
 <!-- main ui -->
-<widget name="main">
+<widget name="main_ui">
   <div id="main">
     <!-- main menu goes here -->
-    <main_button/>
+    <main_button lazy/>
   </div>
 </widget>
 
@@ -103,21 +103,22 @@
   <div id="options_menu" class="menu" onmouseout="menu_onmouseout" >
     <menu_title title="Options"/>
     <table><tr>
-	<td>
+	<td oninit="check_disable_button_ui_settings" >
 	  <frame title="User Interface">
-	  <checkbox_item label="Auto-hide main button"
+	  <checkbox_item label="Auto-hide main button" klass="button_ui_setting"
 			 title=""
 			 state="`autohide_main_button"
 			 callback="`toggle_autohide_main_button"></checkbox_item>
-	  <checkbox_item label="Transparent button !"
+	  <checkbox_item label="Transparent button !" klass="button_ui_setting"
 			 title=""
 			 state="`transparent_main_button"
 			 callback="`toggle_transparent_main_button"></checkbox_item>
-	  <select_menu_display_logic></select_menu_display_logic>
+	  <disable_main_button></disable_main_button>
 	  <checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"
 			 title="!! experimental !!"
 			 state="`show_scripts_in_main_menu"
 			 callback="`toggle_show_scripts_in_main_menu"></checkbox_item>
+	  <select_menu_display_logic></select_menu_display_logic>
 	  <select_reload_method></select_reload_method>
 	  </frame>
 
@@ -160,6 +161,14 @@
     </ul>
   </div>
 </widget>
+
+<widget name="disable_main_button" init>
+  <checkbox_item label="Disable main button"
+		 title="Install opera button and use it to come back here first."
+		 state="`disable_main_button"
+		 callback="`toggle_disable_main_button"></checkbox_item>
+</widget>
+
 
 <widget name="select_iframe_logic" init>
   <li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive).">Scripts in iframes:
@@ -220,7 +229,7 @@
 
 <!--         [ low level stuff ]         -->
 
-<widget name="checkbox_item" id title label state callback init>
+<widget name="checkbox_item" id title label state callback klass init>
   <li>
     <input type="checkbox"/>
   </li>
