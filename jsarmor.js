@@ -150,9 +150,9 @@
 
     function init_core()
     {
-	setup_event_handlers();
 	check_script_storage();
 	load_global_settings();
+	setup_event_handlers();	
 	window.opera.jsarmor = new Object();	// external api
     }
 	
@@ -691,6 +691,40 @@
 	    repaint_ui();
     }
 
+    function log_event(e)
+    {
+	console.log("bef " + e.type + " listener:" +
+	    " currentTarget: " + e.currentTarget.tagName +
+	    " target: " + e.target.tagName +
+//	    " srcElement: " + e.srcElement +
+	    ""
+	   );	
+    }
+    
+    // called before event listeners. block anything that looks like a page handler.
+    function beforelistener_handler(ue)
+    {
+	var e = ue.event;
+	var name = 'on' + e.type;	
+	
+	if (e.target && e.target.id == 'jsarmor_iframe')
+	{
+	    console.log("ignoring iframe "+ e.type +" event")
+	    return;
+	}
+
+	foreach([ e.currentTarget, e.target ], function(n)
+	{
+	    if (n && ue.listener == n[name])
+	    {		
+		log_event(e);		
+		ue.preventDefault();
+		n[name] = null;		// don't bother us again.
+		there_is_work_todo = true;
+	    }
+	});
+    }
+    
     // Find out which scripts are actually loaded,
     // this way we can find out if *something else* is blocking
     // (blocked content, bad url, syntax error...). Awesome!    
@@ -779,6 +813,8 @@
 	// deferred: events should be queued until we're initialized
     	opera.addEventListener('BeforeScript',	       work_todo(deferred(beforescript_handler)),		false);
 	opera.addEventListener('BeforeExternalScript', work_todo(deferred(beforeextscript_handler)),		false);
+	if (block_inline_scripts) // FIXME iframes init !!!
+	    opera.addEventListener('BeforeEventListener',		beforelistener_handler,		false);
 	opera.addEventListener('BeforeEvent.load',               deferred(beforeload_handler, true),		false);
 	document.addEventListener('DOMContentLoaded',            deferred(domcontentloaded_handler, true),	false);
 
