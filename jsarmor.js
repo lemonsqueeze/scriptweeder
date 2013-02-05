@@ -145,26 +145,7 @@
 	};
     }
     
-    
-    /********************************* Startup ************************************/    
-    
-    // jsarmor ui's iframe, don't run in there !
-    if (window != window.top &&	window.name == 'jsarmor_iframe') // FIXME better way of id ?
-	return;
-
-    init();
-    
-    if (global_setting('whitelist') == '')
-    {
-	// FIXME: need a nice way to edit this.
-	alert("Welcome to jsarmor !\n\n" +
-	      "jsarmor's button will show up at the bottom right of pages using javascript.\n\n" +
-	      "The initial global whitelist is set to:\n\n[" +
-	      default_globally_allowed_hosts.join(', ') + "]");
-	set_global_setting('whitelist',
-			   '. ' + default_globally_allowed_hosts.join(' '));
-    }
-
+        
     /******************************** Normal init *******************************/
 
     function init_core()
@@ -286,12 +267,12 @@
     /***************************** filtering js in iframes **************************/
 
     var show_ui_in_iframes;    
-    var iframe_message_header;
+    var iframe_message_header = "jsarmor lost iframe rescue channel:";
+    var iframe_message_frame_actually = "you're in a frame actually my dear";
     
     function init_iframe_logic()
     {
 	show_ui_in_iframes = global_bool_setting('show_ui_in_iframes', default_show_ui_in_iframes);
-	iframe_message_header = "jsarmor lost iframe rescue channel:";
 	message_handlers[iframe_message_header] = iframe_rescue_channel;
 	
 	iframe_logic = global_setting('iframe_logic');
@@ -337,17 +318,36 @@
     function message_from_iframe(e, url)
     {
 	// log("message from iframe: host=" + url_hostname(url));
+	assert(domcontentloaded, "received message from iframe before domcontentloaded, that shouldn't happen !!");
+	if (element_tag_is(document.body, 'frameset')) // crap, frames !
+	{
+	    e.source.postMessage(iframe_message_header + iframe_message_frame_actually, '*');
+	    return;
+	}
 	if (iframe_logic == 'filter') // it needs our hostname
 	    e.source.postMessage(iframe_message_header + current_host, '*');
 	add_iframe(url);			// add to menu so we can block/allow it.
 	if (main_ui) // UIFIXME
 	    repaint_ui();	
     }
-    
-    function message_from_parent(e, parent_host)
+
+    var i_am_inside_a_frame = false;    
+    function message_from_parent(e, answer)
     {
-	// log("message from parent: host=" + parent_host);
-	
+	assert(!domcontentloaded, "received message from parent after domcontentloaded, that shouldn't happen !!");	
+	// log("message from parent: host=" + answer);
+
+	// crap, page uses frames. fall back to normal logic and show ui everywhere.	
+	if (answer == iframe_message_frame_actually)
+	    i_am_inside_a_frame = true;
+	else
+	    decide_iframe_mode(answer);
+		
+	async_init_finished(); // happy now =)
+    }
+
+    function decide_iframe_mode(parent_host)
+    {
 	// now that we know parent window's hostname we can decide what to do.
 	// does our parent allow us ?
 	load_global_context(parent_host);
@@ -358,9 +358,7 @@
 	// alert("iframe " + location.hostname + " allowed: " + allowed);
 	if (!allowed)
 	    iframe_block_all_mode();
-	// else: allowed. treat it as a normal page: current mode applies.
-	
-	async_init_finished(); // happy now =)
+	// else: allowed. treat it as a normal page: current mode applies.	
     }
 
     // can't use set_mode_no_update('block_all'), it would save the setting.
@@ -726,6 +724,9 @@
     function domcontentloaded_handler(e, deferred_call)
     {
 	domcontentloaded = true;
+
+	if (element_tag_is(document.body, 'frameset')) // frames, can't show ui in there !
+	    return;	
         if (!there_is_work_todo &&			// no scripts ?
 	    !document.querySelector('iframe') &&	// no iframes ?
 	    !rescue_mode())				// rescue mode, always show ui
@@ -734,8 +735,9 @@
 	if (block_inline_scripts)
 	    check_handle_noscript_tags();
 
-	// display ui in frame / iframe ?
+	// don't display ui in iframes
 	if (window != window.top &&
+	    !i_am_inside_a_frame &&
 	    !show_ui_in_iframes)
 	    return;
 	
@@ -2957,5 +2959,29 @@ li.inactive:hover	{ background:inherit }  \n\
     }
 
 
-    
+
+    /********************************* Startup ************************************/    
+
+    function main()
+    {
+	// jsarmor ui's iframe, don't run in there !
+	if (window != window.top && window.name == 'jsarmor_iframe') // FIXME better way of id ?
+	    return;
+	
+	init();
+	
+	if (global_setting('whitelist') == '')
+	{
+	    // FIXME: need a nice way to edit this.
+	    alert("Welcome to jsarmor !\n\n" +
+		  "jsarmor's button will show up at the bottom right of pages using javascript.\n\n" +
+		  "The initial global whitelist is set to:\n\n[" +
+		  default_globally_allowed_hosts.join(', ') + "]");
+	    set_global_setting('whitelist',
+			       '. ' + default_globally_allowed_hosts.join(' '));
+	}
+    }
+
+    main();
+
 })(window.document, window.location, window.opera, window.opera.scriptStorage);
