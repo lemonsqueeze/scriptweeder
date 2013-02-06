@@ -2,7 +2,7 @@
 NAME	= jsarmor.js
 SRC	= main.js core.js settings.js utils.js core_ui.js builtin_ui.js
 GEN_SRC	= jsarmor_style.js jsarmor_widgets.js
-TMPFILES= jsarmor.xml 
+TMPFILES= jsarmor.xml jsarmor.inlined.css
 ALLSRC	= $(SRC) $(GEN_SRC)
 # where we save output from generate_layout.html
 GEN_LAYOUT=/home/opera/downloads/default
@@ -16,7 +16,11 @@ clean:
 jsarmor.js: $(ALLSRC)
 	$(TOOLS)/jpp $<  > $@
 
-jsarmor_style.js: jsarmor.css
+jsarmor.inlined.css: jsarmor.css
+	@echo generating $@ from $<
+	@../tools/inline_images < $<  > $@
+
+jsarmor_style.js: jsarmor.inlined.css
 	@echo generating $@ from $<
 	@echo "    var builtin_style = " > $@
 	@echo -n '"' >> $@

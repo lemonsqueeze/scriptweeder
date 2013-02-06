@@ -114,6 +114,9 @@
 			   state="`transparent_main_button"
 			   callback="`toggle_transparent_main_button"></checkbox_item>
 	    <disable_main_button></disable_main_button>
+	    <checkbox_item label="Fat icons" 
+			   state="`fat_icons"
+			   callback="`toggle_fat_icons"></checkbox_item>
 	    <checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"
 			   title="!! experimental !!"
 			   state="`show_scripts_in_main_menu"

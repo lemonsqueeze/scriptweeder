@@ -18,6 +18,20 @@ function(){   // fake line, keep_editor_happy
 	return u;
     }
 
+    function truncate(s, max)
+    {
+	if (s.length > max)
+	    return s.slice(0, max) + "[…]";
+	return s;
+    }
+
+    function truncate_left(s, max)
+    {
+	if (s.length > max)
+	    return "[…]" + s.slice(s.length - max);
+	return s;
+    }
+    
     // split url into [host, dir, file, tail]
     function split_url(u)
     {

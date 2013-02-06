@@ -7,6 +7,7 @@ function(){   // fake line, keep_editor_happy
 
     var default_autohide_main_button = false;
     var default_transparent_main_button = true;
+    var default_fat_icons = false;
     var default_menu_display_logic = 'auto';
     var default_show_scripts_in_main_menu = false; // for now.
     
@@ -18,6 +19,7 @@ function(){   // fake line, keep_editor_happy
     var main_ui = null;
     var autohide_main_button;
     var transparent_main_button;
+    var fat_icons;
     var disable_main_button;
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
@@ -60,6 +62,7 @@ function(){   // fake line, keep_editor_happy
     {
 	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
 	transparent_main_button = global_bool_setting('transparent_main_button', default_transparent_main_button);
+	fat_icons = global_bool_setting('fat_icons', default_fat_icons);
 	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);
 	show_scripts_in_main_menu = global_bool_setting('show_scripts_in_main_menu', default_show_scripts_in_main_menu);
 	
@@ -76,6 +79,10 @@ function(){   // fake line, keep_editor_happy
     function create_main_ui()
     {
 	main_ui = new_widget("main_ui");
+	if (fat_icons)
+	    idoc.body.className = ' fat_icons';		// slightly evil
+	else
+	    idoc.body.className = '';
 	if (!disable_main_button)
 	    wakeup_lazy_widgets(main_ui);
     }
@@ -359,6 +366,13 @@ function(){   // fake line, keep_editor_happy
 	need_reload = true;
     }
 
+    function toggle_fat_icons(event)
+    {
+	fat_icons = toggle_global_setting(this, fat_icons, 'fat_icons');
+	// need_repaint is all we need !
+	need_reload = true;
+    }
+    
     function toggle_disable_main_button(event)
     {
 	disable_main_button = toggle_global_setting(this, disable_main_button, 'disable_main_button');
@@ -417,22 +431,18 @@ function(){   // fake line, keep_editor_happy
 	    return 'iframe';
 	return 'blocked_iframe';
     }
-    
+
     function script_detail_init(w, hn, s, iframe, file_only)
     {
 	var h = hn.name;
 	var img = w.firstChild;
 	var link = img.nextSibling;
 
-	var label = strip_http(s.url);
-	var max_item_length = 60;	// truncate displayed url if too long        
-        if (label.length > max_item_length) { label = label.slice(0, max_item_length) + "…"; }
+	// truncate displayed url if necessary
+	var label = truncate_left(strip_url_tail(s.url), 60);
 
 	if (file_only)
-	{
-	    var a = split_url(s.url);
-	    label = a[2];
-	}
+	    label = truncate((split_url(s.url))[2], 25);
 	
 	link.innerText = label;
 	link.href = s.url;
@@ -566,6 +576,11 @@ function(){   // fake line, keep_editor_happy
 	resize_iframe();
     }
 
+    function menu_shown()
+    {
+	return (nsmenu && nsmenu.style.display != 'none');
+    }
+
     
     /****************************** Main menu *********************************/
     
@@ -636,7 +651,7 @@ function(){   // fake line, keep_editor_happy
 	submenu = sub;
 	if (sub)
 	{
-	    idoc.body.appendChild(sub);	    
+	    idoc.body.appendChild(sub);
 	    position_submenu(sub, position);
 	}
 	resize_iframe();	
@@ -670,7 +685,9 @@ function(){   // fake line, keep_editor_happy
     }
     
     function scripts_submenu(tr)
-    {	
+    {
+	if (!menu_shown())
+	    return;
 	var sub = new_widget("submenu");
 	var menu = find_element(sub, "menu_content");
 	var host = tr.host;
@@ -959,12 +976,13 @@ function(){   // fake line, keep_editor_happy
 	// show_hide_menu() at the end -> no flickering at all this way!!
 	var menu_shown = menu_request || (nsmenu && nsmenu.style.display != 'none');
 	menu_request = false;	// external api menu request (opera button ...)
-	
+
+	var old = main_ui;
 	create_main_ui();
 	if (menu_shown)
 	    create_menu();
-	if (idoc.body.lastChild)
-	    idoc.body.removeChild(idoc.body.lastChild); // remove main_ui
+	if (old)
+	    old.parentNode.removeChild(old); // remove main_ui
 	parent_main_ui();
 	if (menu_shown)
 	{
