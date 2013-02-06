@@ -271,6 +271,10 @@ function(){   // fake line, keep_editor_happy
 	var use_custom = (enable_custom_style && !rescue_mode());
 	var style = (use_custom ? global_setting('style') : '');
 	style = (style == '' ? builtin_style : style);
+
+	// style patches
+	if (use_custom)
+	    style += '\n' + global_setting('style_patch');
 	new_style(style);
     }
     

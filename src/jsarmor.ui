@@ -1,9 +1,12 @@
 <!-- interface layout
-     xml "macros" are used here to allow for a little bit of structure.
-     They're basically custom tags with an associated definition stating
-     what content to replace them with. Macros can use other macros, and
-     can also take parameters: tag attributes are substituted in the output
-     so it can be used for templating etc...
+     this stuff uses widgets and macros to allow for a little bit of structure.
+     widgets are run-time entities, while macros are pre-processed.
+
+     Macro syntax is somewhat similar to that of fxmacro, but the only
+     thing we really need here is attribute substitution. the whole macro
+     tree arguments thing isn't used here (or even supported).
+
+     Generated output ends up enclosed in '', so can't use single quotes in there.
 -->
 
 <widgets>
@@ -98,68 +101,70 @@
 
 
 <!-- options menu -->
-<!-- FIXME! menu items using li inside of table !! -->
 <widget name="options_menu">
   <div id="options_menu" class="menu" onmouseout="menu_onmouseout" >
     <menu_title title="Options"/>
     <table><tr>
 	<td oninit="check_disable_button_ui_settings" >
 	  <frame title="User Interface">
-	  <checkbox_item label="Auto-hide main button" klass="button_ui_setting"
-			 title=""
-			 state="`autohide_main_button"
-			 callback="`toggle_autohide_main_button"></checkbox_item>
-	  <checkbox_item label="Transparent button !" klass="button_ui_setting"
-			 title=""
-			 state="`transparent_main_button"
-			 callback="`toggle_transparent_main_button"></checkbox_item>
-	  <disable_main_button></disable_main_button>
-	  <checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"
-			 title="!! experimental !!"
-			 state="`show_scripts_in_main_menu"
-			 callback="`toggle_show_scripts_in_main_menu"></checkbox_item>
-	  <select_menu_display_logic></select_menu_display_logic>
-	  <select_reload_method></select_reload_method>
-	  </frame>
-
-	  <frame title="Iframes">
-	  <select_iframe_logic></select_iframe_logic>
-	  <checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"
-			 title=""
-			 state="`show_ui_in_iframes"
-			 callback="`toggle_show_ui_in_iframes"></checkbox_item>
-	  </frame>
-
-	  <frame title="Edit Settings">
-	  <button onclick="edit_whitelist">Global whitelist…</button><br>
-	  <button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default">Helper blacklist…</button>
+	    <checkbox_item label="Auto-hide main button" klass="button_ui_setting"
+			   state="`autohide_main_button"
+			   callback="`toggle_autohide_main_button"></checkbox_item>
+	    <checkbox_item label="Transparent button !" klass="button_ui_setting"
+			   state="`transparent_main_button"
+			   callback="`toggle_transparent_main_button"></checkbox_item>
+	    <disable_main_button></disable_main_button>
+	    <checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"
+			   title="!! experimental !!"
+			   state="`show_scripts_in_main_menu"
+			   callback="`toggle_show_scripts_in_main_menu"></checkbox_item>
+	    <select_menu_display_logic></select_menu_display_logic>
+	    <select_reload_method></select_reload_method>
 	  </frame>
 	  
+	  <frame title="Iframes">
+	    <select_iframe_logic></select_iframe_logic>
+	    <checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"
+			   state="`show_ui_in_iframes"
+			   callback="`toggle_show_ui_in_iframes"></checkbox_item>
+	  </frame>
+	  
+	  <frame title="Edit Settings">
+	    <table class="button_table">	  
+	      <tabled_button onclick="edit_whitelist"  label="Global whitelist…"/>
+	      <tabled_button onclick="edit_blacklist"  label="Helper blacklist…"
+			     title="Stuff relaxed mode should never allow by default" />
+	    </table>
+	  </frame>	  
 	</td>
 
 	<td>
-	  <frame title="Style">
-	    <load_custom_style/>
-	    <button onclick="save_current_style">Save current…</button><br>
-	    <button onclick="clear_saved_style" oninit="clear_saved_style_init">Back to default</button><br>
+	  <frame title="Custom Style">
+	    <table class="button_table">
+	      <tabled_button onclick="edit_style_patch" label="Patch style…" 
+			     title="Add css rules on top of the current stylesheet." />
+	      <tr><td><load_custom_style/></td></tr>
+	      <tabled_button onclick="save_current_style" label="Save stylesheet…" />
+	      <tabled_button onclick="clear_saved_style" extra="oninit=clear_saved_style_init" label="Back to default"/>
+	    </table>
 	    <a oninit="rescue_mode_link_init">Rescue mode</a>
 	  </frame>
-
+	  
 	  <frame title="Settings">
-	    <import_settings/>
-	    <button onclick="export_settings">Save settings…</button><br>
-	    <button onclick="view_settings">View settings…</button><br>
-	    <button onclick="reset_settings">Clear Settings…</button><br>
+	    <table class="button_table">
+	      <tr><td><import_settings/></td></tr>
+	      <tabled_button onclick="export_settings" label="Save settings…" 
+			     title="Beware, does not save custom style." />
+	      <tabled_button onclick="view_settings" label="View settings…"  />
+	      <tabled_button onclick="reset_settings" label="Clear Settings…"  />
+	    </table>
 	  </frame>
-
-	  <frame title="">
+	  
+	  <frame>
 	    <a href="https://github.com/lemonsqueeze/jsarmor">Help</a>
-	    <a href="http://">Show version</a>
 	  </frame>
 	</td>
-    </tr></table>
-
-    </ul>
+    </tr></table>    
   </div>
 </widget>
 
@@ -213,7 +218,7 @@
 
 <def macro="load_custom_style">
   <li><form id="load_custom_style">
-      <input type="file" autocomplete="off" oninit="load_custom_style_init" ><button>Load custom…</button>
+      <input type="file" autocomplete="off" oninit="load_custom_style_init" ><button>Load stylesheet…</button>
   </form></li>
 </def>
 
@@ -262,6 +267,12 @@
 <def macro="radio_button" label >
   <input type="radio" name="radio"/>
   <label> $label </label>
+</def>
+
+<def macro="tabled_button" onclick title label oninit extra>
+  <tr><td>
+      <button onclick="$onclick" title="$title" $extra>$label</button>
+  </td></tr>
 </def>
 
 <widget name="scope_widget" init>

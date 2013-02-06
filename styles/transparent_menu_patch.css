@@ -1,0 +1,4 @@
+/* transparent menu */
+
+.menu {	background: none repeat scroll 0 0 rgba(204,204,204,0.95);  }
+/* last number is transparency level */

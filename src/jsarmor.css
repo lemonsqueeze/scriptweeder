@@ -133,6 +133,10 @@ li.inactive:hover	{ background:inherit }
 .dropdown_setting td + td	{ text-align:right; }
 .dropdown_setting select	{ width:100% }
 
+.button_table  *		{ width:100% }
+
+#patch_style textarea		{ width: 700px; height: 200px; }
+
 /********************************************************************************************************** 
  * transparent button 
  * http://www.dreamtemplate.com/dreamcodes/documentation/buttons_transparent.html

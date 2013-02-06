@@ -7,9 +7,11 @@ my $debug = 0;
 my @lines = <STDIN>;
 
 
-my @content; # without macros
-my %macros;
+my @content;		# without macros
+my %macros;		# macro definitions (string)
+my %macros_args;	# macros arguments  (array)
 my $def = "";
+my $args = "";
 # first get macro definitions
 foreach my $s (@lines)
 {
@@ -26,9 +28,11 @@ foreach my $s (@lines)
     }
     if ($s =~ m|<def .*>|  )
     {   
-	if (!($s =~ m|<def  *macro="([^" ]+)".*>|  ))		# sanity check
+	if (!($s =~ m|<def  *macro="([^" ]+)"(.*)>|  ))		# sanity check
 	{  die("${s}Couldn't parse this <def> tag, aborting."); }
-	$def = $1;
+	($def, $args) = ($1, $2);
+	my @tmp = split(" ", $args);
+	$macros_args{$def} = \@tmp;
     }
 
     if ($def eq "")
@@ -73,12 +77,16 @@ sub replace_macro
     $did_something = 1;
     print "replacing $name\n" if ($debug);
     %args = parse_args($arg_str, $name);
-    
+
+    # replace given arguments
     my $s = $macros{$name};
     foreach my $arg (keys(%args))
-    {
-	$s =~ s|\$$arg|$args{$arg}|gm;
-    }
+    {	$s =~ s|\$$arg|$args{$arg}|gm;    }
+
+    # blank out undefined args
+    foreach my $arg (@{$macros_args{$name}})
+    {	$s =~ s|\$$arg||gm;    }
+    
     return $s;
 }
 
@@ -126,6 +134,4 @@ if ($debug)
 
 # print output
 foreach my $s (@content)
-{
-    print "$s\n";
-}
+{    print "$s\n";    }

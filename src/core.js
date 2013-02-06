@@ -16,6 +16,8 @@ function(){   // fake line, keep_editor_happy
     // 'block_all'   'filter'   'allow'
     var default_iframe_logic = 'filter';
 
+    // 'normal'  or  'cache'
+    var default_reload_method = 'cache';
     
     /********************************* Globals *********************************/
 
@@ -121,7 +123,7 @@ function(){   // fake line, keep_editor_happy
     {
 	load_global_context(location.hostname);
 	init_iframe_logic();
-	reload_method = global_setting('reload_method', 'cache');
+	reload_method = global_setting('reload_method', default_reload_method);
     }
     
     // can be used to check on another page's settings.

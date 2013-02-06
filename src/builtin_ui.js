@@ -195,19 +195,36 @@ function(){   // fake line, keep_editor_happy
     }
 
     function save_current_style()
-    {	
+    {
 	save_file(builtin_style, true);
     }
 
+    function edit_style_patch()
+    {
+	var w = new_editor("Patch Style",
+			   global_setting('style_patch'),
+			   '',
+			   function(text)
+        {
+	   set_global_setting('style_patch', text);
+	   need_reload = true;
+	   close_menu();
+	});
+	w.id = 'patch_style';
+	switch_menu(w);
+    }	
+    
     function clear_saved_style_init()
     {	
-	if (global_setting('style') == '')
+	if (global_setting('style') == '' &&
+	    global_setting('style_patch') == '')
 	    this.disabled = true;
     }
     
     function clear_saved_style()
     {	
 	set_global_setting('style', '');
+	set_global_setting('style_patch', '');
 	alert("Cleared !");
 	need_reload = true;
     }
@@ -271,7 +288,7 @@ function(){   // fake line, keep_editor_happy
 		textarea.innerText = '';
 		textarea.innerText = default_setting;
 	    };
-    }
+    }    
     
     function select_iframe_logic_init(widget)
     {
