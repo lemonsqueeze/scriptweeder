@@ -2,15 +2,17 @@
 // @name jsarmor
 // @author lemonsqueeze https://github.com/lemonsqueeze/jsarmor
 // @description Block unwanted javascript. NoScript on steroids for opera !
+// @license GNU GPL version 2 or later version.
 // @published 2012-10-08 11:00
 // ==/UserScript==
 
-/* This script is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- */
 
+// This file is put together from the different bits and pieces in the repository.
+// Besides code there's css, html and encoded images in there, so it looks a little
+// like an extension all packed into one file.
+// You can edit it directly if you really want, but if you're going to be hacking
+// this thing i'd suggest cloning the repo and working in there instead.
+// Then you can just type 'make' and it'll regenerate the whole thing.
 
 // When running as userjs, document and window.document are the same,
 // but when running as an extension they're 2 different things, beware !

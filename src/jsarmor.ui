@@ -28,7 +28,7 @@
 
 <!-- main menu -->
 <widget name="main_menu" init>
-  <div id="main_menu" class="menu" onmouseout >
+  <div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown">
     <menu_title title="JSArmor"/>
     <ul>
       <scope_widget></scope_widget>
@@ -69,7 +69,7 @@
 
 <!-- submenu -->
 <widget name="submenu" >
-  <div class="submenu menu" onmouseout="menu_onmouseout" >
+  <div class="submenu menu" onmouseout="menu_onmouseout" onmousedown="menu_onmousedown">
     <ul id="menu_content">
     </ul>
   </div>
@@ -87,22 +87,22 @@
 
 <!-- details menu -->
 <widget name="details_menu" init>
-  <div id="details_menu" class="menu" onmouseout="menu_onmouseout" >
-    <menu_title title="Scripts"/>
+  <div id="details_menu" class="menu" onmouseout="menu_onmouseout" onmousedown="menu_onmousedown">
+    <menu_title title="Details"/>
     <ul id="menu_content">
       <menu_item id="last_item" label="Options…" onclick="options_menu"/>
     </ul>
   </div>
 </widget>
 
-<widget name="script_detail" host script file_only init>
+<widget name="script_detail" host_node script iframe file_only init>
     <li><img/><a></a></li>
 </widget>
 
 
 <!-- options menu -->
 <widget name="options_menu">
-  <div id="options_menu" class="menu" onmouseout="menu_onmouseout" >
+  <div id="options_menu" class="menu" onmouseout="menu_onmouseout" onmousedown="menu_onmousedown">
     <menu_title title="Options"/>
     <table><tr>
 	<td oninit="check_disable_button_ui_settings" >

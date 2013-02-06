@@ -267,7 +267,7 @@ function(){   // fake line, keep_editor_happy
 	});
 	switch_menu(w);
     }
-    
+
     function editor_init(w, title, text, default_setting, save_callback)
     {
 	w.querySelector('#menu_title').innerText = title;
@@ -394,8 +394,33 @@ function(){   // fake line, keep_editor_happy
     
     /***************************** Details menu *******************************/
 
-    function script_detail_init(w, h, s, file_only)
+    function script_detail_status(w, h, s)
     {
+	var status = "blocked";
+	if (allowed_host(h))
+	{
+	    status = "allowed";
+	    if (!s.loaded)
+	    {
+		status = "not_loaded";
+		w.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
+	    }
+	}
+	return status;
+    }
+
+    function script_detail_iframe_status(w, hn, s)
+    {
+	var allowed = allowed_host(hn.name);
+	var iframes = iframes_info(hn, allowed);
+	if (iframes.allowed)	// iframes never null here
+	    return 'iframe';
+	return 'blocked_iframe';
+    }
+    
+    function script_detail_init(w, hn, s, iframe, file_only)
+    {
+	var h = hn.name;
 	var img = w.firstChild;
 	var link = img.nextSibling;
 
@@ -411,16 +436,7 @@ function(){   // fake line, keep_editor_happy
 	
 	link.innerText = label;
 	link.href = s.url;
-	var status = "blocked";
-	if (allowed_host(h))
-	{
-	    status = "allowed";
-	    if (!s.loaded)
-	    {
-		status = "not_loaded";
-		w.title = "Script allowed, but not loaded: syntax error, bad url, or something else is blocking it.";
-	    }
-	}
+	var status = (iframe ? script_detail_iframe_status(w, hn, s) : script_detail_status(w, h, s));
 	w.className += " " + status;       
     }
     
@@ -444,9 +460,17 @@ function(){   // fake line, keep_editor_happy
 	  sort_scripts(s);
 	  for (var j = 0; j < s.length; j++)
 	  {
-	      var w = new_script_detail(h, s[j], false);
+	      var w = new_script_detail(host_node, s[j], false, false);
 	      menu.insertBefore(w, last);
 	  }
+
+	  var iframes = host_node.iframes;
+	  for (var j = 0; j < iframes.length; j++)
+	  {
+	      var w = new_script_detail(host_node, iframes[j], true, false);
+	      menu.insertBefore(w, last);
+	  }
+	  
 	});	
     }    
 
@@ -637,7 +661,9 @@ function(){   // fake line, keep_editor_happy
 	if (!show_scripts_in_main_menu)
 	    return;
 	var tr = this;
-	if (!this.host_node.scripts.length)
+	var hn = tr.host_node;
+	if (!hn.scripts.length &&
+	    !(hn.iframes && hn.iframes.length))
 	    return;
 	if (!this.timer)
 	    this.timer = setTimeout(function(){ scripts_submenu(tr) }, 600);
@@ -651,14 +677,22 @@ function(){   // fake line, keep_editor_happy
 	var host_node = tr.host_node;
 	var h = host_node.name;
 	var s = host_node.scripts;
-	
+
+	// FIXME factor this and details_menu_init();
 	sort_scripts(s);
 	for (var j = 0; j < s.length; j++)
 	{
-	    var w = new_script_detail(h, s[j], true);
+	    var w = new_script_detail(host_node, s[j], false, true);
 	    menu.appendChild(w);
 	}
-	
+
+	var iframes = host_node.iframes;
+	for (var j = 0; j < iframes.length; j++)
+	{
+	    var w = new_script_detail(host_node, iframes[j], true, true);
+	    menu.appendChild(w);
+	}
+		
 	switch_submenu(sub, tr);
     }    
 
@@ -710,7 +744,7 @@ function(){   // fake line, keep_editor_happy
 	repaint_ui_now();
     };
 
-    function iframe_info(hn, allowed)
+    function iframes_info(hn, allowed)
     {
 	if (!hn.iframes || !hn.iframes.length)
 	    return null;
@@ -723,7 +757,7 @@ function(){   // fake line, keep_editor_happy
 	    allowed = false;
 	if (iframe_logic == 'allowed')
 	    allowed = true;
-	return {title: title, allowed: allowed};
+	return {count:n, title:title, allowed:allowed};
     }
 
     function not_loaded_tooltip(hn, allowed)
@@ -762,9 +796,9 @@ function(){   // fake line, keep_editor_happy
 	    var allowed = allowed_host(h);
 	    var host_part = h.slice(0, h.length - d.length);
 	    var not_loaded = not_loaded_tooltip(hn, allowed);
-	    var count = "[" + hn.scripts.length + "]";
+	    var count = hn.scripts.length;
 	    var helper = hn.helper_host;
-	    var iframes = iframe_info(hn, allowed);
+	    var iframes = iframes_info(hn, allowed);
 
 	    tr = new_widget("host_table_row");
 	    tr = tr.firstChild.firstChild; // skip dummy <table> and <tbody> tags
@@ -785,13 +819,14 @@ function(){   // fake line, keep_editor_happy
 		tr.childNodes[4].className += " helper";
 	    if (iframes)
 	    {
+		count += iframes.count;
 		var c = (iframes.allowed ? 'iframe' : 'blocked_iframe');
 		tr.childNodes[5].className += " " + c;
 		tr.childNodes[5].title = iframes.title;
 	    }
 	    if (host_allowed_globally(h))
 		tr.childNodes[6].className += " visible";
-	    tr.childNodes[7].innerText = count;
+	    tr.childNodes[7].innerText = '[' + count + ']';		// scripts + iframes
 
 	    if (not_loaded)
 		found_not_loaded = true;	    
@@ -828,6 +863,9 @@ function(){   // fake line, keep_editor_happy
     
     /***************************** Main ui *********************************/
 
+    function menu_onmousedown()	// make text non selectable
+    {	return false;	}
+    
     function main_button_tooltip()
     {
         var tooltip = "[Inline scripts] " + total_inline +
@@ -848,7 +886,6 @@ function(){   // fake line, keep_editor_happy
 	    tooltip += " (" + loaded_external + " loaded)";
 	return tooltip;
     }
-
 
     function main_button_init(div)
     {
