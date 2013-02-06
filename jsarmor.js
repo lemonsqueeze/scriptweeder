@@ -16,30 +16,12 @@
 // but when running as an extension they're 2 different things, beware !
 (function(document, location, opera, scriptStorage)
 {
-    var version = 'jsarmor v1.5.0 (dev)';
-
-
-    /************************* Default Settings *******************************/
+    var version_number = "1.5.0";
+    var version_type = "userjs";
+    var version_full = "jsarmor v"+ version_number + " (" + version_type + ")";
     
-    var default_globally_allowed_hosts =
-    ['maps.google.com',
-     'maps.gstatic.com',
-//     'ajax.googleapis.com',   // no need, relaxed mode will enable it
-     's.ytimg.com',
-     'code.jquery.com',
-     'z-ecx.images-amazon.com',
-     'st.deviantart.net',
-     'static.tumblr.com',
-     'codysherman.com'
-    ];
 
-    // Stuff we don't want to allow in relaxed mode which would otherwise be.
-    var helper_blacklist =     // FIXME add ui to edit ?
-    { "apis.google.com": 1,    // only used for google plus one
-      "widgets.twimg.com": 1,  // twitter
-      "static.ak.fbcdn.net": 1 // facebook
-    };
-    
+    /************************* Default Settings *******************************/        
     
     // default mode for new pages:
     //   block_all, filtered, relaxed or allow_all    
@@ -421,6 +403,12 @@
 	var l = global_setting('whitelist');
 	return list_contains(l, host);
     }
+
+    function on_helper_blacklist(host)
+    {
+	var l = global_setting('helper_blacklist');
+	return list_contains(l, host);
+    }
     
     function host_allowed_locally(host)
     {
@@ -442,7 +430,7 @@
 	dn = (dn ? dn : get_domain_node(get_domain(host), true));
 	return (dn.related ||
 		((dn.helper || helper_host(host)) &&
-		 !helper_blacklist[host]));
+		 !on_helper_blacklist(host)));
     }
     
     // allow related and helper domains
@@ -1003,7 +991,7 @@
 	    }
 	    
 	    var val = scriptStorage.getItem(k);
-	    if (val.indexOf('\n') == -1)	// i refuse to save any setting with newlines in it.
+	    if (val && val.indexOf('\n') == -1)	// i refuse to save any setting with newlines in it.
 		settings[key] = val;
 	}
     }
@@ -1015,7 +1003,7 @@
 	var s = "";
 	get_all_settings_by_host(glob, host_settings)
 
-	s += version + "\n\n";
+	s += version_full + "\n\n";
 	s += print_setting('', glob);
 	s += "\nhost settings:\n";
 	
@@ -1102,19 +1090,6 @@
     // use stored custom style ?
     var enable_custom_style = true;
 
-    // load style from an external css.
-    // *note* this only works locally, won't work on remote sites.
-    // this is really nice for testing as you can just edit your css file directly.
-    // - set this to true, reload.
-    // - save jsarmor.css somewhere, put its address as a 'file:///...' url
-    //   in options menu, edit css url
-    // - open a good local html for testing, (test_offline/ in the repo has one)
-    // - edit css file, just reload to test changes !
-    //   (switch opera to offline mode for instantaneous reloads!)
-    // to revert set back to false, or set blank url.
-    var enable_external_css = false;
-
-
     /********************************* Style *********************************/
 
     // inject style as plain text with a <style> element.
@@ -1126,16 +1101,6 @@
 	el.appendChild(idoc.createTextNode(str));
 	idoc.head.appendChild(el);
 	return el;
-    }
-
-    // use external css for styling.
-    function add_css_link(url)
-    {
-	var link = idoc.createElement('link');
-	link.rel = "stylesheet";
-	link.type = "text/css";
-	link.href = url;
-	idoc.head.appendChild(link);
     }
 
     /****************************** Widget API *************************/
@@ -1383,18 +1348,7 @@
 
     // interface style used in jsarmor's iframe
     function init_style()
-    {
-	if (enable_external_css)
-	{
-	    // use external .css file ?
-	    var css = global_setting('css');
-	    if (css != '')
-	    {
-		add_css_link(css);
-		return;
-	    }
-	}
-
+    {	
 	// use custom style ?
 	var use_custom = (enable_custom_style && !rescue_mode());
 	var style = (use_custom ? global_setting('style') : '');
@@ -1681,6 +1635,11 @@
       return (list && list.indexOf(' ' + str) != -1);
     }
 
+    function array_to_list(a)
+    {
+	return ('. ' + a.join(' '));
+    }
+    
     function list_to_string(list)
     {
 	var d = '';
@@ -1713,7 +1672,7 @@
 	return d;
     }
 
-    // suitable for textarea input
+    // str: text from textarea
     function raw_string_to_list(str)
     {
 	var a = str.split('\r\n'); // eeew
@@ -2041,57 +2000,52 @@
 	}
     }    
     
-    function edit_css_url()
-    {
-/*	
-	var nsmenu = new_menu("css url to use");
-
-	var close_menu = function()
-	{
-	   td.removeChild(nsmenu);
-	   resize_iframe();
-	};
-	
-	var text = new_textarea(global_setting('css'));
-	nsmenu.appendChild(text);
-
-	var div = idoc.createElement('div');
-	nsmenu.appendChild(div);		
-	var button = new_button("Save", function()
-				{
-				   set_global_setting('css', text.innerText);
-				   close_menu();
-				});
-	div.appendChild(button);
-	
-	var button = new_button("Cancel", close_menu);
-	div.appendChild(button);	
-	
-	var td = idoc.getElementById('td_nsmenu');
-	td.appendChild(nsmenu);
-	resize_iframe();
- */
-    }
-
-    function save_whitelist()
-    {
-	var w = find_element(null, "whitelist");
-	if (!w)
-	    return;
-	set_global_setting('whitelist', raw_string_to_list(w.innerText));
-	close_menu();
-    }
-
-    function whitelist_editor_init(realmenu)
-    {
-	var t = find_element(realmenu, "whitelist");
-	t.innerText = raw_list_to_string(global_setting('whitelist'));
-    }
-
     function edit_whitelist()
     {
-	var w = new_widget("whitelist_editor");
+	var w = new_editor("Whitelist",
+			   raw_list_to_string(global_setting('whitelist')),
+			   raw_list_to_string(array_to_list(default_global_whitelist)),
+			   function(text)
+        {
+	   set_global_setting('whitelist', raw_string_to_list(text));
+	   close_menu();
+	});
 	switch_menu(w);
+    }
+
+    function edit_blacklist()
+    {
+	var w = new_editor("Helper Blacklist",
+			   raw_list_to_string(global_setting('helper_blacklist')),
+			   raw_list_to_string(array_to_list(default_helper_blacklist)),			   
+			   function(text)
+        {
+	   set_global_setting('helper_blacklist', raw_string_to_list(text));
+	   close_menu();
+	});
+	switch_menu(w);
+    }
+    
+    function editor_init(w, title, text, default_setting, save_callback)
+    {
+	w.querySelector('#menu_title').innerText = title;
+	var textarea = w.querySelector('textarea');
+	textarea.innerText = text;
+	w.querySelector('button.save').onclick = function()
+	{ 
+	   save_callback(textarea.innerText);
+	};
+	
+	var b = w.querySelector('button.default');
+	if (!default_setting)
+	    b.style = "display:none";
+	else
+	    b.onclick = function()
+	    {
+	        // strange stuff happen if we don't clear it first, wtf ?!
+		textarea.innerText = '';
+		textarea.innerText = default_setting;
+	    };
     }
     
     function select_iframe_logic_init(widget)
@@ -2390,7 +2344,7 @@
 	    wakeup_lazy_widgets(menu);
 
 	w = find_element(menu, "menu_title");
-	w.title = version;
+	w.title = version_full;
 	
 	// FIXME put it back one day
 	// plugin api
@@ -2855,7 +2809,6 @@ li.inactive:hover	{ background:inherit }  \n\
 /*************************************************************************************************************/  \n\
 /* Options menu */  \n\
   \n\
-#options_menu		{ min-width:250px; }  \n\
 #options_menu li:hover	{ background:inherit }  \n\
 /* how do we add cell spacing ??  \n\
 #options_menu table	{ cell-spacing: 5px; }  \n\
@@ -2867,13 +2820,15 @@ li.inactive:hover	{ background:inherit }  \n\
 .frame		{ border:1px solid #bbb; margin:10px; padding:9px; position:relative; min-width:200px; }  \n\
 .frame_title	{ position:absolute; top:-10px; background: #ccc; }  \n\
   \n\
-/* import file (make form and button look like a menuitem) */  \n\
-  \n\
+/* file input form styling: http://www.quirksmode.org/dom/inputfile.html */  \n\
 #import_settings, #load_custom_style  \n\
 	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }  \n\
 #import_settings input, #load_custom_style input  \n\
 	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }  \n\
   \n\
+.dropdown_setting		{ width:100% }  \n\
+.dropdown_setting td + td	{ text-align:right; }  \n\
+.dropdown_setting select	{ width:100% }  \n\
   \n\
 /**********************************************************************************************************   \n\
  * transparent button   \n\
@@ -2918,12 +2873,12 @@ li.inactive:hover	{ background:inherit }  \n\
       'submenu' : '<widget name="submenu" ><div class="submenu menu" onmouseout="menu_onmouseout" ><ul id="menu_content"></ul></div></widget>',
       'details_menu' : '<widget name="details_menu" init><div id="details_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Scripts</h1><ul id="menu_content"><li id="last_item" onclick="options_menu">Options…</li></ul></div></widget>',
       'script_detail' : '<widget name="script_detail" host script file_only init><li><img/><a></a></li></widget>',
-      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td oninit="check_disable_button_ui_settings" ><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting" 			 title="" 			 state="`autohide_main_button" 			 callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting" 			 title="" 			 state="`transparent_main_button" 			 callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu" 			 title="!! experimental !!" 			 state="`show_scripts_in_main_menu" 			 callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_reload_method></select_reload_method></div><div class="frame"><div class="frame_title">Iframes</div><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes" 			 title="" 			 state="`show_ui_in_iframes" 			 callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div class="frame"><div class="frame_title">Settings</div><button onclick="edit_whitelist">Edit whitelist…</button></div></td><td><div class="frame"><div class="frame_title">Style</div><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" ><button>Load custom…</button></form></li><button onclick="save_current_style">Save current…</button><br><button onclick="clear_saved_style" oninit="clear_saved_style_init">Back to default</button><br><a oninit="rescue_mode_link_init">Rescue mode</a></div><div class="frame"><div class="frame_title">Import/Export Settings</div><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" ><button>Load Settings…</button></form></li><button onclick="export_settings">Save Settings…</button><br><button onclick="view_settings">View Settings…</button><br><button onclick="reset_settings">Reset…</button><br></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/jsarmor">Help</a></div></td></tr></table></ul></div></widget>',
+      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td oninit="check_disable_button_ui_settings" ><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting" 			 title="" 			 state="`autohide_main_button" 			 callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting" 			 title="" 			 state="`transparent_main_button" 			 callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu" 			 title="!! experimental !!" 			 state="`show_scripts_in_main_menu" 			 callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_reload_method></select_reload_method></div><div class="frame"><div class="frame_title">Iframes</div><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes" 			 title="" 			 state="`show_ui_in_iframes" 			 callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div class="frame"><div class="frame_title">Edit Settings</div><button onclick="edit_whitelist">Global whitelist…</button><br><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default">Helper blacklist…</button></div></td><td><div class="frame"><div class="frame_title">Style</div><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" ><button>Load custom…</button></form></li><button onclick="save_current_style">Save current…</button><br><button onclick="clear_saved_style" oninit="clear_saved_style_init">Back to default</button><br><a oninit="rescue_mode_link_init">Rescue mode</a></div><div class="frame"><div class="frame_title">Settings</div><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" ><button>Load settings…</button></form></li><button onclick="export_settings">Save settings…</button><br><button onclick="view_settings">View settings…</button><br><button onclick="reset_settings">Clear Settings…</button><br></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/jsarmor">Help</a><a href="http://">Show version</a></div></td></tr></table></ul></div></widget>',
       'disable_main_button' : '<widget name="disable_main_button" init><checkbox_item label="Disable main button" 		 title="Install opera button and use it to come back here first." 		 state="`disable_main_button" 		 callback="`toggle_disable_main_button"></checkbox_item></widget>',
-      'select_iframe_logic' : '<widget name="select_iframe_logic" init><li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive).">Scripts in iframes:<select><option value="block_all">Block All</option><option value="filter">Filter</option><option value="allow">Allow</option></select></li></widget>',
-      'select_menu_display_logic' : '<widget name="select_menu_display_logic" init><li id="menu_display"  class="inactive">Menu popup:<select><option value="auto">Auto</option><option value="delay">Delay</option><option value="click">Click</option></select></li></widget>',
-      'select_reload_method' : '<widget name="select_reload_method" init><li id="reload_method" class="inactive" title="Cache: reload from cache (fastest but…). Normal: slow but sure.">Reload method:<select><option value="cache">Cache</option><option value="normal">Normal</option></select></li></widget>',
-      'whitelist_editor' : '<widget name="whitelist_editor" init><div class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Global Whitelist</h1><ul id="menu_content"><li><textarea spellcheck="false" id="whitelist"></textarea></li><li class="inactive"><button onclick="save_whitelist">Save</button><button onclick="close_menu">Cancel</button></li></ul></div></widget>',
+      'select_iframe_logic' : '<widget name="select_iframe_logic" init><table id="iframe_logic" class="dropdown_setting"  	 title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive)."><tr><td>Scripts in iframes</td><td><select><option value="block_all">Block All</option><option value="filter">Filter</option><option value="allow">Allow</option></select></td></tr></table></widget>',
+      'select_menu_display_logic' : '<widget name="select_menu_display_logic" init><table id="menu_display"  class="dropdown_setting"><tr><td>Menu popup</td><td><select><option value="auto">Auto</option><option value="delay">Delay</option><option value="click">Click</option></select></td></tr></table></widget>',
+      'select_reload_method' : '<widget name="select_reload_method" init><table id="reload_method" class="dropdown_setting"  	 title="Cache: reload from cache (fastest but…). Normal: slow but sure."><tr><td>Reload method</td><td><select><option value="cache">Cache</option><option value="normal">Normal</option></select></td></tr></table></widget>',
+      'editor' : '<widget name="editor" title text default_setting save_callback init><div class="menu editor" ><h1 id="menu_title" >Editor</h1><ul id="menu_content"><li><textarea spellcheck="false"></textarea></li><li class="inactive"><button class="save">Save</button><button onclick="close_menu">Cancel</button><button class="default">Default</button></li></ul></div></widget>',
       'checkbox_item' : '<widget name="checkbox_item" id title label state callback klass init><li><input type="checkbox"/></li></widget>',
       'scope_widget' : '<widget name="scope_widget" init><li id="scope" class="inactive">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li></widget>',
       'block_all_settings' : '<widget name="block_all_settings" init><block_inline_scripts></block_inline_scripts><checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags" 		 title="Treat noscript tags as if javascript was disabled in opera. Useful to access the non-javascript version of websites." 		 state="`handle_noscript_tags" 		 callback="`toggle_handle_noscript_tags"/></checkbox_item></widget>',
@@ -2934,6 +2889,11 @@ li.inactive:hover	{ background:inherit }  \n\
     function script_detail_init_proxy(w, ph)
     {
         script_detail_init(w, ph.host, ph.script, ph.file_only);
+    }
+
+    function editor_init_proxy(w, ph)
+    {
+        editor_init(w, ph.title, ph.text, ph.default_setting, ph.save_callback);
     }
 
     function checkbox_item_init_proxy(w, ph)
@@ -2950,6 +2910,14 @@ li.inactive:hover	{ background:inherit }  \n\
         });
     }
 
+    function new_editor(title, text, default_setting, save_callback)
+    {
+      return new_widget("editor", function(w)
+        {
+          editor_init(w, title, text, default_setting, save_callback);
+        });
+    }
+
     function new_checkbox_item(id, title, label, state, callback, klass)
     {
       return new_widget("checkbox_item", function(w)
@@ -2960,26 +2928,70 @@ li.inactive:hover	{ background:inherit }  \n\
 
 
 
+    /********************************* Defaults ************************************/
+
+    var default_global_whitelist =
+    ['maps.google.com',
+     'maps.gstatic.com',
+//     'ajax.googleapis.com',   // no need, relaxed mode will enable it
+     's.ytimg.com',
+     'code.jquery.com',
+     'z-ecx.images-amazon.com',
+     'st.deviantart.net',
+     'static.tumblr.com',
+     'codysherman.com'
+    ];
+
+    // Stuff we don't want to allow in relaxed mode which would otherwise be.
+    var default_helper_blacklist =     // FIXME add ui to edit ?
+    [ 'apis.google.com',	// only used for google plus one
+      'widgets.twimg.com',	// twitter
+      'static.ak.fbcdn.net'	// facebook
+    ];
+
+    
     /********************************* Startup ************************************/    
 
     function main()
     {
 	// jsarmor ui's iframe, don't run in there !
-	if (window != window.top && window.name == 'jsarmor_iframe') // FIXME better way of id ?
+	if (window != window.top && window.name == 'jsarmor_iframe')	// TODO better way of id ?
 	    return;
 	
 	init();
 	
+	// first run
 	if (global_setting('whitelist') == '')
-	{
-	    // FIXME: need a nice way to edit this.
-	    alert("Welcome to jsarmor !\n\n" +
-		  "jsarmor's button will show up at the bottom right of pages using javascript.\n\n" +
-		  "The initial global whitelist is set to:\n\n[" +
-		  default_globally_allowed_hosts.join(', ') + "]");
-	    set_global_setting('whitelist',
-			       '. ' + default_globally_allowed_hosts.join(' '));
+	{	    
+	    var load_defaults = confirm(
+		"jsarmor up and running !\n\n" +
+		"Main button will show up at the bottom right of pages using javascript.\n\n" +
+		"Click [OK] to load default settings, or [Cancel] to start from scratch.\n" +
+		"(can change your mind later either way).");
+
+	    set_global_setting('version_number', version_number);
+	    set_global_setting('version_type', version_type);	    
+	    if (load_defaults)
+	    {
+		set_global_setting('whitelist',		array_to_list(default_global_whitelist) );
+		set_global_setting('helper_blacklist',	array_to_list(default_helper_blacklist) );
+	    }
+	    else
+	    {
+		set_global_setting('whitelist',		array_to_list([]) );
+		set_global_setting('helper_blacklist',	array_to_list([]) );
+	    }
 	}
+
+	// upgrade from 1.44 or before
+	if (global_setting('version_number') == '')
+	{
+	    set_global_setting('version_number', version_number);
+	    set_global_setting('version_type', version_type);
+	    // didn't exist:
+	    set_global_setting('helper_blacklist',	array_to_list(default_helper_blacklist) );
+	}
+	
     }
 
     main();

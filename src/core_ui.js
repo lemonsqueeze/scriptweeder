@@ -8,19 +8,6 @@ function(){   // fake line, keep_editor_happy
     // use stored custom style ?
     var enable_custom_style = true;
 
-    // load style from an external css.
-    // *note* this only works locally, won't work on remote sites.
-    // this is really nice for testing as you can just edit your css file directly.
-    // - set this to true, reload.
-    // - save jsarmor.css somewhere, put its address as a 'file:///...' url
-    //   in options menu, edit css url
-    // - open a good local html for testing, (test_offline/ in the repo has one)
-    // - edit css file, just reload to test changes !
-    //   (switch opera to offline mode for instantaneous reloads!)
-    // to revert set back to false, or set blank url.
-    var enable_external_css = false;
-
-
     /********************************* Style *********************************/
 
     // inject style as plain text with a <style> element.
@@ -32,16 +19,6 @@ function(){   // fake line, keep_editor_happy
 	el.appendChild(idoc.createTextNode(str));
 	idoc.head.appendChild(el);
 	return el;
-    }
-
-    // use external css for styling.
-    function add_css_link(url)
-    {
-	var link = idoc.createElement('link');
-	link.rel = "stylesheet";
-	link.type = "text/css";
-	link.href = url;
-	idoc.head.appendChild(link);
     }
 
     /****************************** Widget API *************************/
@@ -289,18 +266,7 @@ function(){   // fake line, keep_editor_happy
 
     // interface style used in jsarmor's iframe
     function init_style()
-    {
-	if (enable_external_css)
-	{
-	    // use external .css file ?
-	    var css = global_setting('css');
-	    if (css != '')
-	    {
-		add_css_link(css);
-		return;
-	    }
-	}
-
+    {	
 	// use custom style ?
 	var use_custom = (enable_custom_style && !rescue_mode());
 	var style = (use_custom ? global_setting('style') : '');

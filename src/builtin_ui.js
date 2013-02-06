@@ -225,57 +225,52 @@ function(){   // fake line, keep_editor_happy
 	}
     }    
     
-    function edit_css_url()
-    {
-/*	
-	var nsmenu = new_menu("css url to use");
-
-	var close_menu = function()
-	{
-	   td.removeChild(nsmenu);
-	   resize_iframe();
-	};
-	
-	var text = new_textarea(global_setting('css'));
-	nsmenu.appendChild(text);
-
-	var div = idoc.createElement('div');
-	nsmenu.appendChild(div);		
-	var button = new_button("Save", function()
-				{
-				   set_global_setting('css', text.innerText);
-				   close_menu();
-				});
-	div.appendChild(button);
-	
-	var button = new_button("Cancel", close_menu);
-	div.appendChild(button);	
-	
-	var td = idoc.getElementById('td_nsmenu');
-	td.appendChild(nsmenu);
-	resize_iframe();
- */
-    }
-
-    function save_whitelist()
-    {
-	var w = find_element(null, "whitelist");
-	if (!w)
-	    return;
-	set_global_setting('whitelist', raw_string_to_list(w.innerText));
-	close_menu();
-    }
-
-    function whitelist_editor_init(realmenu)
-    {
-	var t = find_element(realmenu, "whitelist");
-	t.innerText = raw_list_to_string(global_setting('whitelist'));
-    }
-
     function edit_whitelist()
     {
-	var w = new_widget("whitelist_editor");
+	var w = new_editor("Whitelist",
+			   raw_list_to_string(global_setting('whitelist')),
+			   raw_list_to_string(array_to_list(default_global_whitelist)),
+			   function(text)
+        {
+	   set_global_setting('whitelist', raw_string_to_list(text));
+	   close_menu();
+	});
 	switch_menu(w);
+    }
+
+    function edit_blacklist()
+    {
+	var w = new_editor("Helper Blacklist",
+			   raw_list_to_string(global_setting('helper_blacklist')),
+			   raw_list_to_string(array_to_list(default_helper_blacklist)),			   
+			   function(text)
+        {
+	   set_global_setting('helper_blacklist', raw_string_to_list(text));
+	   close_menu();
+	});
+	switch_menu(w);
+    }
+    
+    function editor_init(w, title, text, default_setting, save_callback)
+    {
+	w.querySelector('#menu_title').innerText = title;
+	var textarea = w.querySelector('textarea');
+	textarea.innerText = text;
+	w.querySelector('button.save').onclick = function()
+	{ 
+	   save_callback(textarea.innerText);
+	};
+	
+	var b = w.querySelector('button.default');
+	if (!default_setting)
+	    b.style = "display:none";
+	else
+	    b.onclick = function()
+	    {
+	        // strange stuff happen if we don't clear it first, wtf ?!
+		textarea.innerText = '';
+		textarea.innerText = default_setting;
+	    };
     }
     
     function select_iframe_logic_init(widget)
@@ -574,7 +569,7 @@ function(){   // fake line, keep_editor_happy
 	    wakeup_lazy_widgets(menu);
 
 	w = find_element(menu, "menu_title");
-	w.title = version;
+	w.title = version_full;
 	
 	// FIXME put it back one day
 	// plugin api

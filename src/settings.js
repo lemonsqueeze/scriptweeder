@@ -213,7 +213,7 @@ function(){   // fake line, keep_editor_happy
 	    }
 	    
 	    var val = scriptStorage.getItem(k);
-	    if (val.indexOf('\n') == -1)	// i refuse to save any setting with newlines in it.
+	    if (val && val.indexOf('\n') == -1)	// i refuse to save any setting with newlines in it.
 		settings[key] = val;
 	}
     }
@@ -225,7 +225,7 @@ function(){   // fake line, keep_editor_happy
 	var s = "";
 	get_all_settings_by_host(glob, host_settings)
 
-	s += version + "\n\n";
+	s += version_full + "\n\n";
 	s += print_setting('', glob);
 	s += "\nhost settings:\n";
 	

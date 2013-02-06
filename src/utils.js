@@ -216,6 +216,11 @@ function(){   // fake line, keep_editor_happy
       return (list && list.indexOf(' ' + str) != -1);
     }
 
+    function array_to_list(a)
+    {
+	return ('. ' + a.join(' '));
+    }
+    
     function list_to_string(list)
     {
 	var d = '';
@@ -248,7 +253,7 @@ function(){   // fake line, keep_editor_happy
 	return d;
     }
 
-    // suitable for textarea input
+    // str: text from textarea
     function raw_string_to_list(str)
     {
 	var a = str.split('\r\n'); // eeew

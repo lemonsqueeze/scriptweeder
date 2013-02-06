@@ -112,7 +112,6 @@ li.inactive:hover	{ background:inherit }
 /*************************************************************************************************************/
 /* Options menu */
 
-#options_menu		{ min-width:250px; }
 #options_menu li:hover	{ background:inherit }
 /* how do we add cell spacing ??
 #options_menu table	{ cell-spacing: 5px; }
@@ -124,13 +123,15 @@ li.inactive:hover	{ background:inherit }
 .frame		{ border:1px solid #bbb; margin:10px; padding:9px; position:relative; min-width:200px; }
 .frame_title	{ position:absolute; top:-10px; background: #ccc; }
 
-/* import file (make form and button look like a menuitem) */
-
+/* file input form styling: http://www.quirksmode.org/dom/inputfile.html */
 #import_settings, #load_custom_style
 	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }
 #import_settings input, #load_custom_style input
 	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }
 
+.dropdown_setting		{ width:100% }
+.dropdown_setting td + td	{ text-align:right; }
+.dropdown_setting select	{ width:100% }
 
 /********************************************************************************************************** 
  * transparent button 

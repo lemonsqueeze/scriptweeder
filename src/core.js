@@ -1,26 +1,6 @@
 function(){   // fake line, keep_editor_happy
 
-    /************************* Default Settings *******************************/
-    
-    var default_globally_allowed_hosts =
-    ['maps.google.com',
-     'maps.gstatic.com',
-//     'ajax.googleapis.com',   // no need, relaxed mode will enable it
-     's.ytimg.com',
-     'code.jquery.com',
-     'z-ecx.images-amazon.com',
-     'st.deviantart.net',
-     'static.tumblr.com',
-     'codysherman.com'
-    ];
-
-    // Stuff we don't want to allow in relaxed mode which would otherwise be.
-    var helper_blacklist =     // FIXME add ui to edit ?
-    { "apis.google.com": 1,    // only used for google plus one
-      "widgets.twimg.com": 1,  // twitter
-      "static.ak.fbcdn.net": 1 // facebook
-    };
-    
+    /************************* Default Settings *******************************/        
     
     // default mode for new pages:
     //   block_all, filtered, relaxed or allow_all    
@@ -402,6 +382,12 @@ function(){   // fake line, keep_editor_happy
 	var l = global_setting('whitelist');
 	return list_contains(l, host);
     }
+
+    function on_helper_blacklist(host)
+    {
+	var l = global_setting('helper_blacklist');
+	return list_contains(l, host);
+    }
     
     function host_allowed_locally(host)
     {
@@ -423,7 +409,7 @@ function(){   // fake line, keep_editor_happy
 	dn = (dn ? dn : get_domain_node(get_domain(host), true));
 	return (dn.related ||
 		((dn.helper || helper_host(host)) &&
-		 !helper_blacklist[host]));
+		 !on_helper_blacklist(host)));
     }
     
     // allow related and helper domains

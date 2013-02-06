@@ -130,9 +130,9 @@
 			 callback="`toggle_show_ui_in_iframes"></checkbox_item>
 	  </frame>
 
-
-	  <frame title="Settings">
-	  <button onclick="edit_whitelist">Edit whitelist…</button>
+	  <frame title="Edit Settings">
+	  <button onclick="edit_whitelist">Global whitelist…</button><br>
+	  <button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default">Helper blacklist…</button>
 	  </frame>
 	  
 	</td>
@@ -145,15 +145,16 @@
 	    <a oninit="rescue_mode_link_init">Rescue mode</a>
 	  </frame>
 
-	  <frame title="Import/Export Settings">
+	  <frame title="Settings">
 	    <import_settings/>
-	    <button onclick="export_settings">Save Settings…</button><br>
-	    <button onclick="view_settings">View Settings…</button><br>
-	    <button onclick="reset_settings">Reset…</button><br>
+	    <button onclick="export_settings">Save settings…</button><br>
+	    <button onclick="view_settings">View settings…</button><br>
+	    <button onclick="reset_settings">Clear Settings…</button><br>
 	  </frame>
 
 	  <frame title="">
 	    <a href="https://github.com/lemonsqueeze/jsarmor">Help</a>
+	    <a href="http://">Show version</a>
 	  </frame>
 	</td>
     </tr></table>
@@ -171,37 +172,42 @@
 
 
 <widget name="select_iframe_logic" init>
-  <li id="iframe_logic" class="inactive" title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive).">Scripts in iframes:
-    <select>
+  <table id="iframe_logic" class="dropdown_setting" 
+	 title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive)."><tr>
+    <td>Scripts in iframes</td>
+    <td><select>
       <option value="block_all">Block All</option>
       <option value="filter">Filter</option>
       <option value="allow">Allow</option>
-    </select>
-  </li>
+    </select></td>
+  </tr></table>
 </widget>
 
 <widget name="select_menu_display_logic" init>
-  <li id="menu_display"  class="inactive">Menu popup:
-    <select>
-      <option value="auto">Auto</option>
-      <option value="delay">Delay</option>
-      <option value="click">Click</option>
-    </select>
-  </li>
+  <table id="menu_display"  class="dropdown_setting"><tr>
+    <td>Menu popup</td>
+    <td><select>
+	<option value="auto">Auto</option>
+	<option value="delay">Delay</option>
+	<option value="click">Click</option>
+    </select></td>
+  </tr></table>
 </widget>
 
 <widget name="select_reload_method" init>
-  <li id="reload_method" class="inactive" title="Cache: reload from cache (fastest but…). Normal: slow but sure.">Reload method:
-    <select>
-      <option value="cache">Cache</option>
-      <option value="normal">Normal</option>
-    </select>
-  </li>
+  <table id="reload_method" class="dropdown_setting" 
+	 title="Cache: reload from cache (fastest but…). Normal: slow but sure."><tr>
+      <td>Reload method</td>
+      <td><select>
+	  <option value="cache">Cache</option>
+	  <option value="normal">Normal</option>
+      </select></td>
+  </tr></table>
 </widget>
 
 <def macro="import_settings">
   <li><form id="import_settings">
-      <input type="file" autocomplete="off" oninit="import_settings_init" ><button>Load Settings…</button>
+      <input type="file" autocomplete="off" oninit="import_settings_init" ><button>Load settings…</button>
   </form></li>
 </def>
 
@@ -212,15 +218,16 @@
 </def>
 
 
-<!-- edit whitelist -->
-<widget name="whitelist_editor" init>
-  <div class="menu" onmouseout="menu_onmouseout" >
-    <menu_title title="Global Whitelist"/>
+<!-- editor -->
+<widget name="editor" title text default_setting save_callback init>
+  <div class="menu editor" >
+    <menu_title title="Editor"/>
     <ul id="menu_content">
-      <li><textarea spellcheck="false" id="whitelist"></textarea></li>
+      <li><textarea spellcheck="false"></textarea></li>
       <li class="inactive">
-	<button onclick="save_whitelist">Save</button>
+	<button class="save">Save</button>
 	<button onclick="close_menu">Cancel</button>
+	<button class="default">Default</button>
       </li>
     </ul>
   </div>
