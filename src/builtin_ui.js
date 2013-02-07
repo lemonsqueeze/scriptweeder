@@ -194,8 +194,13 @@ function(){   // fake line, keep_editor_happy
     function import_settings_init()
     {	this.onchange = file_loader(parse_settings_file); }
 
-    function view_settings()
-    {   export_settings(null, true);  }
+    function export_settings_onclick(e)
+    {
+	if (e.shiftKey)
+	    export_settings(null, true);
+	else
+	    export_settings();
+    }
     
     function load_custom_style_init()
     {

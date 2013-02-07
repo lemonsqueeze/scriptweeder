@@ -177,9 +177,8 @@
 	  <frame title="Import / Export">
 	    <table class="button_table">
 	      <tr><td><import_settings/></td></tr>
-	      <tabled_button onclick="export_settings" label="Save settings…" 
-			     title="Beware, does not save custom style." />
-	      <tabled_button onclick="view_settings" label="View settings…"  />
+	      <tabled_button onclick="export_settings_onclick" label="Save settings…" 
+			     title="shift+click to view" />
 	      <tabled_button onclick="reset_settings" label="Clear Settings…"  />
 	    </table>
 	  </frame>

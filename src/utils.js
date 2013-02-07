@@ -38,7 +38,7 @@ function(){   // fake line, keep_editor_happy
 	// FIXME: can't we just use the builtin parser like url_hostname() ?
 	//        http://www.joezimjs.com/javascript/the-lazy-mans-url-parsing/
 	u = strip_http(u);
-	var a = u.match(/^([^/]*)(\/|\/.*\/)([^/?&:]*)([^/]*)$/);
+	var a = u.match(/^([^/]*)(\/|\/.*\/)([\w-.]*)([^/]*)$/);
 	assert(a, "split_url(): shouldn't happen");
 	return a.slice(1);
     }

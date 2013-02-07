@@ -23,14 +23,9 @@ function(){   // fake line, keep_editor_happy
 
     /****************************** Widget API *************************/
 
-    // cache of widget nodes so we don't have to use innerHTML everytime
-    //var cached_widgets;
-    
     // layout of interface used in jsarmor's iframe
     function init_layout()
     {
-	//cached_widgets = new Object();
-
 	// allow uppercase widget names, will be convenient later on...
 	var n = widgets_layout;
 	for (var i in widgets_layout)
@@ -78,18 +73,12 @@ function(){   // fake line, keep_editor_happy
     
     /**************************** Internal widget functions ***********************/
 
-    // FIXME check for duplicate ids ?
-    
     // same as new_widget() but returns the <widget> wrapper. this is necessary if
     // the widget is actually a forest... (.forest is set on the div in this case)
     // init_proxy function is used to pass arguments to widget_init()
     function new_wrapped_widget(name, init_proxy)
     {
 	name = name.toLowerCase();
-	// do we have this guy in cache ? use that then
-	//if (cached_widgets[name])
-	// return cached_widgets[name].cloneNode(true);
-
 	var layout = widgets_layout[name];
 	assert(layout, "new_widget(" + name + "): the layout for this widget is missing!");
 	
@@ -107,8 +96,6 @@ function(){   // fake line, keep_editor_happy
 	call_oninit_handlers(wrap);	
 	init_widget(wrap, wrap.firstChild, name, init_proxy);
 	
-	// cached_widgets[id] = d.firstChild;
-	//return widget.cloneNode(true);
 	return wrap;
     }
     
@@ -277,7 +264,7 @@ function(){   // fake line, keep_editor_happy
 	    style += '\n' + global_setting('style_patch');
 	new_style(style);
     }
-    
+
     function populate_iframe()
     {
 	iframe.contentWindow.name = 'jsarmor_iframe';
@@ -333,7 +320,7 @@ function(){   // fake line, keep_editor_happy
     {
 	iframe = document.createElement('iframe');
 	iframe.id = 'jsarmor_iframe';
-	iframe.style = "position:fixed !important;background:transparent !important;white-space:nowrap !important;z-index:99999999 !important;direction:ltr !important;font-family:sans-serif !important; font-size:small !important; margin-bottom:0px !important;" +
+	iframe.style = "position:fixed !important;background:transparent !important;white-space:nowrap !important;z-index:2147483647 !important;direction:ltr !important;font-family:sans-serif !important; font-size:small !important; margin-bottom:0px !important;" +
  "width: 1px !important; height: 1px !important;"   +
 	"margin-top: 0px !important; margin-right: 0px !important; margin-bottom: 0px !important; margin-left: 0px !important; padding-top: 0px !important; padding-right: 0px !important; padding-bottom: 0px !important; padding-left: 0px !important; border-top-width: 0px !important; border-right-width: 0px !important; border-bottom-width: 0px !important; border-left-width: 0px !important; border-top-style: none !important; border-right-style: none !important; border-bottom-style: none !important; border-left-style: none !important; background-color: transparent !important; visibility: visible !important; content: normal !important; outline-width: medium !important; outline-style: none !important; background-image: none !important; min-width: 0px !important; min-height: 0px !important; " +
 // useful for layout debugging
