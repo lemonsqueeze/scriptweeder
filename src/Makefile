@@ -36,8 +36,7 @@ jsarmor_style.js: jsarmor.inlined.css
 jsarmor.xml: jsarmor.ui
 	@echo generating $@ from $<
 # make it somewhat readable
-	@cat $< | tr '\n' ' ' | sed -e 's|>|>\n|g' | sed -e 's|<|\n<|g' |  \
-	$(TOOLS)/xml_macros   |  \
+	@$(TOOLS)/xml_macros < $<  |  \
 	grep -v '^ *$$'  > $@
 
 jsarmor_widgets.js: jsarmor.xml

@@ -2,9 +2,7 @@ function(){   // fake line, keep_editor_happy
 
     /********************************* Builtin ui *********************************/
 
-    var cornerposition = 4;
-    // 1 = top left, 2=top right , 3=bottom left , 4=bottom right etc.
-
+    var default_ui_position = 'bottom_right';
     var default_autohide_main_button = false;
     var default_transparent_main_button = true;
     var default_fat_icons = false;
@@ -24,6 +22,9 @@ function(){   // fake line, keep_editor_happy
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
     var show_scripts_in_main_menu;
+    var ui_position;
+    var ui_hpos;
+    var ui_vpos;
     
     var menu_request = false;		// external api request while not ready yet (opera button ...)
     var using_opera_button = false;	// seen external api request
@@ -43,6 +44,10 @@ function(){   // fake line, keep_editor_happy
     var init_ui_done = false;
     function init_ui(force)
     {
+	ui_position = global_setting('ui_position', default_ui_position);
+	ui_vpos = ui_position.slice(0, ui_position.indexOf('_'));
+	ui_hpos = ui_position.slice(ui_position.indexOf('_') + 1);
+	
 	if (!init_ui_needed())
 	    return;
 	create_iframe();	// calls start_ui() when ready
@@ -68,6 +73,8 @@ function(){   // fake line, keep_editor_happy
 	
 	if (menu_display_logic == 'click')
 	    window.addEventListener('click',  function (e) { close_menu(); }, false);
+
+	idoc.body.className += ' ' + ui_hpos + ' ' + ui_vpos;
 	
 	repaint_ui_now();
 	resize_iframe();
@@ -80,9 +87,9 @@ function(){   // fake line, keep_editor_happy
     {
 	main_ui = new_widget("main_ui");
 	if (fat_icons)
-	    idoc.body.className = ' fat_icons';		// slightly evil
+	    idoc.body.className += ' fat_icons';		// slightly evil
 	else
-	    idoc.body.className = '';
+	    idoc.body.className = idoc.body.className.replace(' fat_icons', '');
 	if (!disable_main_button)
 	    wakeup_lazy_widgets(main_ui);
     }
@@ -307,6 +314,18 @@ function(){   // fake line, keep_editor_happy
 	    need_reload = true;
 	};       
     }
+
+    function select_ui_position_init(widget)
+    {
+	var select = widget.querySelector('select');
+	select.options.value = ui_position;
+	select.onchange = function(n)
+	{
+	    set_global_setting('ui_position', this.value);
+	    need_reload = true;
+	};
+    }
+
 
     function select_menu_display_logic_init(widget)
     {
@@ -637,7 +656,7 @@ function(){   // fake line, keep_editor_happy
 
     function parent_menu()
     {
-	if (!main_ui.firstChild) // no main button
+	if (!main_ui.firstChild || ui_vpos == 'top') // no main button
 	    main_ui.appendChild(nsmenu);
 	else
 	    main_ui.insertBefore(nsmenu, main_ui.lastChild);
@@ -660,14 +679,18 @@ function(){   // fake line, keep_editor_happy
     function position_submenu(sub, position)
     {
 	var tr = position.getBoundingClientRect();
-	//var left = nsmenu.offsetWidth;
-	var left = -sub.offsetWidth;
-	var top = tr.top;  // tr's top
-	if (top + sub.offsetHeight > main_ui.offsetHeight)
+	var left = (ui_hpos == 'right' ?
+		    tr.left - sub.offsetWidth - 3 :
+		    tr.right + 2);
+	var top = tr.top;  // tr's top	
+	if (top + sub.offsetHeight > main_ui.offsetHeight) // bottom screens out
 	    top = main_ui.offsetHeight - sub.offsetHeight;
+
+	// offsetHeight changes afterwards in bottom-left layout, wtf ?!	
+	sub.realwidth = sub.offsetWidth;
+	sub.realheight = sub.offsetHeight;
 	
-	sub.style = "left:" + left + 'px;' +
-	            "top:" + top + 'px;';	
+	sub.style = ("left:" + left + 'px;' + "top:" + top + 'px;');	    
     }
 
     // TODO: show iframes as well ?

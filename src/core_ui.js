@@ -308,14 +308,20 @@ function(){   // fake line, keep_editor_happy
 		width += -e.offsetLeft;
 		e.style.left = 0;
 	    }
-	    width = max(width, e.offsetLeft + e.offsetWidth);
+	    width = max(width, e.offsetLeft + e.realwidth);
 	    if (e.offsetTop < 0)
 	    {
 		height += -e.offsetTop;
 		e.style.top = 0;
 	    }
-	    height = max(height, e.offsetTop + e.offsetHeight);
+	    height = max(height, e.realheight);
 	}
+
+	// extra space for menu shadows
+	if (ui_hpos == 'left')
+	    width += 30;
+	if (ui_vpos == 'top')
+	    height += 30;
 	
 	iframe.style.width = width + 'px';
 	iframe.style.height = height + 'px';
@@ -332,7 +338,7 @@ function(){   // fake line, keep_editor_happy
 	"margin-top: 0px !important; margin-right: 0px !important; margin-bottom: 0px !important; margin-left: 0px !important; padding-top: 0px !important; padding-right: 0px !important; padding-bottom: 0px !important; padding-left: 0px !important; border-top-width: 0px !important; border-right-width: 0px !important; border-bottom-width: 0px !important; border-left-width: 0px !important; border-top-style: none !important; border-right-style: none !important; border-bottom-style: none !important; border-left-style: none !important; background-color: transparent !important; visibility: visible !important; content: normal !important; outline-width: medium !important; outline-style: none !important; background-image: none !important; min-width: 0px !important; min-height: 0px !important; " +
 // useful for layout debugging
 //	"border: 1px solid #CCC !important; " +	
-	(cornerposition < 3 ? 'top': 'bottom') + ':1px !important;' + (cornerposition % 2 == 1 ? 'left': 'right') + ':1px !important;';
+	ui_vpos + ':1px !important;' + ui_hpos + ':1px !important;';
 	iframe.scrolling="no";
 	iframe.allowtransparency="true";
 	

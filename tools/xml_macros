@@ -3,9 +3,18 @@
 
 # explain what is found
 my $debug = 0;
-
 my @lines = <STDIN>;
+@lines = split_tags(@lines);
 
+# fix newlines: one tag per line max, and no split tags.
+sub split_tags
+{
+    my $s = join(' ', @_);
+    $s =~ s|\n| |g;
+    $s =~ s|>|>\n|g;
+    $s =~ s|<|\n<|g;
+    return split(/\n/, $s);
+}
 
 my @content;		# without macros
 my %macros;		# macro definitions (string)
@@ -50,7 +59,7 @@ sub parse_args
 	#print "name: $name val: $value\n";
 	$args{$name} = $value;
     }
-    if (!$s =~ m|^[ \t]*\$|)
+    if (!($s =~ m|^[ \t]*$|))
     { die("<$name $orig> : '$s' bad attribute (missing '\"' maybe ?)"); }
     return %args;
 }
@@ -61,6 +70,7 @@ sub defined_macro
     return $macros{$name} ne "";
 }
 
+$did_something;
 sub replace_macro
 {
     my ($s, $name, $arg_str, $type) = @_;
@@ -69,10 +79,13 @@ sub replace_macro
     { return $s; }
 
     # tag closing sanity checks
-    if ($type eq "self_closing" && defined_macro("/$name"))
-    {  die("${s}This tag is self-closing, but /$name is defined !"); }
-    if ($type eq "open" && !defined_macro("/$name"))
-    {  die("${s}open <$name> tag found. should be <$name/>, aborting\n");  }
+    if (!($name =~ m|^/|))	# not a closing tag
+    {
+	if ($type eq "self_closing" && defined_macro("/$name"))
+	{  die("${s}\nThis tag is self-closing, but /$name is defined !"); }
+	if ($type eq "open" && !defined_macro("/$name"))
+	{  die("${s}\nopen <$name> tag found. should be <$name/>, aborting\n");  }
+    }
 
     $did_something = 1;
     print "replacing $name\n" if ($debug);
@@ -91,7 +104,7 @@ sub replace_macro
 }
 
 # and replace them
-my $did_something;
+
 do
 {
     $did_something = 0;
@@ -99,34 +112,35 @@ do
     foreach my $s (@content)
     {
 	# self-closing macro tags
-	if ($s =~ m|<([^ ]+) (.*)/>|)
-	{
-	    my ($name, $args) = ($1, $2);
-	    $s = replace_macro($s, $name, $args, "self_closing");
-	}    
-	if ($s =~ m|<([^ ]+) */>|)
+	if ($s =~ m|<([/\w]+) */>|)
 	{
 	    my $name = $1;
 	    $s = replace_macro($s, $name, "", "self_closing");
 	}
+	elsif ($s =~ m|<([/\w]+) ([^>]*)/>|)
+	{
+	    my ($name, $args) = ($1, $2);
+	    $s = replace_macro($s, $name, $args, "self_closing");
+	}    
 
 	# open macro tags
-	if ($s =~ m|<([^ ]+) (.*[^/])>|)
+	elsif ($s =~ m|<([/\w]+) *>|)
+	{
+	    my $name = $1;
+	    $s = replace_macro($s, $name, "", "open");
+	}
+	elsif ($s =~ m|<([/\w]+) ([^>]*)>|)
 	{
 	    my ($name, $args) = ($1, $2);
 	    $s = replace_macro($s, $name, $args, "open");
 	}    
-	if ($s =~ m|<([^ ]+) *>|)
-	{
-	    my $name = $1;
-	    $s = replace_macro($s, $name, "", "close");
-	}
 
 	push(@tmp, $s);
     }
     
     #@content = @tmp;
-    @content = split("\n", join("\n", @tmp));
+#split("\n", join("\n", @tmp));
+    @content = split_tags(@tmp);
 } while ($did_something);
 
 if ($debug)

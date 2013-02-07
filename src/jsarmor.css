@@ -1,17 +1,34 @@
 /* jsarmor stylesheet */
-body			{ margin:0px; direction:rtl; }
-#main			{ position:absolute; bottom:0; /* bottom align */
+
+body			{ margin:0px;  }
+
+#main			{ position:absolute; 
 			  width:auto; height:auto; background:transparent; 
-			  white-space:nowrap; z-index:999999; direction:ltr; font-family:Ubuntu,Tahoma,Sans;
+			  white-space:nowrap; font-family:Ubuntu,Tahoma,Sans;
 			  font-size:small;  margin-bottom:0px; }
 
 /* main button */
-
-#main_button		{ direction:rtl; border-width: 2px; margin: 0; float: none; } 
-/* note: width/height only works with img background:... not content:... */
+#main_button		{ border-width: 2px; margin: 0; float: none; } 
 
 .autohide		{ visibility:hidden; }
 :hover .autohide	{ visibility:visible }
+
+
+/*************************************************************************************************************/
+/* left/right/top/bottom layouts */
+
+body.right		{ direction:rtl; }
+body.right #main	{ direction:ltr; right:0; z-index:1; }
+body.right .submenu	{ z-index:0 }
+body.right #main_button	{ direction:rtl; }
+
+body.left		{ direction:ltr; }
+body.left #main		{ direction:ltr; left:0;  z-index:0; }
+body.left .submenu	{ z-index:1 }
+body.left #main_button	{ direction:ltr; }
+
+body.bottom #main	{ bottom:0; /* bottom align */ }
+body.top #main		{ top:0;    /* top align */ }
 
 
 /*************************************************************************************************************/
@@ -36,7 +53,7 @@ body			{ margin:0px; direction:rtl; }
 .td_script_count			{ text-align:right; }
 
 /* submenu */
-.submenu		{ position:absolute; z-index:0 }
+.submenu		{ position:absolute; }
 
 #options_details table				{ width:100% }
 .details_item , .options_item			{ text-align:center; }
@@ -161,15 +178,11 @@ li.inactive:hover	{ background:inherit }
 	box-shadow: 0 0 3px rgba(255,255,255,0.25) inset, 0 0 1px rgba(255,255,255,0.2), 0 10px 10px rgba(255,255,255,0.08) inset;
 }
 
-
-/***** Hovered Button *****/
 .tbutton:hover {
 	color: #fff; text-shadow: 0 0 5px rgba(0,0,0,0.2), 0 0 1px rgba(0,0,0,0.4);	
 	box-shadow: 0 0 5px rgba(255,255,255,0.45) inset, 0 0 1px rgba(255,255,255,0.2), 0 10px 10px rgba(255,255,255,0.08) inset;
  }
 
-
-/***** Clicked Button *****/
 .tbutton:active {
 	color: #eee;
 	box-shadow: 0 0 5px rgba(255,255,255,0.1) inset, 0 0 1px rgba(255,255,255,0.2), 0 0 4px rgba(0,0,0,0.4) inset, 0 10px 10px rgba(255,255,255,0.08) inset;
