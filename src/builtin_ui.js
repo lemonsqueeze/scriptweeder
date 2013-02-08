@@ -6,6 +6,7 @@ function(){   // fake line, keep_editor_happy
     var default_autohide_main_button = false;
     var default_transparent_main_button = true;
     var default_fat_icons = false;
+    var default_small_font = false;
     var default_menu_display_logic = 'auto';
     var default_show_scripts_in_main_menu = true;
     
@@ -18,6 +19,7 @@ function(){   // fake line, keep_editor_happy
     var autohide_main_button;
     var transparent_main_button;
     var fat_icons;
+    var small_font;
     var disable_main_button;
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
@@ -68,6 +70,7 @@ function(){   // fake line, keep_editor_happy
 	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
 	transparent_main_button = global_bool_setting('transparent_main_button', default_transparent_main_button);
 	fat_icons = global_bool_setting('fat_icons', default_fat_icons);
+	small_font = global_bool_setting('small_font', default_small_font);
 	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);
 	show_scripts_in_main_menu = global_bool_setting('show_scripts_in_main_menu', default_show_scripts_in_main_menu);
 	
@@ -86,10 +89,8 @@ function(){   // fake line, keep_editor_happy
     function create_main_ui()
     {
 	main_ui = new_widget("main_ui");
-	if (fat_icons)
-	    idoc.body.className += ' fat_icons';		// slightly evil
-	else
-	    idoc.body.className = idoc.body.className.replace(' fat_icons', '');
+	set_unset_class(idoc.body, 'fat_icons', fat_icons);	// slightly evil
+	set_unset_class(idoc.body, 'small_font', small_font);
 	if (!disable_main_button)
 	    wakeup_lazy_widgets(main_ui);
     }
@@ -452,6 +453,13 @@ function(){   // fake line, keep_editor_happy
 	// need_repaint is all we need !
 	need_reload = true;
     }
+
+    function toggle_small_font(event)
+    {
+	small_font = toggle_global_setting(this, small_font, 'small_font');
+	// need_repaint is all we need !
+	need_reload = true;
+    }
     
     function toggle_disable_main_button(event)
     {
@@ -763,7 +771,7 @@ function(){   // fake line, keep_editor_happy
 	    !(hn.iframes && hn.iframes.length))
 	    return;
 	if (!this.timer)
-	    this.timer = setTimeout(function(){ scripts_submenu(tr) }, 600);
+	    this.timer = iwin.setTimeout(function(){ scripts_submenu(tr) }, 600);
     }
     
     function scripts_submenu(tr)
@@ -802,7 +810,7 @@ function(){   // fake line, keep_editor_happy
 	    return;
 	if (this.timer)
 	{
-	    clearTimeout(this.timer);
+	    iwin.clearTimeout(this.timer);
 	    this.timer = null;
 	}
 	if (submenu)
@@ -1004,7 +1012,7 @@ function(){   // fake line, keep_editor_happy
 	{
 	    div.onclick = div.onmouseover;
 	    div.onmouseover = function()
-	    {  menu_display_timer = setTimeout(main_button_onmouseover, 400); }  // canceled in onmouseout 
+	    {  menu_display_timer = iwin.setTimeout(main_button_onmouseover, 400); }  // canceled in onmouseout 
 	}	
     }
     
@@ -1029,7 +1037,7 @@ function(){   // fake line, keep_editor_happy
     {
 	if (menu_display_timer)
 	{
-	    clearTimeout(menu_display_timer);	    
+	    iwin.clearTimeout(menu_display_timer);	    
 	    menu_display_timer = null;
 	}
 	if (need_reload)
@@ -1045,7 +1053,7 @@ function(){   // fake line, keep_editor_happy
 	repaint_ui_count++;
 	if (repaint_ui_timer)
 	    return;
-	repaint_ui_timer = window.setTimeout(repaint_ui_now, 500);
+	repaint_ui_timer = iwin.setTimeout(repaint_ui_now, 500);
     }
 
     function repaint_ui_now()

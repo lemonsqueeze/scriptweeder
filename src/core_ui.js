@@ -268,7 +268,8 @@ function(){   // fake line, keep_editor_happy
     function populate_iframe()
     {
 	iframe.contentWindow.name = 'jsarmor_iframe';
-	idoc = iframe.contentWindow.document;
+	iwin = iframe.contentWindow;
+	idoc = iwin.document;
 
 	// set doctype, we want strict mode, not quirks mode!
 	idoc.open();
@@ -314,8 +315,9 @@ function(){   // fake line, keep_editor_happy
 	iframe.style.height = height + 'px';
     }    	    
     
-    var iframe = null;
-    var idoc = null;
+    var iframe;
+    var idoc;
+    var iwin;
     function create_iframe()
     {
 	iframe = document.createElement('iframe');

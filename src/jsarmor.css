@@ -1,7 +1,7 @@
 /* jsarmor stylesheet */
 
-body			{ margin:0px; background:transparent; white-space:nowrap; 
-			  font-family:Ubuntu,Tahoma,Sans; font-size:small; }
+body			{ margin:0px; background:transparent; white-space:nowrap; font-family:Ubuntu,Tahoma,Sans; }
+body.small_font		{ font-size:small; }
 
 #main			{ position:absolute; width:auto; height:auto; margin-bottom:0px; }
 
@@ -105,7 +105,7 @@ img	{ width:1px; height:1px; vertical-align:middle;
 	padding: 1px 1px; text-align:left; direction:ltr;
 	box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);
 	border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;
-	display:table; font-size:small; background: #ccc; 
+	display:table; background: #ccc; 
 }
 
 /* menu title */

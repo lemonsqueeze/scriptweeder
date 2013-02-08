@@ -131,6 +131,9 @@
     <checkbox_item label="Fat icons" 
 		   state="`fat_icons"
 		   callback="`toggle_fat_icons"></checkbox_item>
+    <checkbox_item label="Small font" 
+		   state="`small_font"
+		   callback="`toggle_small_font"></checkbox_item>
     <checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"
 		   title="!! experimental !!"
 		   state="`show_scripts_in_main_menu"

@@ -1374,7 +1374,8 @@
     function populate_iframe()
     {
 	iframe.contentWindow.name = 'jsarmor_iframe';
-	idoc = iframe.contentWindow.document;
+	iwin = iframe.contentWindow;
+	idoc = iwin.document;
 
 	// set doctype, we want strict mode, not quirks mode!
 	idoc.open();
@@ -1420,8 +1421,9 @@
 	iframe.style.height = height + 'px';
     }    	    
     
-    var iframe = null;
-    var idoc = null;
+    var iframe;
+    var idoc;
+    var iwin;
     function create_iframe()
     {
 	iframe = document.createElement('iframe');
@@ -1848,6 +1850,7 @@
     var default_autohide_main_button = false;
     var default_transparent_main_button = true;
     var default_fat_icons = false;
+    var default_small_font = false;
     var default_menu_display_logic = 'auto';
     var default_show_scripts_in_main_menu = true;
     
@@ -1860,6 +1863,7 @@
     var autohide_main_button;
     var transparent_main_button;
     var fat_icons;
+    var small_font;
     var disable_main_button;
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
@@ -1910,6 +1914,7 @@
 	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
 	transparent_main_button = global_bool_setting('transparent_main_button', default_transparent_main_button);
 	fat_icons = global_bool_setting('fat_icons', default_fat_icons);
+	small_font = global_bool_setting('small_font', default_small_font);
 	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);
 	show_scripts_in_main_menu = global_bool_setting('show_scripts_in_main_menu', default_show_scripts_in_main_menu);
 	
@@ -1928,10 +1933,8 @@
     function create_main_ui()
     {
 	main_ui = new_widget("main_ui");
-	if (fat_icons)
-	    idoc.body.className += ' fat_icons';		// slightly evil
-	else
-	    idoc.body.className = idoc.body.className.replace(' fat_icons', '');
+	set_unset_class(idoc.body, 'fat_icons', fat_icons);	// slightly evil
+	set_unset_class(idoc.body, 'small_font', small_font);
 	if (!disable_main_button)
 	    wakeup_lazy_widgets(main_ui);
     }
@@ -2294,6 +2297,13 @@
 	// need_repaint is all we need !
 	need_reload = true;
     }
+
+    function toggle_small_font(event)
+    {
+	small_font = toggle_global_setting(this, small_font, 'small_font');
+	// need_repaint is all we need !
+	need_reload = true;
+    }
     
     function toggle_disable_main_button(event)
     {
@@ -2605,7 +2615,7 @@
 	    !(hn.iframes && hn.iframes.length))
 	    return;
 	if (!this.timer)
-	    this.timer = setTimeout(function(){ scripts_submenu(tr) }, 600);
+	    this.timer = iwin.setTimeout(function(){ scripts_submenu(tr) }, 600);
     }
     
     function scripts_submenu(tr)
@@ -2644,7 +2654,7 @@
 	    return;
 	if (this.timer)
 	{
-	    clearTimeout(this.timer);
+	    iwin.clearTimeout(this.timer);
 	    this.timer = null;
 	}
 	if (submenu)
@@ -2846,7 +2856,7 @@
 	{
 	    div.onclick = div.onmouseover;
 	    div.onmouseover = function()
-	    {  menu_display_timer = setTimeout(main_button_onmouseover, 400); }  // canceled in onmouseout 
+	    {  menu_display_timer = iwin.setTimeout(main_button_onmouseover, 400); }  // canceled in onmouseout 
 	}	
     }
     
@@ -2871,7 +2881,7 @@
     {
 	if (menu_display_timer)
 	{
-	    clearTimeout(menu_display_timer);	    
+	    iwin.clearTimeout(menu_display_timer);	    
 	    menu_display_timer = null;
 	}
 	if (need_reload)
@@ -2887,7 +2897,7 @@
 	repaint_ui_count++;
 	if (repaint_ui_timer)
 	    return;
-	repaint_ui_timer = window.setTimeout(repaint_ui_now, 500);
+	repaint_ui_timer = iwin.setTimeout(repaint_ui_now, 500);
     }
 
     function repaint_ui_now()
@@ -2918,8 +2928,8 @@
     var builtin_style = 
 "/* jsarmor stylesheet */  \n\
   \n\
-body			{ margin:0px; background:transparent; white-space:nowrap;   \n\
-			  font-family:Ubuntu,Tahoma,Sans; font-size:small; }  \n\
+body			{ margin:0px; background:transparent; white-space:nowrap; font-family:Ubuntu,Tahoma,Sans; }  \n\
+body.small_font		{ font-size:small; }  \n\
   \n\
 #main			{ position:absolute; width:auto; height:auto; margin-bottom:0px; }  \n\
   \n\
@@ -3023,7 +3033,7 @@ img	{ width:1px; height:1px; vertical-align:middle;   \n\
 	padding: 1px 1px; text-align:left; direction:ltr;  \n\
 	box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);  \n\
 	border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;  \n\
-	display:table; font-size:small; background: #ccc;   \n\
+	display:table; background: #ccc;   \n\
 }  \n\
   \n\
 /* menu title */  \n\
@@ -3116,7 +3126,7 @@ li.inactive:hover	{ background:inherit }  \n\
       'submenu' : '<widget name="submenu" ><div class="submenu menu" onmouseout="menu_onmouseout" onmousedown="menu_onmousedown"><ul id="menu_content"></ul></div></widget>',
       'details_menu' : '<widget name="details_menu" init><div id="details_menu" class="menu" onmouseout="menu_onmouseout" onmousedown="menu_onmousedown"><h1 id="menu_title" >Details</h1><ul id="menu_content"><li id="last_item" onclick="options_menu">Options…</li></ul></div></widget>',
       'script_detail' : '<widget name="script_detail" host_node script iframe file_only init><li><img/><a></a></li></widget>',
-      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   title="!! experimental !!"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_ui_position></select_ui_position></div><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><button onclick="edit_style_patch" title="Add rules on top of current stylesheet." >Patch style…</button></td></tr><tr><td><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" /><button>Load stylesheet…</button></form></li></td></tr><tr><td><button onclick="save_current_style" title="" >Save stylesheet…</button></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a></div><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></li></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/jsarmor">Help</a></div></td></tr></table></div></widget>',
+      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Small font"   		   state="`small_font"  		   callback="`toggle_small_font"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   title="!! experimental !!"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_ui_position></select_ui_position></div><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><button onclick="edit_style_patch" title="Add rules on top of current stylesheet." >Patch style…</button></td></tr><tr><td><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" /><button>Load stylesheet…</button></form></li></td></tr><tr><td><button onclick="save_current_style" title="" >Save stylesheet…</button></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a></div><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></li></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/jsarmor">Help</a></div></td></tr></table></div></widget>',
       'select_ui_position' : '<widget name="select_ui_position" init><table id="ui_position" class="dropdown_setting"><tr><td>Position</td><td><select><option value="top_left">top left</option><option value="top_right">top right</option><option value="bottom_left">bottom left</option><option value="bottom_right">bottom right</option></select></td></tr></table></widget>',
       'disable_main_button' : '<widget name="disable_main_button" init><checkbox_item label="Disable main button"  		 title="Install opera button and use it to come back here first."  		 state="`disable_main_button"  		 callback="`toggle_disable_main_button"></checkbox_item></widget>',
       'select_iframe_logic' : '<widget name="select_iframe_logic" init><table id="iframe_logic" class="dropdown_setting"   	 title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive)."><tr><td>Iframe policy</td><td><select><option value="block_all">Block All</option><option value="filter">Filter</option><option value="allow">Allow</option></select></td></tr></table></widget>',
@@ -3226,7 +3236,7 @@ li.inactive:hover	{ background:inherit }  \n\
 	    var load_defaults = confirm(
 		"jsarmor up and running !\n\n" +
 		"Main button will show up at the bottom right of pages using javascript.\n\n" +
-		"Click [OK] to load default settings, or [Cancel] to start from scratch.\n" +
+		"Click [OK] to load default settings, or [Cancel] to start from scratch. " +
 		"(can change your mind later either way).");
 
 	    set_global_setting('version_number', version_number);

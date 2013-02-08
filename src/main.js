@@ -66,7 +66,7 @@
 	    var load_defaults = confirm(
 		"jsarmor up and running !\n\n" +
 		"Main button will show up at the bottom right of pages using javascript.\n\n" +
-		"Click [OK] to load default settings, or [Cancel] to start from scratch.\n" +
+		"Click [OK] to load default settings, or [Cancel] to start from scratch. " +
 		"(can change your mind later either way).");
 
 	    set_global_setting('version_number', version_number);
