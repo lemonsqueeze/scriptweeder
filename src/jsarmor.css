@@ -1,11 +1,9 @@
 /* jsarmor stylesheet */
 
-body			{ margin:0px;  }
+body			{ margin:0px; background:transparent; white-space:nowrap; 
+			  font-family:Ubuntu,Tahoma,Sans; font-size:small; }
 
-#main			{ position:absolute; 
-			  width:auto; height:auto; background:transparent; 
-			  white-space:nowrap; font-family:Ubuntu,Tahoma,Sans;
-			  font-size:small;  margin-bottom:0px; }
+#main			{ position:absolute; width:auto; height:auto; margin-bottom:0px; }
 
 /* main button */
 #main_button		{ border-width: 2px; margin: 0; float: none; } 
@@ -110,7 +108,7 @@ img	{ width:1px; height:1px; vertical-align:middle;
 	display:table; font-size:small; background: #ccc; 
 }
 
-/* title */
+/* menu title */
 h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;
 	  margin:0;
 	  background:url('../img/title_background.png') repeat-x;}

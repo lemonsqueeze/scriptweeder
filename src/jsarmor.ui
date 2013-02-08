@@ -153,6 +153,8 @@
 <def macro="options_edit_settings">
   <frame title="Edit Settings">
     <table class="button_table">	  
+      <tabled_button onclick="edit_site_settings"  label="Site settings…"
+		     title="View/edit site specific settings."/>
       <tabled_button onclick="edit_whitelist"  label="Global whitelist…"/>
       <tabled_button onclick="edit_blacklist"  label="Helper blacklist…"
 		     title="Stuff relaxed mode should never allow by default" />
@@ -164,7 +166,7 @@
   <frame title="Custom Style">
     <table class="button_table">
       <tabled_button onclick="edit_style_patch" label="Patch style…" 
-		     title="Add css rules on top of the current stylesheet." />
+		     title="Add rules on top of current stylesheet." />
       <tr><td><load_custom_style/></td></tr>
       <tabled_button onclick="save_current_style" label="Save stylesheet…" />
       <tabled_button onclick="clear_saved_style" extra="oninit=clear_saved_style_init" label="Back to default"/>
@@ -257,20 +259,47 @@
 </def>
 
 
-<!-- editor -->
-<widget name="editor" title text default_setting save_callback init>
+<!-- editor window -->
+<widget name="editor_window" title text default_setting save_callback init>
   <div class="menu editor" >
     <menu_title title="Editor"/>
-    <ul id="menu_content">
-      <li><textarea spellcheck="false"></textarea></li>
-      <li class="inactive">
-	<button class="save">Save</button>
-	<button onclick="close_menu">Cancel</button>
-	<button class="default">Default</button>
-      </li>
-    </ul>
+    <editor></editor>
   </div>
 </widget>
+
+<widget name="editor" text default_setting save_callback init>
+  <ul class="editor">
+    <li><my_textarea></my_textarea></li>
+    <li class="inactive">
+      <button class="save">Save</button>
+      <button onclick="close_menu">Cancel</button>
+      <button class="default">Default</button>
+    </li>
+  </ul>
+</widget>
+
+<widget name="my_textarea">
+  <textarea class="textarea" spellcheck="false"></textarea>
+</widget>
+
+<widget name="site_settings_editor" init>
+  <div class="menu editor" >
+    <menu_title title="Site Settings"/>
+    <table><tr>
+	<td><ul>
+	    <mode_menu_item mode="block_all" label="Block All" title="Block all scripts." />
+	    <mode_menu_item mode="filtered" label="Filtered" />			    
+	    <mode_menu_item mode="relaxed" label="Relaxed" />			   
+	    <mode_menu_item mode="allow_all" label="Allow All" title="Allow everything…" />
+	</ul></td>
+
+	<td>
+	  <editor></editor>
+	</td>
+    </tr></table>
+  </div>  
+</widget>
+
 
 
 <!--         [ low level stuff ]         -->

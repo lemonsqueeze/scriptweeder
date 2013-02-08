@@ -7,7 +7,7 @@ function(){   // fake line, keep_editor_happy
     var default_transparent_main_button = true;
     var default_fat_icons = false;
     var default_menu_display_logic = 'auto';
-    var default_show_scripts_in_main_menu = false; // for now.
+    var default_show_scripts_in_main_menu = true;
     
     // can be used to display stuff in jsarmor menu from outside scripts.
     var enable_plugin_api = false;
@@ -220,10 +220,10 @@ function(){   // fake line, keep_editor_happy
 
     function edit_style_patch()
     {
-	var w = new_editor("Patch Style",
-			   global_setting('style_patch'),
-			   '',
-			   function(text)
+	var w = new_editor_window("Patch Style",
+				  global_setting('style_patch'),
+				  '',
+				  function(text)
         {
 	   set_global_setting('style_patch', text);
 	   need_reload = true;
@@ -260,13 +260,55 @@ function(){   // fake line, keep_editor_happy
 	   location.reload(false);
 	}
     }    
+
+    function edit_site_settings()
+    {
+	var w = new_widget("site_settings_editor");	
+	switch_menu(w);
+    }
+
+    function site_settings_editor_init(w, for_mode)
+    {
+	if (!for_mode)
+	    for_mode = 'block_all';
+	foreach(modes, function(mode)
+	{
+	    var item = w.querySelector('li.' + mode);
+	    set_unset_class(item, 'selected', mode == for_mode);
+	    item.onclick = function() { site_settings_editor_init(w, mode); };
+	});
+
+	var sites = all_settings_for_mode(for_mode);
+	var save_changes = function(str)
+	{
+	    var new_sites = textarea_lines_nows(str);
+ 	    // set the given ones
+	    foreach(new_sites, function(site)
+	    {
+	       if (site != '')
+		   set_global_setting(site + ':mode', for_mode);
+	    });
+
+	    // clear the removed ones
+	    foreach(sites, function(site)
+	    {
+		if (new_sites.indexOf(site) == -1)
+		    set_global_setting(site + ':mode', '');
+	    });
+	    
+	    close_menu();
+	};
+	
+	var editor = w.querySelector('.editor');
+	editor_init(editor, sites.join('\n'), '', save_changes);
+    }
     
     function edit_whitelist()
     {
-	var w = new_editor("Whitelist",
-			   raw_list_to_string(global_setting('whitelist')),
-			   raw_list_to_string(array_to_list(default_global_whitelist)),
-			   function(text)
+	var w = new_editor_window("Whitelist",
+				  raw_list_to_string(global_setting('whitelist')),
+				  raw_list_to_string(array_to_list(default_global_whitelist)),
+				  function(text)
         {
 	   set_global_setting('whitelist', raw_string_to_list(text));
 	   close_menu();
@@ -276,10 +318,10 @@ function(){   // fake line, keep_editor_happy
 
     function edit_blacklist()
     {
-	var w = new_editor("Helper Blacklist",
-			   raw_list_to_string(global_setting('helper_blacklist')),
-			   raw_list_to_string(array_to_list(default_helper_blacklist)),			   
-			   function(text)
+	var w = new_editor_window("Helper Blacklist",
+				  raw_list_to_string(global_setting('helper_blacklist')),
+				  raw_list_to_string(array_to_list(default_helper_blacklist)),			   
+				  function(text)
         {
 	   set_global_setting('helper_blacklist', raw_string_to_list(text));
 	   close_menu();
@@ -287,26 +329,40 @@ function(){   // fake line, keep_editor_happy
 	switch_menu(w);
     }
 
-    function editor_init(w, title, text, default_setting, save_callback)
+    function editor_window_init(w, title, text, default_setting, save_callback)
     {
 	w.querySelector('#menu_title').innerText = title;
-	var textarea = w.querySelector('textarea');
-	textarea.innerText = text;
+	var editor = w.querySelector('.editor');
+	editor_init(editor, text, default_setting, save_callback);
+    }    
+
+    // setting text works fine the first time but that's about it, so ...   
+    function replace_textarea(t, text)
+    {
+	var n = new_widget("my_textarea");
+	n.innerText = text;
+	t.parentNode.replaceChild(n, t);
+    }
+
+    function editor_init(w, text, default_setting, save_callback)
+    {
+	function get_textarea() { return w.querySelector('textarea'); }
+	
+	replace_textarea(get_textarea(), text);
 	w.querySelector('button.save').onclick = function()
-	{ 
-	   save_callback(textarea.innerText);
+	{
+	    // note: textarea.textContent doesn't change after edits !
+	    save_callback(get_textarea().innerText);
 	};
 	
 	var b = w.querySelector('button.default');
 	if (!default_setting)
 	    b.style = "display:none";
 	else
-	    b.onclick = function()
-	    {
-	        // strange stuff happen if we don't clear it first, wtf ?!
-		textarea.innerText = '';
-		textarea.innerText = default_setting;
-	    };
+	{
+	    b.style = "display:auto";	    
+	    b.onclick = function(){  replace_textarea(get_textarea(), default_setting)  };
+	}
     }    
     
     function select_iframe_logic_init(widget)
@@ -634,13 +690,7 @@ function(){   // fake line, keep_editor_happy
 	if (for_mode == mode)
 	    this.className += " selected";
 	else
-	    this.onclick = function() { set_mode(for_mode); }
-	
-	// now add host table	    
-	if (mode == 'block_all' ||
-	    for_mode != mode)	// is it current mode ?
-	    return;
-	add_host_table_after(this);
+	    this.onclick = function() { set_mode(for_mode); }	
     }
     
     function main_menu_init(menu)
@@ -650,6 +700,10 @@ function(){   // fake line, keep_editor_happy
 
 	w = find_element(menu, "menu_title");
 	w.title = version_full;
+	
+	// add host table
+	if (mode != 'block_all')
+	    add_host_table_after(menu.querySelector('li.' + mode));
 	
 	// FIXME put it back one day
 	// plugin api

@@ -302,5 +302,25 @@ function(){   // fake line, keep_editor_happy
 	scriptStorage.clear();
     }
 
+    
+    /**************************** Site settings editor stuff *************************/    
 
+    // returns array of sites set to mode
+    function all_settings_for_mode(mode)
+    {
+	var glob = {};
+	var host_settings = {};
+	var sites = [];
+	get_all_settings_by_host(glob, host_settings)
+	
+	var hosts = get_keys(host_settings).sort();
+	for (var i in hosts)
+	{
+	    var host = hosts[i];
+	    if (host_settings[host]['mode'] == mode)
+		sites.push(host);
+	}
+	return sites;
+    }
+    
 }   // keep_editor_happy

@@ -216,6 +216,22 @@ function(){   // fake line, keep_editor_happy
 	foreach(n.getElementsByTagName('*'), f);
     }
 
+    function set_class(n, klass)
+    {
+	n.className += ' ' + klass;
+    }
+    
+    function unset_class(n, klass)
+    {
+	n.className = n.className.replace(' ' + klass, '');
+    }
+
+    function set_unset_class(n, klass, set)
+    {
+	(set ? set_class(n, klass) : unset_class(n, klass));
+    }
+
+    
     /**************************** List utils *******************************/
 
     // FIXME use l.forEach(f) !
@@ -270,7 +286,7 @@ function(){   // fake line, keep_editor_happy
     // str: text from textarea
     function raw_string_to_list(str)
     {
-	var a = str.split('\r\n'); // eeew
+	var a = textarea_lines_nows(str);
 	var l = '. ';
 	var sep = '';
 	for (var i = 0; i < a.length; i++)
@@ -284,8 +300,24 @@ function(){   // fake line, keep_editor_happy
 	return l;
     }    
 
+    // array of lines from textarea input, all whitespace cut out
+    function textarea_lines_nows(str)
+    {
+	return textarea_lines(no_whitespace(str));
+    }
+
+    // array of lines from textarea input
+    function textarea_lines(str)
+    {
+	return (str.split('\r\n'));
+    }
     
     /**************************** String functions *******************************/
+
+    function no_whitespace(s)
+    {
+	return (s.replace(/ */g, ''));
+    }
     
     function is_prefix(p, str)
     {

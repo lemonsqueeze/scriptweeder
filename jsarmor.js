@@ -1084,7 +1084,27 @@
 	scriptStorage.clear();
     }
 
+    
+    /**************************** Site settings editor stuff *************************/    
 
+    // returns array of sites set to mode
+    function all_settings_for_mode(mode)
+    {
+	var glob = {};
+	var host_settings = {};
+	var sites = [];
+	get_all_settings_by_host(glob, host_settings)
+	
+	var hosts = get_keys(host_settings).sort();
+	for (var i in hosts)
+	{
+	    var host = hosts[i];
+	    if (host_settings[host]['mode'] == mode)
+		sites.push(host);
+	}
+	return sites;
+    }
+    
 
     /********************************* Core ui *********************************/
 
@@ -1636,6 +1656,22 @@
 	foreach(n.getElementsByTagName('*'), f);
     }
 
+    function set_class(n, klass)
+    {
+	n.className += ' ' + klass;
+    }
+    
+    function unset_class(n, klass)
+    {
+	n.className = n.className.replace(' ' + klass, '');
+    }
+
+    function set_unset_class(n, klass, set)
+    {
+	(set ? set_class(n, klass) : unset_class(n, klass));
+    }
+
+    
     /**************************** List utils *******************************/
 
     // FIXME use l.forEach(f) !
@@ -1690,7 +1726,7 @@
     // str: text from textarea
     function raw_string_to_list(str)
     {
-	var a = str.split('\r\n'); // eeew
+	var a = textarea_lines_nows(str);
 	var l = '. ';
 	var sep = '';
 	for (var i = 0; i < a.length; i++)
@@ -1704,8 +1740,24 @@
 	return l;
     }    
 
+    // array of lines from textarea input, all whitespace cut out
+    function textarea_lines_nows(str)
+    {
+	return textarea_lines(no_whitespace(str));
+    }
+
+    // array of lines from textarea input
+    function textarea_lines(str)
+    {
+	return (str.split('\r\n'));
+    }
     
     /**************************** String functions *******************************/
+
+    function no_whitespace(s)
+    {
+	return (s.replace(/ */g, ''));
+    }
     
     function is_prefix(p, str)
     {
@@ -1797,7 +1849,7 @@
     var default_transparent_main_button = true;
     var default_fat_icons = false;
     var default_menu_display_logic = 'auto';
-    var default_show_scripts_in_main_menu = false; // for now.
+    var default_show_scripts_in_main_menu = true;
     
     // can be used to display stuff in jsarmor menu from outside scripts.
     var enable_plugin_api = false;
@@ -2010,10 +2062,10 @@
 
     function edit_style_patch()
     {
-	var w = new_editor("Patch Style",
-			   global_setting('style_patch'),
-			   '',
-			   function(text)
+	var w = new_editor_window("Patch Style",
+				  global_setting('style_patch'),
+				  '',
+				  function(text)
         {
 	   set_global_setting('style_patch', text);
 	   need_reload = true;
@@ -2050,13 +2102,55 @@
 	   location.reload(false);
 	}
     }    
+
+    function edit_site_settings()
+    {
+	var w = new_widget("site_settings_editor");	
+	switch_menu(w);
+    }
+
+    function site_settings_editor_init(w, for_mode)
+    {
+	if (!for_mode)
+	    for_mode = 'block_all';
+	foreach(modes, function(mode)
+	{
+	    var item = w.querySelector('li.' + mode);
+	    set_unset_class(item, 'selected', mode == for_mode);
+	    item.onclick = function() { site_settings_editor_init(w, mode); };
+	});
+
+	var sites = all_settings_for_mode(for_mode);
+	var save_changes = function(str)
+	{
+	    var new_sites = textarea_lines_nows(str);
+ 	    // set the given ones
+	    foreach(new_sites, function(site)
+	    {
+	       if (site != '')
+		   set_global_setting(site + ':mode', for_mode);
+	    });
+
+	    // clear the removed ones
+	    foreach(sites, function(site)
+	    {
+		if (new_sites.indexOf(site) == -1)
+		    set_global_setting(site + ':mode', '');
+	    });
+	    
+	    close_menu();
+	};
+	
+	var editor = w.querySelector('.editor');
+	editor_init(editor, sites.join('\n'), '', save_changes);
+    }
     
     function edit_whitelist()
     {
-	var w = new_editor("Whitelist",
-			   raw_list_to_string(global_setting('whitelist')),
-			   raw_list_to_string(array_to_list(default_global_whitelist)),
-			   function(text)
+	var w = new_editor_window("Whitelist",
+				  raw_list_to_string(global_setting('whitelist')),
+				  raw_list_to_string(array_to_list(default_global_whitelist)),
+				  function(text)
         {
 	   set_global_setting('whitelist', raw_string_to_list(text));
 	   close_menu();
@@ -2066,10 +2160,10 @@
 
     function edit_blacklist()
     {
-	var w = new_editor("Helper Blacklist",
-			   raw_list_to_string(global_setting('helper_blacklist')),
-			   raw_list_to_string(array_to_list(default_helper_blacklist)),			   
-			   function(text)
+	var w = new_editor_window("Helper Blacklist",
+				  raw_list_to_string(global_setting('helper_blacklist')),
+				  raw_list_to_string(array_to_list(default_helper_blacklist)),			   
+				  function(text)
         {
 	   set_global_setting('helper_blacklist', raw_string_to_list(text));
 	   close_menu();
@@ -2077,26 +2171,40 @@
 	switch_menu(w);
     }
 
-    function editor_init(w, title, text, default_setting, save_callback)
+    function editor_window_init(w, title, text, default_setting, save_callback)
     {
 	w.querySelector('#menu_title').innerText = title;
-	var textarea = w.querySelector('textarea');
-	textarea.innerText = text;
+	var editor = w.querySelector('.editor');
+	editor_init(editor, text, default_setting, save_callback);
+    }    
+
+    // setting text works fine the first time but that's about it, so ...   
+    function replace_textarea(t, text)
+    {
+	var n = new_widget("my_textarea");
+	n.innerText = text;
+	t.parentNode.replaceChild(n, t);
+    }
+
+    function editor_init(w, text, default_setting, save_callback)
+    {
+	function get_textarea() { return w.querySelector('textarea'); }
+	
+	replace_textarea(get_textarea(), text);
 	w.querySelector('button.save').onclick = function()
-	{ 
-	   save_callback(textarea.innerText);
+	{
+	    // note: textarea.textContent doesn't change after edits !
+	    save_callback(get_textarea().innerText);
 	};
 	
 	var b = w.querySelector('button.default');
 	if (!default_setting)
 	    b.style = "display:none";
 	else
-	    b.onclick = function()
-	    {
-	        // strange stuff happen if we don't clear it first, wtf ?!
-		textarea.innerText = '';
-		textarea.innerText = default_setting;
-	    };
+	{
+	    b.style = "display:auto";	    
+	    b.onclick = function(){  replace_textarea(get_textarea(), default_setting)  };
+	}
     }    
     
     function select_iframe_logic_init(widget)
@@ -2424,13 +2532,7 @@
 	if (for_mode == mode)
 	    this.className += " selected";
 	else
-	    this.onclick = function() { set_mode(for_mode); }
-	
-	// now add host table	    
-	if (mode == 'block_all' ||
-	    for_mode != mode)	// is it current mode ?
-	    return;
-	add_host_table_after(this);
+	    this.onclick = function() { set_mode(for_mode); }	
     }
     
     function main_menu_init(menu)
@@ -2440,6 +2542,10 @@
 
 	w = find_element(menu, "menu_title");
 	w.title = version_full;
+	
+	// add host table
+	if (mode != 'block_all')
+	    add_host_table_after(menu.querySelector('li.' + mode));
 	
 	// FIXME put it back one day
 	// plugin api
@@ -2812,12 +2918,10 @@
     var builtin_style = 
 "/* jsarmor stylesheet */  \n\
   \n\
-body			{ margin:0px;  }  \n\
+body			{ margin:0px; background:transparent; white-space:nowrap;   \n\
+			  font-family:Ubuntu,Tahoma,Sans; font-size:small; }  \n\
   \n\
-#main			{ position:absolute;   \n\
-			  width:auto; height:auto; background:transparent;   \n\
-			  white-space:nowrap; font-family:Ubuntu,Tahoma,Sans;  \n\
-			  font-size:small;  margin-bottom:0px; }  \n\
+#main			{ position:absolute; width:auto; height:auto; margin-bottom:0px; }  \n\
   \n\
 /* main button */  \n\
 #main_button		{ border-width: 2px; margin: 0; float: none; }   \n\
@@ -2922,7 +3026,7 @@ img	{ width:1px; height:1px; vertical-align:middle;   \n\
 	display:table; font-size:small; background: #ccc;   \n\
 }  \n\
   \n\
-/* title */  \n\
+/* menu title */  \n\
 h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
 	  margin:0;  \n\
 	  background:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAYCAYAAAA7zJfaAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90BFRUGLEa8gbIAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAUElEQVQI102KOwqAQBDFsm+9/3Fs9RqChdgIVjYi6nxsLLYJCYSc+xTLgFhHhD8t0m5kAQo39Jojj0RuLzquQLUkUuG3qtJmJ9plOyua9uADjaopUrsHkrMAAAAASUVORK5CYII=') repeat-x;}  \n\
@@ -3012,13 +3116,16 @@ li.inactive:hover	{ background:inherit }  \n\
       'submenu' : '<widget name="submenu" ><div class="submenu menu" onmouseout="menu_onmouseout" onmousedown="menu_onmousedown"><ul id="menu_content"></ul></div></widget>',
       'details_menu' : '<widget name="details_menu" init><div id="details_menu" class="menu" onmouseout="menu_onmouseout" onmousedown="menu_onmousedown"><h1 id="menu_title" >Details</h1><ul id="menu_content"><li id="last_item" onclick="options_menu">Options…</li></ul></div></widget>',
       'script_detail' : '<widget name="script_detail" host_node script iframe file_only init><li><img/><a></a></li></widget>',
-      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   title="!! experimental !!"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_ui_position></select_ui_position></div><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><button onclick="edit_style_patch" title="Add css rules on top of the current stylesheet." >Patch style…</button></td></tr><tr><td><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" /><button>Load stylesheet…</button></form></li></td></tr><tr><td><button onclick="save_current_style" title="" >Save stylesheet…</button></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a></div><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></li></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/jsarmor">Help</a></div></td></tr></table></div></widget>',
+      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   title="!! experimental !!"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_ui_position></select_ui_position></div><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><button onclick="edit_style_patch" title="Add rules on top of current stylesheet." >Patch style…</button></td></tr><tr><td><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" /><button>Load stylesheet…</button></form></li></td></tr><tr><td><button onclick="save_current_style" title="" >Save stylesheet…</button></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a></div><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></li></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/jsarmor">Help</a></div></td></tr></table></div></widget>',
       'select_ui_position' : '<widget name="select_ui_position" init><table id="ui_position" class="dropdown_setting"><tr><td>Position</td><td><select><option value="top_left">top left</option><option value="top_right">top right</option><option value="bottom_left">bottom left</option><option value="bottom_right">bottom right</option></select></td></tr></table></widget>',
       'disable_main_button' : '<widget name="disable_main_button" init><checkbox_item label="Disable main button"  		 title="Install opera button and use it to come back here first."  		 state="`disable_main_button"  		 callback="`toggle_disable_main_button"></checkbox_item></widget>',
       'select_iframe_logic' : '<widget name="select_iframe_logic" init><table id="iframe_logic" class="dropdown_setting"   	 title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive)."><tr><td>Iframe policy</td><td><select><option value="block_all">Block All</option><option value="filter">Filter</option><option value="allow">Allow</option></select></td></tr></table></widget>',
       'select_menu_display_logic' : '<widget name="select_menu_display_logic" init><table id="menu_display"  class="dropdown_setting"><tr><td>Menu popup</td><td><select><option value="auto">Auto</option><option value="delay">Delay</option><option value="click">Click</option></select></td></tr></table></widget>',
       'select_reload_method' : '<widget name="select_reload_method" init><table id="reload_method" class="dropdown_setting"   	 title="Cache: reload from cache (fastest but…). Normal: slow but sure."><tr><td>Reload method</td><td><select><option value="cache">Cache</option><option value="normal">Normal</option></select></td></tr></table></widget>',
-      'editor' : '<widget name="editor" title text default_setting save_callback init><div class="menu editor" ><h1 id="menu_title" >Editor</h1><ul id="menu_content"><li><textarea spellcheck="false"></textarea></li><li class="inactive"><button class="save">Save</button><button onclick="close_menu">Cancel</button><button class="default">Default</button></li></ul></div></widget>',
+      'editor_window' : '<widget name="editor_window" title text default_setting save_callback init><div class="menu editor" ><h1 id="menu_title" >Editor</h1><editor></editor></div></widget>',
+      'editor' : '<widget name="editor" text default_setting save_callback init><ul class="editor"><li><my_textarea></my_textarea></li><li class="inactive"><button class="save">Save</button><button onclick="close_menu">Cancel</button><button class="default">Default</button></li></ul></widget>',
+      'my_textarea' : '<widget name="my_textarea"><textarea class="textarea" spellcheck="false"></textarea></widget>',
+      'site_settings_editor' : '<widget name="site_settings_editor" init><div class="menu editor" ><h1 id="menu_title" >Site Settings</h1><table><tr><td><ul><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><li class="filtered" formode="filtered" title="" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="" oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li></ul></td><td><editor></editor></td></tr></table></div></widget>',
       'checkbox_item' : '<widget name="checkbox_item" id title label state callback klass init><li><input type="checkbox"/></li></widget>',
       'scope_widget' : '<widget name="scope_widget" init><li id="scope" class="inactive">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li></widget>',
       'block_all_settings' : '<widget name="block_all_settings" init><block_inline_scripts></block_inline_scripts><checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags"  		 title="Treat noscript tags as if javascript was disabled in opera. Useful to access the non-javascript version of websites."  		 state="`handle_noscript_tags"  		 callback="`toggle_handle_noscript_tags"/></checkbox_item></widget>',
@@ -3031,9 +3138,14 @@ li.inactive:hover	{ background:inherit }  \n\
         script_detail_init(w, ph.host_node, ph.script, ph.iframe, ph.file_only);
     }
 
+    function editor_window_init_proxy(w, ph)
+    {
+        editor_window_init(w, ph.title, ph.text, ph.default_setting, ph.save_callback);
+    }
+
     function editor_init_proxy(w, ph)
     {
-        editor_init(w, ph.title, ph.text, ph.default_setting, ph.save_callback);
+        editor_init(w, ph.text, ph.default_setting, ph.save_callback);
     }
 
     function checkbox_item_init_proxy(w, ph)
@@ -3050,11 +3162,19 @@ li.inactive:hover	{ background:inherit }  \n\
         });
     }
 
-    function new_editor(title, text, default_setting, save_callback)
+    function new_editor_window(title, text, default_setting, save_callback)
+    {
+      return new_widget("editor_window", function(w)
+        {
+          editor_window_init(w, title, text, default_setting, save_callback);
+        });
+    }
+
+    function new_editor(text, default_setting, save_callback)
     {
       return new_widget("editor", function(w)
         {
-          editor_init(w, title, text, default_setting, save_callback);
+          editor_init(w, text, default_setting, save_callback);
         });
     }
 
