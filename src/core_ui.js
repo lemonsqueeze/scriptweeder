@@ -325,8 +325,8 @@ function(){   // fake line, keep_editor_happy
 	iframe.style = "position:fixed !important;background:transparent !important;white-space:nowrap !important;z-index:2147483647 !important;direction:ltr !important;font-family:sans-serif !important; font-size:small !important; margin-bottom:0px !important;" +
  "width: 1px !important; height: 1px !important;"   +
 	"margin-top: 0px !important; margin-right: 0px !important; margin-bottom: 0px !important; margin-left: 0px !important; padding-top: 0px !important; padding-right: 0px !important; padding-bottom: 0px !important; padding-left: 0px !important; border-top-width: 0px !important; border-right-width: 0px !important; border-bottom-width: 0px !important; border-left-width: 0px !important; border-top-style: none !important; border-right-style: none !important; border-bottom-style: none !important; border-left-style: none !important; background-color: transparent !important; visibility: visible !important; content: normal !important; outline-width: medium !important; outline-style: none !important; background-image: none !important; min-width: 0px !important; min-height: 0px !important; " +
-// useful for layout debugging
-//	"border: 1px solid #CCC !important; " +	
+        // useful for layout debugging
+	(debug_mode ? "border: 1px solid #CCC !important; " : "") +
 	ui_vpos + ':1px !important;' + ui_hpos + ':1px !important;';
 	iframe.scrolling="no";
 	iframe.allowtransparency="true";

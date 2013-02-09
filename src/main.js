@@ -57,7 +57,8 @@
 	// jsarmor ui's iframe, don't run in there !
 	if (window != window.top && window.name == 'jsarmor_iframe')	// TODO better way of id ?
 	    return;
-	
+
+	debug_log("start");	
 	init();
 	
 	// first run

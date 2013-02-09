@@ -171,10 +171,11 @@ function(){   // fake line, keep_editor_happy
 
     
     // old settings names, not used anymore but could still be around after upgrade.
-    function is_old_setting(k)
+    function do_not_save_setting(k)
     {
 	return (k == 'time' ||
-		k === 'timestamp' ||
+		k == 'timestamp' ||
+		k == 'top_window_host' ||
 		is_prefix("noscript_", k));
     }
     
@@ -185,7 +186,7 @@ function(){   // fake line, keep_editor_happy
 	for (k in settings)
 	{
 	    var val = settings[k];
-	    if (!is_old_setting(k) &&			// old names, not used anymore.
+	    if (!do_not_save_setting(k) &&		// old and temp stuff
 		!(host != '' && val == '') &&		// empty host setting
 		!is_default_bool_setting(k, val)	// don't bother with default values
 	       )
@@ -234,9 +235,7 @@ function(){   // fake line, keep_editor_happy
 	{
 	    var host = hosts[i];
 	    var settings = print_setting(host, host_settings[host]);
-	    // if there are still old settings lingering, we could end up with an empty string.
-	    if (settings != "") 
-		s += settings;
+	    s += settings;
 	}
 
 	save_file(s, !as_text);

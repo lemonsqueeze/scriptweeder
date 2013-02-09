@@ -21,6 +21,8 @@ function(){   // fake line, keep_editor_happy
     
     /********************************* Globals *********************************/
 
+    var debug_mode = false;
+    
     /* stuff load_global_settings() takes care of */
     var current_host;
     var current_domain;    
@@ -42,77 +44,30 @@ function(){   // fake line, keep_editor_happy
     //     - BeforeExternalScript fires before loading an external script
     //     - BeforeScript fires before executing both inline and external scripts
     //   Scripts which have not been blocked are run, they get a chance to register events.
-    // - [...] Page loads, all kinds of stuff can happen: load focus ... 
+    // - [...] Page loads, all kinds of stuff can happen: load focus ...
+    // -       iframes can start loading
     // * DOMContentLoaded fires: scripts can start messing with the DOM.
-    // - [...] iframes start loading
-    //         dynamic content added by scripts gets loaded
+    //   [...] dynamic content gets loaded
     // - document load event fires: document is loaded, browser button stops spinning.
-    // - iframes finish loading anytime before or after that.
+    // - iframes finish loading anytime before or after that (DOMFrameContentLoaded)
     
-    var async_init_request = false;
-    var async_init = false;  // currently only used when running inside iframe
-    var sync_init = false;
+    var init_done = false;
 
     function ready()
-    {	return (sync_init && async_init);  }
-    
+    {	return init_done;  }
+
     function init()
     {
-	// sync_init, async_init both false
 	init_core();
 	register_ui();
-	sync_init = true;
-	// sync_init set
-	
-	if (!async_init_request)
-	    async_init_finished();
-	if (ready())
-	    trigger_deferred_events();
+	init_done = true;
     }
 
-    function async_init_finished()
-    {
-	// note: unlocking async_init first implies the ordering of events might not be preserved.
-	// for example if domcontentloaded fires now, it'll get handled before the queued events.
-	// that's fine though, the script handlers take notice something happened even when deferred.
-	async_init = true;
-	if (sync_init) // ready() then  (can't set async_init yet)
-	    trigger_deferred_events();
-    }
-
-    var event_queue = [];    
-    function trigger_deferred_events()
-    {
-	// if (event_queue.length) alert("deferred events: " + event_queue.length);
-	foreach(event_queue, function(o)
-	{
-	    o.handler(o.event, true); // deferred call
-	});
-	event_queue = [];
-    }
-
-    function deferred(handler, allow_unhandled_event)
-    {
-	return function(e)
-	{
-	    if (ready())
-	    {
-		handler(e, false); // synchronous call
-		return;
-	    }
-	    
-	    // queue it, and block current event if requested
-	    event_queue.push({handler: handler, event: e});
-	    if (!allow_unhandled_event)
-		e.preventDefault();
-	};
-    }
     
-        
     /******************************** Normal init *******************************/
 
     function init_core()
-    {
+    {	
 	setup_event_handlers();
 	check_script_storage();
 	load_global_settings();
@@ -121,7 +76,7 @@ function(){   // fake line, keep_editor_happy
 	
     function load_global_settings()
     {
-	load_global_context(location.hostname);
+	load_global_context(location.hostname);	
 	init_iframe_logic();
 	reload_method = global_setting('reload_method', default_reload_method);
     }
@@ -235,6 +190,10 @@ function(){   // fake line, keep_editor_happy
     
     function init_iframe_logic()
     {
+	// let contained iframes know their parent host.
+	if (window == window.top)
+	    set_global_setting('top_window_host', current_host);
+	
 	show_ui_in_iframes = global_bool_setting('show_ui_in_iframes', default_show_ui_in_iframes);
 	message_handlers[iframe_message_header] = iframe_message_handler;
 	
@@ -246,12 +205,16 @@ function(){   // fake line, keep_editor_happy
 	    return;
 
 	// tell parent about us so it can display our host in the menu.
-	// for 'filter' iframe_logic, this is also asking for its hostname.
 	window.top.postMessage(iframe_message_header + location.href, '*');
 	
 	// switch mode depending on iframe_logic
 	// TODO: add way to override with page setting *only*, which should be safe enough
-	
+
+	decide_iframe_mode();
+    }
+
+    function decide_iframe_mode()
+    {
 	if (iframe_logic != 'filter')
 	{
 	    if (iframe_logic == 'block_all')
@@ -261,10 +224,36 @@ function(){   // fake line, keep_editor_happy
 	}
 	
 	// 'filter' logic uses parent window's settings to decide what to do with page scripts.
-	// for that we need parent's hostname, but because of cross-domain restrictions we can't
-	// find out on our own. Wait for msg from parent.
-	async_init_request = true;
-	return;
+	var parent_host = get_parent_host();
+	assert(parent_host != '', "parent_host is empty !");
+	
+	// does our parent allow us ?
+	load_global_context(parent_host);
+	var allowed = allowed_host(location.hostname);
+	clear_domain_nodes();	// wipe out hosts nodes this will have created
+	load_global_context(location.hostname);
+	
+	// alert("iframe " + location.hostname + " allowed: " + allowed);
+	if (!allowed)
+	    iframe_block_all_mode();
+	// else: allowed. treat it as a normal page: current mode applies.	
+    }
+
+    function get_parent_host()
+    {
+	// 1) try getting it directly. that won't work cross domain
+	try {  return window.top.location.hostname;  } catch(e) { }
+	
+	// 2) try document.referrer. not available if referrer disabled in opera ...
+	if (document.referrer != "")
+	    return url_hostname(document.referrer);
+	
+	// 3) hack it. this will work unless loading multiple tabs with iframes simultaneously.
+	//    the proper way, sending it from top window with postMessage() is far more evil:
+	//    we'd need to store and cancel all events until init() finishes, reload blocked scripts
+	//    and replay/refire all events in order, hoping things like domcontentloaded can be fired
+	//    twice without side effects...
+    	return global_setting('top_window_host');
     }
     
     function iframe_message_handler(e, content)
@@ -280,15 +269,14 @@ function(){   // fake line, keep_editor_happy
     // iframe instance making itself known to us. (works for nested iframes unlike DOM harvesting)
     function message_from_iframe(e, url)
     {
-	// log("message from iframe: host=" + url_hostname(url));
+	debug_log("[msg] from iframe: " + url_hostname(url));
+	
 	// fortunately this works even before domcontentloaded
 	if (element_tag_is(document.body, 'frameset')) // sorry, can't help you
 	{
 	    e.source.postMessage(iframe_message_header + message_topwin_cant_display, '*');
 	    return;
-	}
-	if (iframe_logic == 'filter') // it needs our hostname
-	    e.source.postMessage(iframe_message_header + current_host, '*');
+	}	
 	add_iframe(url);			// add to menu so we can block/allow it.
 	if (main_ui) // UIFIXME
 	    repaint_ui();	
@@ -297,31 +285,12 @@ function(){   // fake line, keep_editor_happy
     var topwin_cant_display = false;
     function message_from_parent(e, answer)
     {
-	assert(!domcontentloaded, "received message from parent after domcontentloaded, that shouldn't happen !!");	
-	// log("message from parent: host=" + answer);
-
-	// crap, page uses frames. fall back to normal logic and show ui everywhere.	
-	if (answer == message_topwin_cant_display)
-	    topwin_cant_display = true;
-	else
-	    decide_iframe_mode(answer);
-		
-	async_init_finished(); // happy now =)
-    }
-
-    function decide_iframe_mode(parent_host)
-    {
-	// now that we know parent window's hostname we can decide what to do.
-	// does our parent allow us ?
-	load_global_context(parent_host);
-	var allowed = allowed_host(location.hostname);
-	clear_domain_nodes();	// wipe out hosts nodes this will have created
-	load_global_context(location.hostname);
+	debug_log("[msg] from parent: " + answer);
 	
-	// alert("iframe " + location.hostname + " allowed: " + allowed);
-	if (!allowed)
-	    iframe_block_all_mode();
-	// else: allowed. treat it as a normal page: current mode applies.	
+	// crap, page uses frames. fall back to normal logic and show ui everywhere.
+	topwin_cant_display = true;
+	if (domcontentloaded)
+	    init_ui();
     }
 
     // can't use set_mode_no_update('block_all'), it would save the setting.
@@ -598,24 +567,13 @@ function(){   // fake line, keep_editor_happy
     var total_inline = 0;
     var total_inline_size = 0;
 
-    function reload_script(script)
-    {
-	var clone = script.cloneNode(true);
-	script.parentNode.replaceChild(clone, script);
-    }
-    
     // Handler for both inline *and* external scripts
-    function beforescript_handler(e, deferred_call)
+    function beforescript_handler(e)
     {
       if (e.element.src) // external script
-	  return;
-      
-      if (deferred_call && !block_inline_scripts)	// now we know it's allowed, load it !
-      {
-	  reload_script(e.element);
-	  return;
-      }
-	
+	  return;     
+
+      debug_log("beforescript");      
       total_inline++;
       total_inline_size += e.element.text.length;
       
@@ -626,20 +584,16 @@ function(){   // fake line, keep_editor_happy
 	e.preventDefault();
     }
 
-    function beforeextscript_handler(e, deferred_call)
+    function beforeextscript_handler(e)
     {
 	assert(element_tag_is(e.element, 'script'),
 	       "BeforeExternalScript: non <script>: " + e.element.tagName);
+	
 	var url = e.element.src;
 	var host = url_hostname(url);
-	var allowed = allowed_host(host);	
+	var allowed = allowed_host(host);
 
-	if (deferred_call && allowed)	// now we know it's allowed, load it !
-	{
-	    reload_script(e.element);
-            return;
-	}
-	
+	debug_log("beforeextscript: " + host);	
 	add_script(url, host);
 	if (host == current_host)
 	{
@@ -663,16 +617,15 @@ function(){   // fake line, keep_editor_happy
     // Find out which scripts are actually loaded,
     // this way we can find out if *something else* is blocking
     // (blocked content, bad url, syntax error...). Awesome!    
-    function beforeload_handler(ev, deferred_call)
+    function beforeload_handler(ev)
     {	
 	var e = ev.event.target;
         if (!e || !e.tagName || !element_tag_is(e, 'script') || !e.src)
 	    return; // not an external script.
-	assert(!deferred_call,
-	       "beforeload_handler() has been deferred. That's extremely strange.");
 	
 	var host = url_hostname(e.src);
 	var script = find_script(e.src, host);
+	debug_log("loaded: " + host);
 
 	// FIXME for performance, could remove this
 	assert(allowed_host(host),		// sanity check ...
@@ -690,8 +643,9 @@ function(){   // fake line, keep_editor_happy
     
 //UIFIXME
     var domcontentloaded = false;
-    function domcontentloaded_handler(e, deferred_call)
+    function domcontentloaded_handler(e)
     {
+	debug_log("domcontentloaded");
 	domcontentloaded = true;
 
 	if (element_tag_is(document.body, 'frameset')) // frames, can't show ui in there !
@@ -723,6 +677,7 @@ function(){   // fake line, keep_editor_happy
 	{
 	    if (is_prefix(h, m))
 	    {
+		//debug_log("[msg] " + m);
 		ujs_event.preventDefault();	// keep this conversation private.
 		var content = m.slice(h.length);		
 		(message_handlers[h])(e, content);
@@ -745,16 +700,11 @@ function(){   // fake line, keep_editor_happy
 
     function setup_event_handlers()
     {
-	// deferred: events should be queued until we're initialized
-    	opera.addEventListener('BeforeScript',	       work_todo(deferred(beforescript_handler)),		false);
-	opera.addEventListener('BeforeExternalScript', work_todo(deferred(beforeextscript_handler)),		false);
-	opera.addEventListener('BeforeEvent.load',               deferred(beforeload_handler, true),		false);
-	document.addEventListener('DOMContentLoaded',            deferred(domcontentloaded_handler, true),	false);
-
-	// messaging between top window and iframes.
-	// FIXME need to make sure page isn't seeing our messages	
-	//window.addEventListener('message',	message_handler,	false);
-	opera.addEventListener('BeforeEvent.message',			before_message_handler,		false);	
+    	opera.addEventListener('BeforeScript',	       work_todo(beforescript_handler),		false);
+	opera.addEventListener('BeforeExternalScript', work_todo(beforeextscript_handler),	false);
+	opera.addEventListener('BeforeEvent.load',		beforeload_handler,		false);
+	document.addEventListener('DOMContentLoaded',		domcontentloaded_handler,	false);
+	opera.addEventListener('BeforeEvent.message',		before_message_handler,		false);	
     }
 
 

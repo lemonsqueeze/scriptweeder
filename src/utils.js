@@ -350,10 +350,19 @@ function(){   // fake line, keep_editor_happy
 	    h = "jsarmor (iframe): ";
 	console.log(h + msg);
     }
+
+    function debug_log(msg)
+    {
+	if (debug_mode)
+	    log(msg);
+    }
     
     function my_alert(msg)
     {
-	alert("jsarmor:\n\n" + msg);
+	var title = "jsarmor";
+	if (window != window.top)
+	    title += " (in iframe)"
+	alert(title + "\n\n" + msg);
     }
 
     function assert(test, msg)
