@@ -1,6 +1,6 @@
 
 NAME	= jsarmor.js
-SRC	= main.js core.js settings.js utils.js core_ui.js builtin_ui.js
+SRC	= main.js core.js settings.js utils.js userjs_ui.js ui.js
 GEN_SRC	= jsarmor_style.js jsarmor_widgets.js
 TMPFILES= jsarmor.xml jsarmor.inlined.css
 ALLSRC	= $(SRC) $(GEN_SRC)
@@ -35,9 +35,7 @@ jsarmor_style.js: jsarmor.inlined.css
 
 jsarmor.xml: jsarmor.ui
 	@echo generating $@ from $<
-# make it somewhat readable
-	@$(TOOLS)/xml_macros < $<  |  \
-	grep -v '^ *$$'  > $@
+	@$(TOOLS)/xml_macros < $<   > $@
 
 jsarmor_widgets.js: jsarmor.xml
 	@echo generating $@ from $<

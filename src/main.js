@@ -24,9 +24,9 @@
     
 @include "core.js"
 @include "settings.js"    
-@include "core_ui.js"
+@include "userjs_ui.js"
 @include "utils.js"
-@include "builtin_ui.js"
+@include "ui.js"
 
     /********************************* Defaults ************************************/
 

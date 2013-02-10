@@ -20,15 +20,51 @@ sub format_html_blob
 }
 
 my $id = "";
+my $args = "";
 my @current_widget;
+
+sub dump_widget_layout
+{
+    print "      layout: '";
+    print format_html_blob(join('', @current_widget));
+    print "'";
+}
+
+sub dump_widget_init_proxy
+{
+    my ($id, $args_str) = (@_);
+    my @args = split(" ", $args_str);
+    @args = grep(!/init/, @args);
+
+    if (@args == 0)
+    {	return;   }
+    print "      init_proxy: ";
+    print "function(w, ph){ ${id}_init(w";
+    foreach my $arg (@args)
+    {  print ", ph.$arg";  }
+    print "); },\n";
+}
+
+sub dump_widget_init
+{
+    my ($id, $args_str) = (@_);
+    my @args = split(" ", $args_str);
+    @args = grep(/init/, @args);
+    
+    if (@args == 0)
+    {	return;   }
+    print "      init: ${id}_init,\n";
+}
 
 sub dump_widget
 {
     my ($last) = @_;
     return if ($id eq "");
-    print "      '$id' : '";
-    print format_html_blob(join('', @current_widget));
-    print "'";
+    print "   '$id' : {\n";
+    dump_widget_init($id, $args);
+    dump_widget_init_proxy($id, $args);
+    dump_widget_layout();
+    print " }";
     print "," if ($last eq "");
     print "\n";
 
@@ -36,7 +72,7 @@ sub dump_widget
     $id = "";
 }
 
-sub dump_widget_layouts
+sub dump_widgets
 {
     foreach my $s (@lines)
     {
@@ -45,9 +81,9 @@ sub dump_widget_layouts
 
 	if ($s =~ m|<widget name="([^"]*)"([^>]*)>|)
 	{
-	    my ($new_id, $args) = ($1, $2);
-	    dump_widget("");
-	    $id = $new_id;   
+	    my ($new_id, $new_args) = ($1, $2);
+	    dump_widget("");		# dump previous widget
+	    ($id, $args) = ($new_id, $new_args);
 	}
 	elsif ($s =~ m|<widget .*>|) # sanity check
 	{  die($s . "\nlooks like name=\"widget name\" attribute is missing"); }
@@ -62,40 +98,10 @@ sub dump_widget_layouts
     dump_widget("last");
 }
 
-print("    /* layout for each widget (generated from $xml). */\n");
-print("    var widgets_layout = {\n");
-dump_widget_layouts();
+print("    /* widgets (generated from $xml). */\n");
+print("    var widgets = {\n");
+dump_widgets();
 print("    };\n\n");
-
-
-sub widget_init_proxy_functions
-{
-    foreach my $s (@lines)
-    {
-	# remove comments
-	$s =~ s|<!--[^>]*-->||g;
-
-	if ($s =~ m|<widget name="([^"]*)"([^>]*)>|)
-	{
-	    my ($id, $args_str) = ($1, $2);
-	    my @args = split(" ", $args_str);
-	    @args = grep(!/init/, @args);
-
-	    if (@args == 0)
-	    {  next;   } # these are rather useless 
-	    print "    function ${id}_init_proxy(w, ph)\n";
-	    print "    {\n";
-	    print "        ${id}_init(w";
-	    foreach my $arg (@args)
-	    {  print ", ph.$arg";  }
-	    print ");\n";
-	    print "    }\n\n";
-	}
-    }
-}
-
-print("    /* init proxies (internal use only) */\n");
-widget_init_proxy_functions();
 
 
 sub widget_new_functions
@@ -122,12 +128,10 @@ sub widget_new_functions
 	    print "    function new_$id(" . join(", ", @args) . ")\n";
 	    print "    {\n";
 	    print "      return new_widget(\"$id\", function(w)\n";
-	    print "        {\n";
-	    print "          ${id}_init(w";
+	    print "        { ${id}_init(w";
 	    foreach my $arg (@args)
 	    {  print ", $arg";  }
-	    print ");\n";
-	    print "        });\n";
+	    print "); });\n";
 	    print "    }\n\n";
 	}
     }

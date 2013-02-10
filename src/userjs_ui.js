@@ -27,18 +27,17 @@ function(){   // fake line, keep_editor_happy
     function init_layout()
     {
 	// allow uppercase widget names, will be convenient later on...
-	var n = widgets_layout;
-	for (var i in widgets_layout)
-	    n[i.toUpperCase()] = widgets_layout[i];
-	widgets_layout = n;	
+	var tmp = widgets;
+	for (var i in widgets)
+	    tmp[i.toUpperCase()] = widgets[i];
+	widgets = tmp;	
 	
 	// special classes
 	idoc.body.className = "body";
     }
 
-    // create ui elements from html strings in widgets_layout. this one is for normal
-    // (single node) widgets. nested widgets are created as well unless they have the
-    // "lazy" attribute.
+    // create ui elements from html layout. this one is for normal (single node) widgets.
+    // nested widgets are created as well unless they have the "lazy" attribute.
     function new_widget(name, init_proxy)
     {
 	var wrap = new_wrapped_widget(name, init_proxy);
@@ -79,7 +78,7 @@ function(){   // fake line, keep_editor_happy
     function new_wrapped_widget(name, init_proxy)
     {
 	name = name.toLowerCase();
-	var layout = widgets_layout[name];
+	var layout = widgets[name].layout;
 	assert(layout, "new_widget(" + name + "): the layout for this widget is missing!");
 	
 	// otherwise create a new one...
@@ -87,33 +86,17 @@ function(){   // fake line, keep_editor_happy
 	d.innerHTML = layout;
 	var wrap = d.firstChild;	// the <widget> element
 	assert(wrap, "new_widget(" + name + "):\n" +
-	             "couldn't create this guy, check the html in widgets_layout.");	
+	             "couldn't create this guy, not defined anywhere.");	
 	if (wrap.children.length > 1)
 	    wrap.forest = true;
 
 	setup_widget_event_handlers(wrap, name);
 	create_nested_widgets(wrap, false);
 	call_oninit_handlers(wrap);	
-	init_widget(wrap, wrap.firstChild, name, init_proxy);
-	
+	init_widget(wrap, wrap.firstChild, name, init_proxy);	
 	return wrap;
     }
-    
-    function eval_attributes(ph)
-    {
-	if (!ph)
-	    return;
-
-	for (var i = 0; i < ph.attributes.length; i++)
-	{
-	    var a = ph.attributes[i];
-	    if (a.value.charAt(0) == "`")  // "`" means eval attribute 
-		ph[a.name] = eval(a.value.slice(1));
-	    else
-		ph[a.name] = a.value;
-	}
-    }
-    
+        
     // copy attributes from placeholder (or use args_func if available), and call init handler if needed:
     // if widget "foo" has the 'init' attribute, then foo_init(widget) is called.
     // we could call function foo_init() automatically if it exists, but that would open a nice hole:
@@ -129,7 +112,7 @@ function(){   // fake line, keep_editor_happy
 	if (init_proxy)
 	    init_proxy(widget);
 	else // no proxy ? widget_init() takes no args then, call it directly.
-	    (eval(name + "_init"))(widget);
+	    (widgets[name].init)(widget);
     }
 
     function call_oninit_handlers(widget)
@@ -144,17 +127,31 @@ function(){   // fake line, keep_editor_happy
     
     function is_widget_placeholder(widget)
     {
-	return (widgets_layout[widget.tagName] != null);
+	return (widgets[widget.tagName] != null);
+    }
+
+    function eval_attributes(ph)
+    {
+	if (!ph)
+	    return;
+
+	for (var i = 0; i < ph.attributes.length; i++)
+	{
+	    var a = ph.attributes[i];
+	    if (a.value.charAt(0) == "`")  // "`" means eval attribute 
+		ph[a.name] = eval(a.value.slice(1));
+	    else
+		ph[a.name] = a.value;
+	}
     }
     
     function get_init_proxy(placeholder)
     {
 	var name = placeholder.tagName.toLowerCase();
-	var fname = name + "_init_proxy";
-	if (!function_exists(fname))
+	var call_init = widgets[name].init_proxy;	
+	if (!call_init)
 	    return null;
-
-	var call_init = eval(fname);
+	
 	return function(widget)
 	{
 	    eval_attributes(placeholder);

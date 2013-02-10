@@ -1082,18 +1082,17 @@
     function init_layout()
     {
 	// allow uppercase widget names, will be convenient later on...
-	var n = widgets_layout;
-	for (var i in widgets_layout)
-	    n[i.toUpperCase()] = widgets_layout[i];
-	widgets_layout = n;	
+	var tmp = widgets;
+	for (var i in widgets)
+	    tmp[i.toUpperCase()] = widgets[i];
+	widgets = tmp;	
 	
 	// special classes
 	idoc.body.className = "body";
     }
 
-    // create ui elements from html strings in widgets_layout. this one is for normal
-    // (single node) widgets. nested widgets are created as well unless they have the
-    // "lazy" attribute.
+    // create ui elements from html layout. this one is for normal (single node) widgets.
+    // nested widgets are created as well unless they have the "lazy" attribute.
     function new_widget(name, init_proxy)
     {
 	var wrap = new_wrapped_widget(name, init_proxy);
@@ -1134,7 +1133,7 @@
     function new_wrapped_widget(name, init_proxy)
     {
 	name = name.toLowerCase();
-	var layout = widgets_layout[name];
+	var layout = widgets[name].layout;
 	assert(layout, "new_widget(" + name + "): the layout for this widget is missing!");
 	
 	// otherwise create a new one...
@@ -1142,33 +1141,17 @@
 	d.innerHTML = layout;
 	var wrap = d.firstChild;	// the <widget> element
 	assert(wrap, "new_widget(" + name + "):\n" +
-	             "couldn't create this guy, check the html in widgets_layout.");	
+	             "couldn't create this guy, not defined anywhere.");	
 	if (wrap.children.length > 1)
 	    wrap.forest = true;
 
 	setup_widget_event_handlers(wrap, name);
 	create_nested_widgets(wrap, false);
 	call_oninit_handlers(wrap);	
-	init_widget(wrap, wrap.firstChild, name, init_proxy);
-	
+	init_widget(wrap, wrap.firstChild, name, init_proxy);	
 	return wrap;
     }
-    
-    function eval_attributes(ph)
-    {
-	if (!ph)
-	    return;
-
-	for (var i = 0; i < ph.attributes.length; i++)
-	{
-	    var a = ph.attributes[i];
-	    if (a.value.charAt(0) == "`")  // "`" means eval attribute 
-		ph[a.name] = eval(a.value.slice(1));
-	    else
-		ph[a.name] = a.value;
-	}
-    }
-    
+        
     // copy attributes from placeholder (or use args_func if available), and call init handler if needed:
     // if widget "foo" has the 'init' attribute, then foo_init(widget) is called.
     // we could call function foo_init() automatically if it exists, but that would open a nice hole:
@@ -1184,7 +1167,7 @@
 	if (init_proxy)
 	    init_proxy(widget);
 	else // no proxy ? widget_init() takes no args then, call it directly.
-	    (eval(name + "_init"))(widget);
+	    (widgets[name].init)(widget);
     }
 
     function call_oninit_handlers(widget)
@@ -1199,17 +1182,31 @@
     
     function is_widget_placeholder(widget)
     {
-	return (widgets_layout[widget.tagName] != null);
+	return (widgets[widget.tagName] != null);
+    }
+
+    function eval_attributes(ph)
+    {
+	if (!ph)
+	    return;
+
+	for (var i = 0; i < ph.attributes.length; i++)
+	{
+	    var a = ph.attributes[i];
+	    if (a.value.charAt(0) == "`")  // "`" means eval attribute 
+		ph[a.name] = eval(a.value.slice(1));
+	    else
+		ph[a.name] = a.value;
+	}
     }
     
     function get_init_proxy(placeholder)
     {
 	var name = placeholder.tagName.toLowerCase();
-	var fname = name + "_init_proxy";
-	if (!function_exists(fname))
+	var call_init = widgets[name].init_proxy;	
+	if (!call_init)
 	    return null;
-
-	var call_init = eval(fname);
+	
 	return function(widget)
 	{
 	    eval_attributes(placeholder);
@@ -3074,84 +3071,96 @@ li.inactive:hover	{ background:inherit }  \n\
   \n\
 ";
 
-    /* layout for each widget (generated from jsarmor.xml). */
-    var widgets_layout = {
-      'main_ui' : '<widget name="main_ui"><div id="main"><main_button lazy/></div></widget>',
-      'main_button' : '<widget name="main_button" init><div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>',
-      'main_menu' : '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown"><h1 id="menu_title" >JSArmor</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li><li id="options_details" class="inactive"><table><tr><td class="options_item"><label onclick="options_menu">Options</label></td><td class="details_item"><label onclick="show_details">Details</label></td></tr></table></li></ul></div></widget>',
-      'host_table' : '<widget name="host_table"><table id="host_table"></table></widget>',
-      'host_table_row' : '<widget name="host_table_row"><table><tr  onclick onmouseover onmouseout><td width="1%"></td><td width="1%" class="td_not_loaded"><img/></td><td width="1%" class="td_checkbox"><input type="checkbox"/></td><td width="1%" class="td_host">code.</td><td class="td_domain">jquery.com</td><td width="1%" class="td_iframe"><img/></td><td width="1%" class="td_allowed_globally allowed_globally"><img/></td><td width="1%" class="td_script_count">[x]</td></tr></table></widget>',
-      'submenu' : '<widget name="submenu" ><div class="submenu menu" onmouseout="menu_onmouseout" onmousedown="menu_onmousedown"><ul id="menu_content"></ul></div></widget>',
-      'details_menu' : '<widget name="details_menu" init><div id="details_menu" class="menu" onmouseout="menu_onmouseout" onmousedown="menu_onmousedown"><h1 id="menu_title" >Details</h1><ul id="menu_content"><li id="last_item" onclick="options_menu">Options…</li></ul></div></widget>',
-      'script_detail' : '<widget name="script_detail" host_node script iframe file_only init><li><img/><a></a></li></widget>',
-      'options_menu' : '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Small font"   		   state="`small_font"  		   callback="`toggle_small_font"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   title="!! experimental !!"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_ui_position></select_ui_position></div><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><button onclick="edit_style_patch" title="Add rules on top of current stylesheet." >Patch style…</button></td></tr><tr><td><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" /><button>Load stylesheet…</button></form></li></td></tr><tr><td><button onclick="save_current_style" title="" >Save stylesheet…</button></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a></div><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></li></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/jsarmor">Help</a></div></td></tr></table></div></widget>',
-      'select_ui_position' : '<widget name="select_ui_position" init><table id="ui_position" class="dropdown_setting"><tr><td>Position</td><td><select><option value="top_left">top left</option><option value="top_right">top right</option><option value="bottom_left">bottom left</option><option value="bottom_right">bottom right</option></select></td></tr></table></widget>',
-      'disable_main_button' : '<widget name="disable_main_button" init><checkbox_item label="Disable main button"  		 title="Install opera button and use it to come back here first."  		 state="`disable_main_button"  		 callback="`toggle_disable_main_button"></checkbox_item></widget>',
-      'select_iframe_logic' : '<widget name="select_iframe_logic" init><table id="iframe_logic" class="dropdown_setting"   	 title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive)."><tr><td>Iframe policy</td><td><select><option value="block_all">Block All</option><option value="filter">Filter</option><option value="allow">Allow</option></select></td></tr></table></widget>',
-      'select_menu_display_logic' : '<widget name="select_menu_display_logic" init><table id="menu_display"  class="dropdown_setting"><tr><td>Menu popup</td><td><select><option value="auto">Auto</option><option value="delay">Delay</option><option value="click">Click</option></select></td></tr></table></widget>',
-      'select_reload_method' : '<widget name="select_reload_method" init><table id="reload_method" class="dropdown_setting"   	 title="Cache: reload from cache (fastest but…). Normal: slow but sure."><tr><td>Reload method</td><td><select><option value="cache">Cache</option><option value="normal">Normal</option></select></td></tr></table></widget>',
-      'editor_window' : '<widget name="editor_window" title text default_setting save_callback init><div class="menu editor" ><h1 id="menu_title" >Editor</h1><editor></editor></div></widget>',
-      'editor' : '<widget name="editor" text default_setting save_callback init><ul class="editor"><li><my_textarea></my_textarea></li><li class="inactive"><button class="save">Save</button><button onclick="close_menu">Cancel</button><button class="default">Default</button></li></ul></widget>',
-      'my_textarea' : '<widget name="my_textarea"><textarea class="textarea" spellcheck="false"></textarea></widget>',
-      'site_settings_editor' : '<widget name="site_settings_editor" init><div class="menu editor" ><h1 id="menu_title" >Site Settings</h1><table><tr><td><ul><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><li class="filtered" formode="filtered" title="" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="" oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li></ul></td><td><editor></editor></td></tr></table></div></widget>',
-      'checkbox_item' : '<widget name="checkbox_item" id title label state callback klass init><li><input type="checkbox"/></li></widget>',
-      'scope_widget' : '<widget name="scope_widget" init><li id="scope" class="inactive">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li></widget>',
-      'block_all_settings' : '<widget name="block_all_settings" init><block_inline_scripts></block_inline_scripts><checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags"  		 title="Treat noscript tags as if javascript was disabled in opera. Useful to access the non-javascript version of websites."  		 state="`handle_noscript_tags"  		 callback="`toggle_handle_noscript_tags"/></checkbox_item></widget>',
-      'block_inline_scripts' : '<widget name="block_inline_scripts" ><li id="block_inline_scripts"><input type="checkbox"/>Block Inline Scripts<div class="right_item">[-2k]</div></li></widget>'
+    /* widgets (generated from jsarmor.xml). */
+    var widgets = {
+   'main_ui' : {
+      layout: '<widget name="main_ui"><div id="main"><main_button lazy/></div></widget>' },
+   'main_button' : {
+      init: main_button_init,
+      layout: '<widget name="main_button" init><div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>' },
+   'main_menu' : {
+      init: main_menu_init,
+      layout: '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown"><h1 id="menu_title" >JSArmor</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li><li id="options_details" class="inactive"><table><tr><td class="options_item"><label onclick="options_menu">Options</label></td><td class="details_item"><label onclick="show_details">Details</label></td></tr></table></li></ul></div></widget>' },
+   'host_table' : {
+      layout: '<widget name="host_table"><table id="host_table"></table></widget>' },
+   'host_table_row' : {
+      layout: '<widget name="host_table_row"><table><tr  onclick onmouseover onmouseout><td width="1%"></td><td width="1%" class="td_not_loaded"><img/></td><td width="1%" class="td_checkbox"><input type="checkbox"/></td><td width="1%" class="td_host">code.</td><td class="td_domain">jquery.com</td><td width="1%" class="td_iframe"><img/></td><td width="1%" class="td_allowed_globally allowed_globally"><img/></td><td width="1%" class="td_script_count">[x]</td></tr></table></widget>' },
+   'submenu' : {
+      layout: '<widget name="submenu" ><div class="submenu menu" onmouseout="menu_onmouseout" onmousedown="menu_onmousedown"><ul id="menu_content"></ul></div></widget>' },
+   'details_menu' : {
+      init: details_menu_init,
+      layout: '<widget name="details_menu" init><div id="details_menu" class="menu" onmouseout="menu_onmouseout" onmousedown="menu_onmousedown"><h1 id="menu_title" >Details</h1><ul id="menu_content"><li id="last_item" onclick="options_menu">Options…</li></ul></div></widget>' },
+   'script_detail' : {
+      init: script_detail_init,
+      init_proxy: function(w, ph){ script_detail_init(w, ph.host_node, ph.script, ph.iframe, ph.file_only); },
+      layout: '<widget name="script_detail" host_node script iframe file_only init><li><img/><a></a></li></widget>' },
+   'options_menu' : {
+      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Small font"   		   state="`small_font"  		   callback="`toggle_small_font"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_ui_position></select_ui_position></div><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><button onclick="edit_style_patch" title="Add rules on top of current stylesheet." >Patch style…</button></td></tr><tr><td><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" /><button>Load stylesheet…</button></form></li></td></tr><tr><td><button onclick="save_current_style" title="" >Save stylesheet…</button></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a></div><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></li></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/jsarmor">Help</a></div></td></tr></table></div></widget>' },
+   'select_ui_position' : {
+      init: select_ui_position_init,
+      layout: '<widget name="select_ui_position" init><table id="ui_position" class="dropdown_setting"><tr><td>Position</td><td><select><option value="top_left">top left</option><option value="top_right">top right</option><option value="bottom_left">bottom left</option><option value="bottom_right">bottom right</option></select></td></tr></table></widget>' },
+   'disable_main_button' : {
+      init: disable_main_button_init,
+      layout: '<widget name="disable_main_button" init><checkbox_item label="Disable main button"  		 title="Install opera button and use it to come back here first."  		 state="`disable_main_button"  		 callback="`toggle_disable_main_button"></checkbox_item></widget>' },
+   'select_iframe_logic' : {
+      init: select_iframe_logic_init,
+      layout: '<widget name="select_iframe_logic" init><table id="iframe_logic" class="dropdown_setting"   	 title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive)."><tr><td>Iframe policy</td><td><select><option value="block_all">Block All</option><option value="filter">Filter</option><option value="allow">Allow</option></select></td></tr></table></widget>' },
+   'select_menu_display_logic' : {
+      init: select_menu_display_logic_init,
+      layout: '<widget name="select_menu_display_logic" init><table id="menu_display"  class="dropdown_setting"><tr><td>Menu popup</td><td><select><option value="auto">Auto</option><option value="delay">Delay</option><option value="click">Click</option></select></td></tr></table></widget>' },
+   'select_reload_method' : {
+      init: select_reload_method_init,
+      layout: '<widget name="select_reload_method" init><table id="reload_method" class="dropdown_setting"   	 title="Cache: reload from cache (fastest but…). Normal: slow but sure."><tr><td>Reload method</td><td><select><option value="cache">Cache</option><option value="normal">Normal</option></select></td></tr></table></widget>' },
+   'editor_window' : {
+      init: editor_window_init,
+      init_proxy: function(w, ph){ editor_window_init(w, ph.title, ph.text, ph.default_setting, ph.save_callback); },
+      layout: '<widget name="editor_window" title text default_setting save_callback init><div class="menu editor" ><h1 id="menu_title" >Editor</h1><editor></editor></div></widget>' },
+   'editor' : {
+      init: editor_init,
+      init_proxy: function(w, ph){ editor_init(w, ph.text, ph.default_setting, ph.save_callback); },
+      layout: '<widget name="editor" text default_setting save_callback init><ul class="editor"><li><my_textarea></my_textarea></li><li class="inactive"><button class="save">Save</button><button onclick="close_menu">Cancel</button><button class="default">Default</button></li></ul></widget>' },
+   'my_textarea' : {
+      layout: '<widget name="my_textarea"><textarea class="textarea" spellcheck="false"></textarea></widget>' },
+   'site_settings_editor' : {
+      init: site_settings_editor_init,
+      layout: '<widget name="site_settings_editor" init><div class="menu editor" ><h1 id="menu_title" >Site Settings</h1><table><tr><td><ul><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><li class="filtered" formode="filtered" title="" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="" oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li></ul></td><td><editor></editor></td></tr></table></div></widget>' },
+   'checkbox_item' : {
+      init: checkbox_item_init,
+      init_proxy: function(w, ph){ checkbox_item_init(w, ph.id, ph.title, ph.label, ph.state, ph.callback, ph.klass); },
+      layout: '<widget name="checkbox_item" id title label state callback klass init><li><input type="checkbox"/></li></widget>' },
+   'scope_widget' : {
+      init: scope_widget_init,
+      layout: '<widget name="scope_widget" init><li id="scope" class="inactive">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li></widget>' },
+   'block_all_settings' : {
+      init: block_all_settings_init,
+      layout: '<widget name="block_all_settings" init><block_inline_scripts></block_inline_scripts><checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags"  		 title="Treat noscript tags as if javascript was disabled in opera. Useful to access the non-javascript version of websites."  		 state="`handle_noscript_tags"  		 callback="`toggle_handle_noscript_tags"/></checkbox_item></widget>' },
+   'block_inline_scripts' : {
+      layout: '<widget name="block_inline_scripts" ><li id="block_inline_scripts"><input type="checkbox"/>Block Inline Scripts<div class="right_item">[-2k]</div></li></widget>' }
     };
-
-    /* init proxies (internal use only) */
-    function script_detail_init_proxy(w, ph)
-    {
-        script_detail_init(w, ph.host_node, ph.script, ph.iframe, ph.file_only);
-    }
-
-    function editor_window_init_proxy(w, ph)
-    {
-        editor_window_init(w, ph.title, ph.text, ph.default_setting, ph.save_callback);
-    }
-
-    function editor_init_proxy(w, ph)
-    {
-        editor_init(w, ph.text, ph.default_setting, ph.save_callback);
-    }
-
-    function checkbox_item_init_proxy(w, ph)
-    {
-        checkbox_item_init(w, ph.id, ph.title, ph.label, ph.state, ph.callback, ph.klass);
-    }
 
     /* functions for creating widgets */
     function new_script_detail(host_node, script, iframe, file_only)
     {
       return new_widget("script_detail", function(w)
-        {
-          script_detail_init(w, host_node, script, iframe, file_only);
-        });
+        { script_detail_init(w, host_node, script, iframe, file_only); });
     }
 
     function new_editor_window(title, text, default_setting, save_callback)
     {
       return new_widget("editor_window", function(w)
-        {
-          editor_window_init(w, title, text, default_setting, save_callback);
-        });
+        { editor_window_init(w, title, text, default_setting, save_callback); });
     }
 
     function new_editor(text, default_setting, save_callback)
     {
       return new_widget("editor", function(w)
-        {
-          editor_init(w, text, default_setting, save_callback);
-        });
+        { editor_init(w, text, default_setting, save_callback); });
     }
 
     function new_checkbox_item(id, title, label, state, callback, klass)
     {
       return new_widget("checkbox_item", function(w)
-        {
-          checkbox_item_init(w, id, title, label, state, callback, klass);
-        });
+        { checkbox_item_init(w, id, title, label, state, callback, klass); });
     }
 
 

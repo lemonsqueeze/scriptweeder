@@ -135,7 +135,6 @@
 		   state="`small_font"
 		   callback="`toggle_small_font"></checkbox_item>
     <checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"
-		   title="!! experimental !!"
 		   state="`show_scripts_in_main_menu"
 		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item>
     <select_menu_display_logic></select_menu_display_logic>

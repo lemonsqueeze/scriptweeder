@@ -147,5 +147,5 @@ if ($debug)
 {  print "---------------------------------------------------------\n";  }
 
 # print output
-foreach my $s (@content)
+foreach my $s (grep(!/^[ \t]*$/, @content))
 {    print "$s\n";    }
