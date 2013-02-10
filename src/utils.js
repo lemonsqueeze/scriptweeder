@@ -208,10 +208,10 @@ function(){   // fake line, keep_editor_happy
     function foreach_node(n, f)
     {
 	f(n);
-	foreach_down_node(n, f);
+	foreach_node_down(n, f);
     }
 
-    function foreach_down_node(n, f)
+    function foreach_node_down(n, f)
     {
 	foreach(n.getElementsByTagName('*'), f);
     }
@@ -397,7 +397,7 @@ function(){   // fake line, keep_editor_happy
 	var url = "data:text/plain;base64,";
 	if (binary)
 	    url = "data:application/binary;base64,";
-	location.href = url + btoa(s);
+	location.href = url + window.btoa(s);
     }
     
     // or use Object.keys(obj) if browser supports it.

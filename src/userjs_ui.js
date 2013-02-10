@@ -53,22 +53,6 @@ function(){   // fake line, keep_editor_happy
 	create_nested_widgets(tree, true);
     }
 
-    // FIXME we should know widget_name, we created these things !
-    // FIXME add placeholder_id arg, this only works for unique placeholders ...
-    function parent_widget(widget, widget_name, tree) 
-    {
-	var l = tree.getElementsByTagName(widget_name);
-	for (var i = 0; i < l.length; i++)
-	{
-	    var n = l[i];
-	    if (!n.hasAttribute('lazy'))
-		continue;
-	    replace_widget(widget, n);
-	    return;
-	}
-	error("parent_widget() couldn't find placeholder for " + widget_name);
-    }
-    
     
     /**************************** Internal widget functions ***********************/
 
@@ -135,14 +119,13 @@ function(){   // fake line, keep_editor_happy
 	if (!ph)
 	    return;
 
-	for (var i = 0; i < ph.attributes.length; i++)
+	foreach(ph.attributes, function(a)
 	{
-	    var a = ph.attributes[i];
 	    if (a.value.charAt(0) == "`")  // "`" means eval attribute 
 		ph[a.name] = eval(a.value.slice(1));
 	    else
 		ph[a.name] = a.value;
-	}
+	});
     }
     
     function get_init_proxy(placeholder)
@@ -211,38 +194,25 @@ function(){   // fake line, keep_editor_happy
 	replace_wrapped_widget(to.parentNode, from);
     }
 
-    //FIXME add the others
-    var is_handler_attribute = { 'oninit':1, 'onclick':1, 'onmouseover':1, 'onmouseout':1, 'onmousedown':1, 'onload':1};
-
-
     // if we load some html like <div onclick="f"> it won't work because the handler
     // will get evaluated in global context, which we do not own as userjs script.
     // so we have a little plumbing to do here ...
     // handler values can be left empty: <div onclick> means <div onclick="widgetname_onclick()">
     function setup_widget_event_handlers(widget, name)
     {
-	function create_handler(expr)
-	{
-	    return eval(expr);  // direct function call
-	    // return eval("function(){" + expr + "}");
-	}	
-	
-	var l = widget.getElementsByTagName('*');
-	for (var i = 0; i < l.length; i++)
-	{
-	    var node = l[i];
-	    for (var j = 0; j < node.attributes.length; j++)
+	foreach_node_down(widget, function(node)
+        {
+	    foreach(node.attributes, function(a)
 	    {
-		var a = node.attributes[j];
-		if (is_handler_attribute[a.name])
+		if (is_prefix('on', a.name))  // onclick onmouseover etc
 		{
 		    if (a.value != "")
-			node[a.name] = create_handler(a.value);
+			node[a.name] = eval(a.value);
 		    else
 			node[a.name] = eval(name + "_" + a.name);
 		}
-	    }
-	}
+	    });
+	});
     }
 
 

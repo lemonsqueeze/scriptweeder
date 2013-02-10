@@ -3,15 +3,14 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/jsarmor
 // @description Block unwanted javascript. NoScript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published 2012-10-08 11:00
+// @published 2013-02-12
 // ==/UserScript==
 
 
 // This file is put together from the different bits and pieces in the repository.
-// Besides code there's css, html and encoded images in there, so it looks a little
-// like an extension all packed into one file.
-// You can edit it directly if you really want, but if you're going to be hacking
-// this thing i'd suggest cloning the repo and working in there instead.
+// Some parts like the ui layout are generated from sources that are much nicer to
+// work with. You can edit it directly if you want, but if you're going to be hacking
+// this thing i'd suggest cloning the repository and working in there instead.
 // Then you can just type 'make' and it'll regenerate the whole thing.
 
 // When running as userjs, document and window.document are the same,
@@ -66,9 +65,8 @@
 	{	    
 	    var load_defaults = confirm(
 		"jsarmor up and running !\n\n" +
-		"Main button will show up at the bottom right of pages using javascript.\n\n" +
-		"Click [OK] to load default settings, or [Cancel] to start from scratch. " +
-		"(can change your mind later either way).");
+		"Click ok to start with useful defaults for the global whitelist/blacklist, " +
+		"or cancel to start from scratch.");
 
 	    set_global_setting('version_number', version_number);
 	    set_global_setting('version_type', version_type);	    

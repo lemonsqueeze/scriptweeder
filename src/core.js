@@ -17,11 +17,12 @@ function(){   // fake line, keep_editor_happy
     var default_iframe_logic = 'filter';
 
     // 'normal'  or  'cache'
-    var default_reload_method = 'cache';
+    var default_reload_method = 'normal';
     
     /********************************* Globals *********************************/
 
     var debug_mode = false;
+    var paranoid = false;
     
     /* stuff load_global_settings() takes care of */
     var current_host;
@@ -573,6 +574,7 @@ function(){   // fake line, keep_editor_happy
       if (e.element.src) // external script
 	  return;     
 
+      assert(ready(), "beforescript called before init() finished !");
       debug_log("beforescript");      
       total_inline++;
       total_inline_size += e.element.text.length;
@@ -588,6 +590,7 @@ function(){   // fake line, keep_editor_happy
     {
 	assert(element_tag_is(e.element, 'script'),
 	       "BeforeExternalScript: non <script>: " + e.element.tagName);
+	assert(ready(), "beforeextscript called before init() finished !");
 	
 	var url = e.element.src;
 	var host = url_hostname(url);
@@ -623,13 +626,14 @@ function(){   // fake line, keep_editor_happy
         if (!e || !e.tagName || !element_tag_is(e, 'script') || !e.src)
 	    return; // not an external script.
 	
+	assert(ready(), "beforeload called before init() finished !");	
 	var host = url_hostname(e.src);
 	var script = find_script(e.src, host);
 	debug_log("loaded: " + host);
 
-	// FIXME for performance, could remove this
-	assert(allowed_host(host),		// sanity check ...
-	       "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
+	if (paranoid)	// sanity check ...
+	    assert(allowed_host(host),
+		   "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
 	
 	if (host == current_host)
 	    loaded_current_host++; 
@@ -645,6 +649,7 @@ function(){   // fake line, keep_editor_happy
     var domcontentloaded = false;
     function domcontentloaded_handler(e)
     {
+	assert(ready(), "domcontentloaded called before init() finished !");	
 	debug_log("domcontentloaded");
 	domcontentloaded = true;
 

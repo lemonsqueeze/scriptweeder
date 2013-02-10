@@ -901,7 +901,7 @@ function(){   // fake line, keep_editor_happy
 	    var d = dn.name;
 	    var h = hn.name;
 	    var allowed = allowed_host(h);
-	    var host_part = h.slice(0, h.length - d.length);
+	    var host_part = truncate_left(h.slice(0, h.length - d.length), 15);
 	    var not_loaded = not_loaded_tooltip(hn, allowed);
 	    var count = hn.scripts.length;
 	    var helper = hn.helper_host;
@@ -932,7 +932,10 @@ function(){   // fake line, keep_editor_happy
 		tr.childNodes[5].title = iframes.title;
 	    }
 	    if (host_allowed_globally(h))
+	    {
 		tr.childNodes[6].className += " visible";
+		tr.childNodes[6].title = "Allowed globally";		
+	    }
 	    tr.childNodes[7].innerText = '[' + count + ']';		// scripts + iframes
 
 	    if (not_loaded)
@@ -1023,13 +1026,20 @@ function(){   // fake line, keep_editor_happy
 	    show_hide_menu(true);    // menu can disappear if we switch these two, strange
 	check_changed_settings();
     }
-    
-    function main_button_onclick()
+
+
+    function main_button_onclick(e)
     {
-	// cycle through the modes
+	if (e.ctrlKey)  // ctrl+click -> toggle menu
+	{
+	    repaint_ui_now();
+	    return;
+	}
+	    
+	// cycle through the modes    	    
 	if (mode == 'block_all')      set_mode('filtered');
 	else if (mode == 'filtered')  set_mode('relaxed');
-	else if (mode == 'relaxed')  set_mode('allow_all');
+	else if (mode == 'relaxed')   set_mode('allow_all');
 	else if (mode == 'allow_all') set_mode('block_all');
     }
     

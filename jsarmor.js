@@ -3,15 +3,14 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/jsarmor
 // @description Block unwanted javascript. NoScript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published 2012-10-08 11:00
+// @published 2013-02-12
 // ==/UserScript==
 
 
 // This file is put together from the different bits and pieces in the repository.
-// Besides code there's css, html and encoded images in there, so it looks a little
-// like an extension all packed into one file.
-// You can edit it directly if you really want, but if you're going to be hacking
-// this thing i'd suggest cloning the repo and working in there instead.
+// Some parts like the ui layout are generated from sources that are much nicer to
+// work with. You can edit it directly if you want, but if you're going to be hacking
+// this thing i'd suggest cloning the repository and working in there instead.
 // Then you can just type 'make' and it'll regenerate the whole thing.
 
 // When running as userjs, document and window.document are the same,
@@ -40,11 +39,12 @@
     var default_iframe_logic = 'filter';
 
     // 'normal'  or  'cache'
-    var default_reload_method = 'cache';
+    var default_reload_method = 'normal';
     
     /********************************* Globals *********************************/
 
     var debug_mode = false;
+    var paranoid = false;
     
     /* stuff load_global_settings() takes care of */
     var current_host;
@@ -596,6 +596,7 @@
       if (e.element.src) // external script
 	  return;     
 
+      assert(ready(), "beforescript called before init() finished !");
       debug_log("beforescript");      
       total_inline++;
       total_inline_size += e.element.text.length;
@@ -611,6 +612,7 @@
     {
 	assert(element_tag_is(e.element, 'script'),
 	       "BeforeExternalScript: non <script>: " + e.element.tagName);
+	assert(ready(), "beforeextscript called before init() finished !");
 	
 	var url = e.element.src;
 	var host = url_hostname(url);
@@ -646,13 +648,14 @@
         if (!e || !e.tagName || !element_tag_is(e, 'script') || !e.src)
 	    return; // not an external script.
 	
+	assert(ready(), "beforeload called before init() finished !");	
 	var host = url_hostname(e.src);
 	var script = find_script(e.src, host);
 	debug_log("loaded: " + host);
 
-	// FIXME for performance, could remove this
-	assert(allowed_host(host),		// sanity check ...
-	       "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
+	if (paranoid)	// sanity check ...
+	    assert(allowed_host(host),
+		   "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
 	
 	if (host == current_host)
 	    loaded_current_host++; 
@@ -668,6 +671,7 @@
     var domcontentloaded = false;
     function domcontentloaded_handler(e)
     {
+	assert(ready(), "domcontentloaded called before init() finished !");	
 	debug_log("domcontentloaded");
 	domcontentloaded = true;
 
@@ -1108,22 +1112,6 @@
 	create_nested_widgets(tree, true);
     }
 
-    // FIXME we should know widget_name, we created these things !
-    // FIXME add placeholder_id arg, this only works for unique placeholders ...
-    function parent_widget(widget, widget_name, tree) 
-    {
-	var l = tree.getElementsByTagName(widget_name);
-	for (var i = 0; i < l.length; i++)
-	{
-	    var n = l[i];
-	    if (!n.hasAttribute('lazy'))
-		continue;
-	    replace_widget(widget, n);
-	    return;
-	}
-	error("parent_widget() couldn't find placeholder for " + widget_name);
-    }
-    
     
     /**************************** Internal widget functions ***********************/
 
@@ -1190,14 +1178,13 @@
 	if (!ph)
 	    return;
 
-	for (var i = 0; i < ph.attributes.length; i++)
+	foreach(ph.attributes, function(a)
 	{
-	    var a = ph.attributes[i];
 	    if (a.value.charAt(0) == "`")  // "`" means eval attribute 
 		ph[a.name] = eval(a.value.slice(1));
 	    else
 		ph[a.name] = a.value;
-	}
+	});
     }
     
     function get_init_proxy(placeholder)
@@ -1266,38 +1253,25 @@
 	replace_wrapped_widget(to.parentNode, from);
     }
 
-    //FIXME add the others
-    var is_handler_attribute = { 'oninit':1, 'onclick':1, 'onmouseover':1, 'onmouseout':1, 'onmousedown':1, 'onload':1};
-
-
     // if we load some html like <div onclick="f"> it won't work because the handler
     // will get evaluated in global context, which we do not own as userjs script.
     // so we have a little plumbing to do here ...
     // handler values can be left empty: <div onclick> means <div onclick="widgetname_onclick()">
     function setup_widget_event_handlers(widget, name)
     {
-	function create_handler(expr)
-	{
-	    return eval(expr);  // direct function call
-	    // return eval("function(){" + expr + "}");
-	}	
-	
-	var l = widget.getElementsByTagName('*');
-	for (var i = 0; i < l.length; i++)
-	{
-	    var node = l[i];
-	    for (var j = 0; j < node.attributes.length; j++)
+	foreach_node_down(widget, function(node)
+        {
+	    foreach(node.attributes, function(a)
 	    {
-		var a = node.attributes[j];
-		if (is_handler_attribute[a.name])
+		if (is_prefix('on', a.name))  // onclick onmouseover etc
 		{
 		    if (a.value != "")
-			node[a.name] = create_handler(a.value);
+			node[a.name] = eval(a.value);
 		    else
 			node[a.name] = eval(name + "_" + a.name);
 		}
-	    }
-	}
+	    });
+	});
     }
 
 
@@ -1596,10 +1570,10 @@
     function foreach_node(n, f)
     {
 	f(n);
-	foreach_down_node(n, f);
+	foreach_node_down(n, f);
     }
 
-    function foreach_down_node(n, f)
+    function foreach_node_down(n, f)
     {
 	foreach(n.getElementsByTagName('*'), f);
     }
@@ -1785,7 +1759,7 @@
 	var url = "data:text/plain;base64,";
 	if (binary)
 	    url = "data:application/binary;base64,";
-	location.href = url + btoa(s);
+	location.href = url + window.btoa(s);
     }
     
     // or use Object.keys(obj) if browser supports it.
@@ -2700,7 +2674,7 @@
 	    var d = dn.name;
 	    var h = hn.name;
 	    var allowed = allowed_host(h);
-	    var host_part = h.slice(0, h.length - d.length);
+	    var host_part = truncate_left(h.slice(0, h.length - d.length), 15);
 	    var not_loaded = not_loaded_tooltip(hn, allowed);
 	    var count = hn.scripts.length;
 	    var helper = hn.helper_host;
@@ -2731,7 +2705,10 @@
 		tr.childNodes[5].title = iframes.title;
 	    }
 	    if (host_allowed_globally(h))
+	    {
 		tr.childNodes[6].className += " visible";
+		tr.childNodes[6].title = "Allowed globally";		
+	    }
 	    tr.childNodes[7].innerText = '[' + count + ']';		// scripts + iframes
 
 	    if (not_loaded)
@@ -2822,13 +2799,20 @@
 	    show_hide_menu(true);    // menu can disappear if we switch these two, strange
 	check_changed_settings();
     }
-    
-    function main_button_onclick()
+
+
+    function main_button_onclick(e)
     {
-	// cycle through the modes
+	if (e.ctrlKey)  // ctrl+click -> toggle menu
+	{
+	    repaint_ui_now();
+	    return;
+	}
+	    
+	// cycle through the modes    	    
 	if (mode == 'block_all')      set_mode('filtered');
 	else if (mode == 'filtered')  set_mode('relaxed');
-	else if (mode == 'relaxed')  set_mode('allow_all');
+	else if (mode == 'relaxed')   set_mode('allow_all');
 	else if (mode == 'allow_all') set_mode('block_all');
     }
     
@@ -2994,24 +2978,22 @@ img	{ width:1px; height:1px; vertical-align:middle;   \n\
 /* menu title */  \n\
 h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
 	  margin:0;  \n\
-	  background:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAAYCAYAAAA7zJfaAAAAAXNSR0IArs4c6QAAAAZiS0dEAAAAAAAA+UO7fwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90BFRUGLEa8gbIAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAAUElEQVQI102KOwqAQBDFsm+9/3Fs9RqChdgIVjYi6nxsLLYJCYSc+xTLgFhHhD8t0m5kAQo39Jojj0RuLzquQLUkUuG3qtJmJ9plOyua9uADjaopUrsHkrMAAAAASUVORK5CYII=') repeat-x;}  \n\
+	  background:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAATCAYAAABRC2cZAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90CChUXEHXQ4zwAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAATUlEQVQI1zXIMQqAMBAF0cmP3v82FjaeQxC01VYQTXazNtoMjyGWIcQ2IdYR4eVL2INKNVTNkbdAbhWdtyMlUE6B+pw+dfrffmU0H40XvEQkSOpTbpQAAAAASUVORK5CYII=') repeat-x;}  \n\
   \n\
 /* menu item stuff */  \n\
 .right_item		{ float:right; }  \n\
   \n\
-ul			{ padding:0; margin:0 }  \n\
+ul			{ padding:0 0 0 1px; margin:0 }  \n\
 ul ul			{ margin-left:1em }  \n\
-li			{ list-style:none; border-radius:6px; }  \n\
+li			{ list-style:none; border-radius:3px; padding:0 0 0 2px}  \n\
   \n\
 li:hover		{ background:#ddd } /* items active by default */  \n\
 li.inactive:hover	{ background:inherit }  \n\
   \n\
   \n\
-/* mode menu item */  \n\
-.selected, .menu .selected:hover {  \n\
-	background-color: #fa4;  \n\
-	padding: 1px; /* for highlighting */  \n\
-}  \n\
+/* mode menu items */  \n\
+li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
+.menu .selected, .menu .selected:hover { background-color: #fa4; }  \n\
   \n\
   \n\
 /*************************************************************************************************************/  \n\
@@ -3026,6 +3008,8 @@ li.inactive:hover	{ background:inherit }  \n\
 .separator	{ height: 1px; display: block; background-color: #bbb; margin-left: auto; margin-right: auto; }  \n\
   \n\
 .frame		{ border:1px solid #bbb; margin:10px; padding:9px; position:relative; min-width:200px; }  \n\
+.frame td, .frame li	{ padding: 2px; }  \n\
+  \n\
 .frame_title	{ position:absolute; top:-10px; background: #ccc; }  \n\
   \n\
 /* file input form styling: http://www.quirksmode.org/dom/inputfile.html */  \n\
@@ -3084,7 +3068,7 @@ li.inactive:hover	{ background:inherit }  \n\
    'host_table' : {
       layout: '<widget name="host_table"><table id="host_table"></table></widget>' },
    'host_table_row' : {
-      layout: '<widget name="host_table_row"><table><tr  onclick onmouseover onmouseout><td width="1%"></td><td width="1%" class="td_not_loaded"><img/></td><td width="1%" class="td_checkbox"><input type="checkbox"/></td><td width="1%" class="td_host">code.</td><td class="td_domain">jquery.com</td><td width="1%" class="td_iframe"><img/></td><td width="1%" class="td_allowed_globally allowed_globally"><img/></td><td width="1%" class="td_script_count">[x]</td></tr></table></widget>' },
+      layout: '<widget name="host_table_row"><table><tr  onclick onmouseover onmouseout><td width="1%"></td><td width="1%" class="td_not_loaded"><img/></td><td width="1%" class="td_checkbox"><input type="checkbox"/></td><td width="1%" class="td_host">code.</td><td class="td_domain">jquery.com</td><td width="1%" class="td_iframe"><img/></td><td width="1%" class="td_allowed_globally allowed_globally" title="Allow globally"><img/></td><td width="1%" class="td_script_count">[x]</td></tr></table></widget>' },
    'submenu' : {
       layout: '<widget name="submenu" ><div class="submenu menu" onmouseout="menu_onmouseout" onmousedown="menu_onmousedown"><ul id="menu_content"></ul></div></widget>' },
    'details_menu' : {
@@ -3095,7 +3079,7 @@ li.inactive:hover	{ background:inherit }  \n\
       init_proxy: function(w, ph){ script_detail_init(w, ph.host_node, ph.script, ph.iframe, ph.file_only); },
       layout: '<widget name="script_detail" host_node script iframe file_only init><li><img/><a></a></li></widget>' },
    'options_menu' : {
-      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Small font"   		   state="`small_font"  		   callback="`toggle_small_font"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_ui_position></select_ui_position></div><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><button onclick="edit_style_patch" title="Add rules on top of current stylesheet." >Patch style…</button></td></tr><tr><td><li><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" /><button>Load stylesheet…</button></form></li></td></tr><tr><td><button onclick="save_current_style" title="" >Save stylesheet…</button></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a></div><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><li><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></li></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/jsarmor">Help</a></div></td></tr></table></div></widget>' },
+      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div></td><td rowspan="2"><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Small font"   		   state="`small_font"  		   callback="`toggle_small_font"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_ui_position></select_ui_position></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><button onclick="edit_style_patch" title="Add rules on top of current stylesheet." >Patch style…</button></td></tr><tr><td><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" /><button>Load stylesheet…</button></form></td></tr><tr><td><button onclick="save_current_style" title="" >Save stylesheet…</button></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a></div></td></tr><tr><td><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/jsarmor">Help</a></div></td></tr></table></div></widget>' },
    'select_ui_position' : {
       init: select_ui_position_init,
       layout: '<widget name="select_ui_position" init><table id="ui_position" class="dropdown_setting"><tr><td>Position</td><td><select><option value="top_left">top left</option><option value="top_right">top right</option><option value="bottom_left">bottom left</option><option value="bottom_right">bottom right</option></select></td></tr></table></widget>' },
@@ -3130,7 +3114,7 @@ li.inactive:hover	{ background:inherit }  \n\
       layout: '<widget name="checkbox_item" id title label state callback klass init><li><input type="checkbox"/></li></widget>' },
    'scope_widget' : {
       init: scope_widget_init,
-      layout: '<widget name="scope_widget" init><li id="scope" class="inactive">Set for:<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li></widget>' },
+      layout: '<widget name="scope_widget" init><li id="scope" class="inactive">Set for&nbsp;<input type="radio" name="radio"/><label>Page</label><input type="radio" name="radio"/><label>Site</label><input type="radio" name="radio"/><label>Domain</label><input type="radio" name="radio"/><label>Global</label></li></widget>' },
    'block_all_settings' : {
       init: block_all_settings_init,
       layout: '<widget name="block_all_settings" init><block_inline_scripts></block_inline_scripts><checkbox_item label="Pretend Javascript Disabled" id="handle_noscript_tags"  		 title="Treat noscript tags as if javascript was disabled in opera. Useful to access the non-javascript version of websites."  		 state="`handle_noscript_tags"  		 callback="`toggle_handle_noscript_tags"/></checkbox_item></widget>' },
@@ -3203,9 +3187,8 @@ li.inactive:hover	{ background:inherit }  \n\
 	{	    
 	    var load_defaults = confirm(
 		"jsarmor up and running !\n\n" +
-		"Main button will show up at the bottom right of pages using javascript.\n\n" +
-		"Click [OK] to load default settings, or [Cancel] to start from scratch. " +
-		"(can change your mind later either way).");
+		"Click ok to start with useful defaults for the global whitelist/blacklist, " +
+		"or cancel to start from scratch.");
 
 	    set_global_setting('version_number', version_number);
 	    set_global_setting('version_type', version_type);	    

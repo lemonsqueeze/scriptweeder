@@ -1,10 +1,10 @@
 <!-- interface layout
      this stuff uses widgets and macros to allow for a little bit of structure.
-     widgets are run-time entities, while macros are pre-processed.
+     widgets are run-time entities, macros are pre-processed.
 
      Macro syntax is somewhat similar to that of fxmacro, but the only
      thing we really need here is attribute substitution. the whole macro
-     tree arguments thing isn't used here (or even supported).
+     tree arguments thing isn't used here (or supported).
 
      Generated output ends up enclosed in '', so can't use single quotes in there.
 -->
@@ -61,7 +61,7 @@
       <td width="1%" class="td_host">code.</td>
       <td class="td_domain">jquery.com</td>
       <td width="1%" class="td_iframe"><img/></td>		<!-- iframe -->
-      <td width="1%" class="td_allowed_globally allowed_globally"><img/></td>
+      <td width="1%" class="td_allowed_globally allowed_globally" title="Allow globally"><img/></td>
       <td width="1%" class="td_script_count">[x]</td>
     </tr>
   </table>
@@ -104,18 +104,21 @@
 <widget name="options_menu">
   <div id="options_menu" class="menu" onmouseout="menu_onmouseout" >
     <menu_title title="Options"/>
-    <table><tr>
+    <table>
+      <tr>
+	<td><options_core/></td>
+	<td rowspan="2"><options_user_interface/></td>
+	<td><options_custom_style/></td>
+      </tr>
+
+      <tr>
+	<td><options_edit_settings/></td>
 	<td>
-	  <options_user_interface/>
-	  <options_core/>
-	  <options_edit_settings/>
-	</td>
-	<td>
-	  <options_custom_style/>
 	  <options_import_export/>
 	  <options_help/>
-	</td>
-    </tr></table>    
+	</td>	
+      </tr>
+    </table>    
   </div>
 </widget>
 
@@ -249,15 +252,15 @@
 </widget>
 
 <def macro="import_settings">
-  <li><form id="import_settings">
+  <form id="import_settings">
       <input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button>
-  </form></li>
+  </form>
 </def>
 
 <def macro="load_custom_style">
-  <li><form id="load_custom_style">
+  <form id="load_custom_style">
       <input type="file" autocomplete="off" oninit="load_custom_style_init" /><button>Load stylesheet…</button>
-  </form></li>
+  </form>
 </def>
 
 
@@ -341,7 +344,7 @@
 </def>
 
 <widget name="scope_widget" init>
-  <li id="scope" class="inactive">Set for:
+  <li id="scope" class="inactive">Set for&nbsp;
     <radio_button label="Page"/>
     <radio_button label="Site"/>
     <radio_button label="Domain"/>
