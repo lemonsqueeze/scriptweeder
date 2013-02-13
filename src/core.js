@@ -447,20 +447,32 @@ function(){   // fake line, keep_editor_happy
 	return s;
     }
 
-    function find_script(url, host)
+    function _find_script(url, host)
     {
 	var domain = get_domain(host);	
 	var domain_node = get_domain_node(domain, false);
-	assert(domain_node, "get_domain_node() failed! should not happen.");
+	if (!domain_node)
+	    return null;
 	var host_node = get_host_node(host, domain_node, false);
+	if (!host_node)
+	    return null;	
 	var scripts = host_node.scripts;
 	for (var i = scripts.length - 1; i >= 0; i--)
 	    if (scripts[i].url == url)
 		return scripts[i];
-	error("find_script(): should not happen.");
 	return null;
     }
 
+    function script_exists(url, host)
+    { return _find_script(url, host); }
+    
+    function find_script(url, host)
+    {
+	var script = _find_script(url, host);
+	assert(script, "find_script() failed, should not happen !");
+	return script;
+    }    
+    
     // call f(host_node, domain_node) for every hosts
     function _foreach_host_node(f)
     {
@@ -536,23 +548,29 @@ function(){   // fake line, keep_editor_happy
     // Handler for both inline *and* external scripts
     function beforescript_handler(e)
     {
-	if (e.element.src) // external script, note script size
-	{
-	    var url = e.element.src;
-	    var script = find_script(url, url_hostname(url));
-	    script.size = e.element.text.length;
-	    return;
-	}
-	
-	check_init();
-	debug_log("beforescript");      
-	total_inline++;
-	total_inline_size += e.element.text.length;
-	
-	repaint_ui();
-	
-	if (block_inline_scripts)
-	    block_script(e);
+      check_init();
+      if (e.element.src) // external script
+      {
+	  var url = e.element.src;
+	  var host = url_hostname(url);
+	  // extension hack: workaround missed beforeexternalscript events
+	  if (!script_exists(url, host))
+	      beforeextscript_handler(e);
+
+	  // note script size
+	  var script = find_script(url, host);
+	  script.size = e.element.text.length;	  
+	  return;
+      }
+
+      debug_log("beforescript");      
+      total_inline++;
+      total_inline_size += e.element.text.length;
+      
+      repaint_ui();
+      
+      if (block_inline_scripts)
+	  block_script(e);
     }
 
     function beforeextscript_handler(e)
