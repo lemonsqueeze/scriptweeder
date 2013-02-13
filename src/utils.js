@@ -351,6 +351,17 @@ function(){   // fake line, keep_editor_happy
 	console.log(h + msg);
     }
 
+    /*
+    function page_log(msg)
+    {
+	var d = document.createElement('div');
+	d.style = "color:#fff; background-color:#000";
+	d.innerText = msg;
+	d.className = 'debug';
+	document.body.appendChild(d);
+    }
+    */
+
     function debug_log(msg)
     {
 	if (debug_mode)

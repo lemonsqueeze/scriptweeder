@@ -31,9 +31,6 @@ function(){   // fake line, keep_editor_happy
 	for (var i in widgets)
 	    tmp[i.toUpperCase()] = widgets[i];
 	widgets = tmp;	
-	
-	// special classes
-	idoc.body.className = "body";
     }
 
     // create ui elements from html layout. this one is for normal (single node) widgets.

@@ -1090,9 +1090,6 @@
 	for (var i in widgets)
 	    tmp[i.toUpperCase()] = widgets[i];
 	widgets = tmp;	
-	
-	// special classes
-	idoc.body.className = "body";
     }
 
     // create ui elements from html layout. this one is for normal (single node) widgets.
@@ -1713,6 +1710,17 @@
 	console.log(h + msg);
     }
 
+    /*
+    function page_log(msg)
+    {
+	var d = document.createElement('div');
+	d.style = "color:#fff; background-color:#000";
+	d.innerText = msg;
+	d.className = 'debug';
+	document.body.appendChild(d);
+    }
+    */
+
     function debug_log(msg)
     {
 	if (debug_mode)
@@ -1849,11 +1857,11 @@
 	
 	if (menu_display_logic == 'click')
 	    window.addEventListener('click',  function (e) { close_menu(); }, false);
-
-	idoc.body.className += ' ' + ui_hpos + ' ' + ui_vpos;
+	
+	set_class(idoc.body, ui_hpos);
+	set_class(idoc.body, ui_vpos);
 	
 	repaint_ui_now();
-	resize_iframe();
 	
 	if (rescue_mode())
 	    my_alert("Running in rescue mode, custom style disabled.");
@@ -1862,7 +1870,7 @@
     function create_main_ui()
     {
 	main_ui = new_widget("main_ui");
-	set_unset_class(idoc.body, 'fat_icons', fat_icons);	// slightly evil
+	set_unset_class(idoc.body, 'fat_icons', fat_icons);
 	set_unset_class(idoc.body, 'small_font', small_font);
 	if (!disable_main_button)
 	    wakeup_lazy_widgets(main_ui);
@@ -2196,9 +2204,7 @@
     function toggle_show_scripts_in_main_menu(event)
     {
 	show_scripts_in_main_menu = toggle_global_setting(this, show_scripts_in_main_menu, 'show_scripts_in_main_menu');
-	// FIXME !! need_repaint should work there !!
-	// need_repaint = true;
-	need_reload = true;
+	need_repaint = true;
     }    
     
     function toggle_show_ui_in_iframes(event)
@@ -2210,35 +2216,31 @@
     function toggle_autohide_main_button(event)
     {
 	autohide_main_button = toggle_global_setting(this, autohide_main_button, 'autohide_main_button');
-	need_reload = true;
+	need_repaint = true;
     }
 
     function toggle_transparent_main_button(event)
     {
 	transparent_main_button = toggle_global_setting(this, transparent_main_button, 'transparent_main_button');
-	// need_repaint is all we need !
-	need_reload = true;
+	need_repaint = true;
     }
 
     function toggle_fat_icons(event)
     {
 	fat_icons = toggle_global_setting(this, fat_icons, 'fat_icons');
-	// need_repaint is all we need !
-	need_reload = true;
+	need_repaint = true;
     }
 
     function toggle_small_font(event)
     {
 	small_font = toggle_global_setting(this, small_font, 'small_font');
-	// need_repaint is all we need !
-	need_reload = true;
+	need_repaint = true;
     }
     
     function toggle_disable_main_button(event)
     {
 	disable_main_button = toggle_global_setting(this, disable_main_button, 'disable_main_button');
-	// need_repaint is all we need !
-	need_reload = true;
+	need_repaint = true;
     }
 
     function disable_main_button_init(w)
@@ -2370,7 +2372,10 @@
 	if (need_reload)
 	    reload_page();
 	if (need_repaint)
-	    repaint_ui_now();	
+	{
+	    need_repaint = false;
+	    repaint_ui_now();
+	}
     }
     
     function main_menu_onmouseout(e)
@@ -2862,6 +2867,8 @@
 	    parent_menu();	
 	    show_hide_menu(true);
 	}
+	else
+	    resize_iframe();
     }
 
     var builtin_style = 
