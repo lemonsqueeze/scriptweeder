@@ -87,7 +87,7 @@
 	
     }
 
-    // to run safely as extension, only thing that can be done here is event registration.
+    // to run safely as extension, only thing that should be done here is event registration.
     // see http://my.opera.com/community/forums/topic.dml?id=1621542
     // for userjs doesn't matter, we could init() here no problem.
     function boot()

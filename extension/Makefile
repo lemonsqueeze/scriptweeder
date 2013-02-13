@@ -7,7 +7,7 @@ VERS_MAG=1.5
 VERS_MIN=0
 VERSION=$(VERS_MAG)-$(VERS_MIN)
 
-all: $(EXT) link
+all: $(EXT) 
 
 $(EXT): $(DIR)/config.xml $(DIR)/includes/jsarmor.js
 	@echo Generating $@
@@ -18,10 +18,6 @@ $(DIR)/includes/jsarmor.js: ../jsarmor.js
 	@echo Generating $@
 	@-mkdir $(DIR)/includes > /dev/null 2>&1
 	@cat $< | sed -e 's|var version_type = "userjs"|var version_type = "extension"|' > $@
-
-link:
-	-rm jsarmor.oex
-	ln -s $(EXT) jsarmor.oex
 
 clean:
 	-rm *.oex *~ $(DIR)/includes/jsarmor.js

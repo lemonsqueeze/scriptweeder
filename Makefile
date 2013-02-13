@@ -2,6 +2,11 @@
 #MAKE=make
 MAKE=make --no-print-directory
 
+all: build_extension
+
+build_extension: scriptweeder.js
+	@cd extension && $(MAKE)
+
 scriptweeder.js: FORCE
 	@cd src && $(MAKE) $@
 	cp src/$@ .
