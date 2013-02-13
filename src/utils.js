@@ -108,8 +108,7 @@ function(){   // fake line, keep_editor_happy
     // FIXME, optimize all this
     function get_by_id(parent, id)
     {
-	var root_node = get_root_node(parent);
-	if (root_node && element_tag_is(root_node, "html"))
+	if (is_parented(parent))
 	    return idoc.getElementById(id);
 
 	// unparented, do it by hand ...
@@ -180,12 +179,18 @@ function(){   // fake line, keep_editor_happy
 
     function get_root_node(n)
     {
-	var p = null;
-	for (; n && p != n; n = n.parentNode)
+	var p;
+	for (p = n; n; n = n.parentNode)
 	    p = n;
-	return n;
+	p = (p.documentElement ? p.documentElement : p); // stop at html node
+	return p;
     }
 
+    function is_parented(n)
+    {
+	return (element_tag_is(get_root_node(n), 'html'));
+    }
+    
     function replace_nodes_if(matches, root, new_node)
     {
 	foreach_child(root, function(n)

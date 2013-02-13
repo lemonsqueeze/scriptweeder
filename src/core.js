@@ -520,18 +520,22 @@ function(){   // fake line, keep_editor_happy
     }
 
     // same but in relaxed mode order:
-    // helper hosts first, then the rest
+    // current host first, then helper hosts, then the rest
     function foreach_host_node(f)
     {
 	_foreach_host_node(function (hn, dn)
 	{
-	    if (hn.helper_host)
+	    if (hn.name == current_host)
 		f(hn, dn);
 	});
-
 	_foreach_host_node(function (hn, dn)
 	{
-	    if (!hn.helper_host)
+	    if (hn.name != current_host && hn.helper_host)
+		f(hn, dn);
+	});
+	_foreach_host_node(function (hn, dn)
+	{
+	    if (hn.name != current_host && !hn.helper_host)
 		f(hn, dn);
 	});
     }

@@ -773,7 +773,7 @@ function(){   // fake line, keep_editor_happy
     
     function scripts_submenu(tr)
     {
-	if (!menu_shown())
+	if (!menu_shown() || !is_parented(tr))
 	    return;
 	var sub = new_widget("submenu");
 	var menu = find_element(sub, "menu_content");
@@ -1065,10 +1065,13 @@ function(){   // fake line, keep_editor_happy
 
     function repaint_ui_now()
     {
-	repaint_ui_timer = null;	
+	repaint_ui_timer = null;
 	//   debug: (note: can't call plugins' add_item() here (recursion))
 	//   plugin_items.repaint_ui = "late events:" + repaint_ui_count;	
 
+	if (submenu)
+	    switch_submenu(null);
+	
 	// menu logic slightly more complicated than just calling
 	// show_hide_menu() at the end -> no flickering at all this way!!
 	var menu_shown = menu_request || (nsmenu && nsmenu.style.display != 'none');

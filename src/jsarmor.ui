@@ -193,7 +193,7 @@
 
 <def macro="options_help">	  
 	  <frame>
-	    <a href="https://github.com/lemonsqueeze/jsarmor">Help</a>
+	    <a href="https://github.com/lemonsqueeze/jsarmor/wiki">Help</a>
 	  </frame>
 </def>
 
