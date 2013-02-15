@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name jsarmor
-// @author lemonsqueeze https://github.com/lemonsqueeze/jsarmor
-// @description Block unwanted javascript. NoScript on steroids for opera !
+// @name scriptkiddie
+// @author lemonsqueeze https://github.com/lemonsqueeze/scriptkiddie
+// @description Block unwanted javascript. kickass noscript for opera !
 // @license GNU GPL version 2 or later version.
 // @published 2013-02-12
 // ==/UserScript==
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.0";
     var version_type = "userjs";
-    var version_full = "jsarmor v"+ version_number + " (" + version_type + ")";
+    var version_full = "scriptkiddie v"+ version_number + " (" + version_type + ")";
     
 @include "core.js"
 @include "settings.js"    
@@ -57,7 +57,7 @@
 	if (global_setting('whitelist') == '')
 	{	    
 	    var load_defaults = confirm(
-		"jsarmor up and running !\n\n" +
+		"scriptkiddie up and running !\n\n" +
 		"Click ok to start with useful defaults for the global whitelist/blacklist, " +
 		"or cancel to start from scratch.");
 
@@ -91,8 +91,8 @@
     // for userjs doesn't matter, we could init() here no problem.
     function boot()
     {
-	// jsarmor ui's iframe, don't run in there !
-	if (window != window.top && window.name == 'jsarmor_iframe')	// TODO better way of id ?
+	// scriptkiddie ui's iframe, don't run in there !
+	if (window != window.top && window.name == 'scriptkiddie_iframe')	// TODO better way of id ?
 	    return;
 	
 	setup_event_handlers();

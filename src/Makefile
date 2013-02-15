@@ -1,8 +1,8 @@
 
-NAME	= jsarmor.js
+NAME	= scriptkiddie.js
 SRC	= main.js core.js settings.js utils.js userjs_ui.js ui.js
-GEN_SRC	= jsarmor_style.js jsarmor_widgets.js
-TMPFILES= jsarmor.xml jsarmor.inlined.css
+GEN_SRC	= scriptkiddie_style.js scriptkiddie_widgets.js
+TMPFILES= scriptkiddie.xml scriptkiddie.inlined.css
 ALLSRC	= $(SRC) $(GEN_SRC)
 # where we save output from generate_layout.html
 GEN_LAYOUT=/home/opera/downloads/default
@@ -13,14 +13,14 @@ all: $(NAME)
 clean:
 	-rm $(NAME) $(GEN_SRC) $(TMPFILES) *~
 
-jsarmor.js: $(ALLSRC)
+scriptkiddie.js: $(ALLSRC)
 	$(TOOLS)/jpp $<  > $@
 
-jsarmor.inlined.css: jsarmor.css
+scriptkiddie.inlined.css: scriptkiddie.css
 	@echo generating $@ from $<
 	@../tools/inline_images < $<  > $@
 
-jsarmor_style.js: jsarmor.inlined.css
+scriptkiddie_style.js: scriptkiddie.inlined.css
 	@echo generating $@ from $<
 	@echo "    var builtin_style = " > $@
 	@echo -n '"' >> $@
@@ -29,15 +29,15 @@ jsarmor_style.js: jsarmor.inlined.css
 
 
 # layout generation pipeline:
-# - we start with the interface description in jsarmor.ui ...
-# - then expand the xml macros in there to get jsarmor.xml
+# - we start with the interface description in scriptkiddie.ui ...
+# - then expand the xml macros in there to get scriptkiddie.xml
 # - and turn that into js object with the html for each widget.
 
-jsarmor.xml: jsarmor.ui
+scriptkiddie.xml: scriptkiddie.ui
 	@echo generating $@ from $<
 	@$(TOOLS)/xml_macros < $<   > $@
 
-jsarmor_widgets.js: jsarmor.xml
+scriptkiddie_widgets.js: scriptkiddie.xml
 	@echo generating $@ from $<
 	@$(TOOLS)/pack_widgets $<  > $@
 

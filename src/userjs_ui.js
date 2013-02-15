@@ -2,7 +2,7 @@ function(){   // fake line, keep_editor_happy
 
     /********************************* Core ui *********************************/
 
-    // whether to show jsarmor ui inside frames / iframes
+    // whether to show scriptkiddie ui inside frames / iframes
     var default_show_ui_in_iframes = false;
 
     // use stored custom style ?
@@ -23,7 +23,7 @@ function(){   // fake line, keep_editor_happy
 
     /****************************** Widget API *************************/
 
-    // layout of interface used in jsarmor's iframe
+    // layout of interface used in scriptkiddie's iframe
     function init_layout()
     {
 	// allow uppercase widget names, will be convenient later on...
@@ -215,7 +215,7 @@ function(){   // fake line, keep_editor_happy
 
     /**************************** Injected iframe logic ***********************/
 
-    // interface style used in jsarmor's iframe
+    // interface style used in scriptkiddie's iframe
     function init_style()
     {	
 	// use custom style ?
@@ -231,7 +231,7 @@ function(){   // fake line, keep_editor_happy
 
     function populate_iframe()
     {
-	iframe.contentWindow.name = 'jsarmor_iframe';
+	iframe.contentWindow.name = 'scriptkiddie_iframe';
 	iwin = iframe.contentWindow;
 	idoc = iwin.document;
 
@@ -285,7 +285,7 @@ function(){   // fake line, keep_editor_happy
     function create_iframe()
     {
 	iframe = document.createElement('iframe');
-	iframe.id = 'jsarmor_iframe';
+	iframe.id = 'scriptkiddie_iframe';
 	iframe.style = "position:fixed !important;background:transparent !important;white-space:nowrap !important;z-index:2147483647 !important;direction:ltr !important;font-family:sans-serif !important; font-size:small !important; margin-bottom:0px !important;" +
  "width: 1px !important; height: 1px !important;"   +
 	"margin-top: 0px !important; margin-right: 0px !important; margin-bottom: 0px !important; margin-left: 0px !important; padding-top: 0px !important; padding-right: 0px !important; padding-bottom: 0px !important; padding-left: 0px !important; border-top-width: 0px !important; border-right-width: 0px !important; border-bottom-width: 0px !important; border-left-width: 0px !important; border-top-style: none !important; border-right-style: none !important; border-bottom-style: none !important; border-left-style: none !important; background-color: transparent !important; visibility: visible !important; content: normal !important; outline-width: medium !important; outline-style: none !important; background-image: none !important; min-width: 0px !important; min-height: 0px !important; " +

@@ -29,7 +29,7 @@
 <!-- main menu -->
 <widget name="main_menu" init>
   <div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown">
-    <menu_title title="JSArmor"/>
+    <menu_title title="Script Kiddie"/>
     <ul>
       <scope_widget></scope_widget>
       <mode_menu_item mode="block_all" label="Block All" title="Block all scripts." />
@@ -193,7 +193,7 @@
 
 <def macro="options_help">	  
 	  <frame>
-	    <a href="https://github.com/lemonsqueeze/jsarmor/wiki">Help</a>
+	    <a href="https://github.com/lemonsqueeze/scriptkiddie/wiki">Help</a>
 	  </frame>
 </def>
 

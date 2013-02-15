@@ -350,9 +350,9 @@ function(){   // fake line, keep_editor_happy
 
     function log(msg)
     {
-	var h = "jsarmor (main)  : ";
+	var h = "scriptkiddie (main)  : ";
 	if (window != window.top)
-	    h = "jsarmor (iframe): ";
+	    h = "scriptkiddie (iframe): ";
 	console.log(h + msg);
     }
 
@@ -375,7 +375,7 @@ function(){   // fake line, keep_editor_happy
     
     function my_alert(msg)
     {
-	var title = "jsarmor";
+	var title = "scriptkiddie";
 	if (window != window.top)
 	    title += " (in iframe)"
 	alert(title + "\n\n" + msg);

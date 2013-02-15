@@ -75,7 +75,7 @@ function(){   // fake line, keep_editor_happy
     {	
 	check_script_storage();
 	load_global_settings();
-	window.opera.jsarmor = new Object();	// external api
+	window.opera.scriptkiddie = new Object();	// external api
     }
 	
     function load_global_settings()
@@ -103,7 +103,7 @@ function(){   // fake line, keep_editor_happy
     // running in rescue_mode ?
     function rescue_mode()
     {
-	return (location.hash == '#jsarmor');
+	return (location.hash == '#scriptkiddie');
     }
     
     // reload top window really: with 'filtered' iframe logic, iframes need parent to reload.
@@ -189,7 +189,7 @@ function(){   // fake line, keep_editor_happy
     /***************************** filtering js in iframes **************************/
 
     var show_ui_in_iframes;    
-    var iframe_message_header = "jsarmor lost iframe rescue channel:";
+    var iframe_message_header = "scriptkiddie lost iframe rescue channel:";
     var message_topwin_cant_display = "can't help you, i'm a frameset my dear";
     
     function init_iframe_logic()

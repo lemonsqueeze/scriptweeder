@@ -2,10 +2,10 @@
 #MAKE=make
 MAKE=make --no-print-directory
 
-jsarmor.js: src/jsarmor.js
-	cp src/jsarmor.js .
+scriptkiddie.js: src/scriptkiddie.js
+	cp src/scriptkiddie.js .
 
-src/jsarmor.js: FORCE
+src/scriptkiddie.js: FORCE
 	@cd src && $(MAKE)
 
 clean:

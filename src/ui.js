@@ -10,7 +10,7 @@ function(){   // fake line, keep_editor_happy
     var default_menu_display_logic = 'auto';
     var default_show_scripts_in_main_menu = true;
     
-    // can be used to display stuff in jsarmor menu from outside scripts.
+    // can be used to display stuff in scriptkiddie menu from outside scripts.
     var enable_plugin_api = false;
 
     /********************************* UI Init *********************************/
@@ -36,9 +36,9 @@ function(){   // fake line, keep_editor_happy
     {
 	disable_main_button = global_bool_setting('disable_main_button', false);
 	
-	// window.opera.jsarmor.toggle_menu() api for opera buttons etc...
-	message_handlers['jsarmor_toggle_menu'] = api_toggle_menu;
-	window.opera.jsarmor.toggle_menu = function() { window.postMessage('jsarmor_toggle_menu', '*'); };
+	// window.opera.scriptkiddie.toggle_menu() api for opera buttons etc...
+	message_handlers['scriptkiddie_toggle_menu'] = api_toggle_menu;
+	window.opera.scriptkiddie.toggle_menu = function() { window.postMessage('scriptkiddie_toggle_menu', '*'); };
     }
 
     // normal case : called only once after domcontentloaded.
@@ -252,7 +252,7 @@ function(){   // fake line, keep_editor_happy
     function rescue_mode_link_init()
     {
 	var label = (!rescue_mode() ? 'Rescue mode' : 'Leave rescue mode');
-	var hash  = (!rescue_mode() ? '#jsarmor' : '#' );
+	var hash  = (!rescue_mode() ? '#scriptkiddie' : '#' );
 	this.href = location.href.replace(/#.*/, '') + hash;
 	this.innerText = label;	
 	this.onclick = function() // why do we need this ?!
@@ -949,19 +949,13 @@ function(){   // fake line, keep_editor_happy
     // currently disabled ...
     // plugin api: can be used to display extra stuff in the menu from other scripts.
     // useful for debugging and hacking purposes when console.log() isn't ideal.
-    if (enable_plugin_api)
+    function __setup_plugin_api()
     {
-	var plugin_items = new Object();
-	
-	if (window.noscript)
-	    alert("jsarmor.js: window.noscript exists!!!");
-	// FIXME: this isn't great for seeing what happens in iframes ...
-	window.noscript = new Object();	
+	var plugin_items = new Object();       
 	
 	// API for plugins to add items to noscript's menu
-	window.noscript.add_item = function(name, value)
+	window.scriptkiddie.add_item = function(name, value)
 	{
-	    //console.log("noscript: plugin added item: " + name + " : " + text);
             plugin_items[name] = value;
 	    if (nsmenu)
 		repaint_ui();	
@@ -1093,8 +1087,8 @@ function(){   // fake line, keep_editor_happy
 	    resize_iframe();
     }
 
-@include "jsarmor_style.js"
+@include "scriptkiddie_style.js"
 
-@include "jsarmor_widgets.js"
+@include "scriptkiddie_widgets.js"
 
 }   // keep_editor_happy
