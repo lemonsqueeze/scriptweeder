@@ -54,14 +54,18 @@ function(){   // fake line, keep_editor_happy
     
     var init_done = false;
 
-    function ready()
-    {	return init_done;  }
-
     function init()
-    {
+    {	
 	init_core();
 	register_ui();
+	startup_checks();	
 	init_done = true;
+    }
+
+    function check_init()
+    {
+	if (!init_done)
+	    init();
     }
 
     
@@ -69,7 +73,6 @@ function(){   // fake line, keep_editor_happy
 
     function init_core()
     {	
-	setup_event_handlers();
 	check_script_storage();
 	load_global_settings();
 	window.opera.jsarmor = new Object();	// external api
@@ -578,7 +581,7 @@ function(){   // fake line, keep_editor_happy
       if (e.element.src) // external script
 	  return;     
 
-      assert(ready(), "beforescript called before init() finished !");
+      check_init();
       debug_log("beforescript");      
       total_inline++;
       total_inline_size += e.element.text.length;
@@ -594,7 +597,7 @@ function(){   // fake line, keep_editor_happy
     {
 	assert(element_tag_is(e.element, 'script'),
 	       "BeforeExternalScript: non <script>: " + e.element.tagName);
-	assert(ready(), "beforeextscript called before init() finished !");
+	check_init();
 	
 	var url = e.element.src;
 	var host = url_hostname(url);
@@ -628,9 +631,9 @@ function(){   // fake line, keep_editor_happy
     {	
 	var e = ev.event.target;
         if (!e || !e.tagName || !element_tag_is(e, 'script') || !e.src)
-	    return; // not an external script.
+	    return; // not an external script.	
+	check_init();
 	
-	assert(ready(), "beforeload called before init() finished !");	
 	var host = url_hostname(e.src);
 	var script = find_script(e.src, host);
 	debug_log("loaded: " + host);
@@ -653,8 +656,8 @@ function(){   // fake line, keep_editor_happy
     var domcontentloaded = false;
     function domcontentloaded_handler(e)
     {
-	assert(ready(), "domcontentloaded called before init() finished !");	
 	debug_log("domcontentloaded");
+	check_init();
 	domcontentloaded = true;
 
 	if (element_tag_is(document.body, 'frameset')) // frames, can't show ui in there !
@@ -682,10 +685,11 @@ function(){   // fake line, keep_editor_happy
 	var m = e.data;
 	if (typeof(m) != "string")
 	    return;
+	check_init();
 	for (var h in message_handlers)
 	{
 	    if (is_prefix(h, m))
-	    {
+	    {		
 		//debug_log("[msg] " + m);
 		ujs_event.preventDefault();	// keep this conversation private.
 		var content = m.slice(h.length);		

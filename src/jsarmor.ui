@@ -37,7 +37,7 @@
       <mode_menu_item mode="filtered" label="Filtered" 
 	      title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
       <mode_menu_item mode="relaxed" label="Relaxed" 
-	      title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
+	      title="Allow related and helper domains." />
       <mode_menu_item mode="allow_all" label="Allow All" title="Allow everything…" />
       <options_details/>
       </ul>

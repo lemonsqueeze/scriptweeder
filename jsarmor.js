@@ -76,14 +76,18 @@
     
     var init_done = false;
 
-    function ready()
-    {	return init_done;  }
-
     function init()
-    {
+    {	
 	init_core();
 	register_ui();
+	startup_checks();	
 	init_done = true;
+    }
+
+    function check_init()
+    {
+	if (!init_done)
+	    init();
     }
 
     
@@ -91,7 +95,6 @@
 
     function init_core()
     {	
-	setup_event_handlers();
 	check_script_storage();
 	load_global_settings();
 	window.opera.jsarmor = new Object();	// external api
@@ -600,7 +603,7 @@
       if (e.element.src) // external script
 	  return;     
 
-      assert(ready(), "beforescript called before init() finished !");
+      check_init();
       debug_log("beforescript");      
       total_inline++;
       total_inline_size += e.element.text.length;
@@ -616,7 +619,7 @@
     {
 	assert(element_tag_is(e.element, 'script'),
 	       "BeforeExternalScript: non <script>: " + e.element.tagName);
-	assert(ready(), "beforeextscript called before init() finished !");
+	check_init();
 	
 	var url = e.element.src;
 	var host = url_hostname(url);
@@ -650,9 +653,9 @@
     {	
 	var e = ev.event.target;
         if (!e || !e.tagName || !element_tag_is(e, 'script') || !e.src)
-	    return; // not an external script.
+	    return; // not an external script.	
+	check_init();
 	
-	assert(ready(), "beforeload called before init() finished !");	
 	var host = url_hostname(e.src);
 	var script = find_script(e.src, host);
 	debug_log("loaded: " + host);
@@ -675,8 +678,8 @@
     var domcontentloaded = false;
     function domcontentloaded_handler(e)
     {
-	assert(ready(), "domcontentloaded called before init() finished !");	
 	debug_log("domcontentloaded");
+	check_init();
 	domcontentloaded = true;
 
 	if (element_tag_is(document.body, 'frameset')) // frames, can't show ui in there !
@@ -704,10 +707,11 @@
 	var m = e.data;
 	if (typeof(m) != "string")
 	    return;
+	check_init();
 	for (var h in message_handlers)
 	{
 	    if (is_prefix(h, m))
-	    {
+	    {		
 		//debug_log("[msg] " + m);
 		ujs_event.preventDefault();	// keep this conversation private.
 		var content = m.slice(h.length);		
@@ -3083,7 +3087,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
       layout: '<widget name="main_button" init><div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>' },
    'main_menu' : {
       init: main_menu_init,
-      layout: '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown"><h1 id="menu_title" >JSArmor</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li><li id="options_details" class="inactive"><table><tr><td class="options_item"><label onclick="options_menu">Options</label></td><td class="details_item"><label onclick="show_details">Details</label></td></tr></table></li></ul></div></widget>' },
+      layout: '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown"><h1 id="menu_title" >JSArmor</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="Allow related and helper domains." oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li><li id="options_details" class="inactive"><table><tr><td class="options_item"><label onclick="options_menu">Options</label></td><td class="details_item"><label onclick="show_details">Details</label></td></tr></table></li></ul></div></widget>' },
    'host_table' : {
       layout: '<widget name="host_table"><table id="host_table"></table></widget>' },
    'host_table_row' : {
@@ -3192,15 +3196,8 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
     
     /********************************* Startup ************************************/    
 
-    function main()
-    {
-	// jsarmor ui's iframe, don't run in there !
-	if (window != window.top && window.name == 'jsarmor_iframe')	// TODO better way of id ?
-	    return;
-
-	debug_log("start");	
-	init();
-	
+    function startup_checks()
+    {	
 	// first run
 	if (global_setting('whitelist') == '')
 	{	    
@@ -3234,6 +3231,19 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
 	
     }
 
-    main();
+    // to run safely as extension, only thing that can be done here is event registration.
+    // see http://my.opera.com/community/forums/topic.dml?id=1621542
+    // for userjs doesn't matter, we could init() here no problem.
+    function boot()
+    {
+	// jsarmor ui's iframe, don't run in there !
+	if (window != window.top && window.name == 'jsarmor_iframe')	// TODO better way of id ?
+	    return;
+	
+	setup_event_handlers();
+	debug_log("start");	
+    }
+    
+    boot();
 
 })(window.document, window.location, window.opera, window.opera.scriptStorage);

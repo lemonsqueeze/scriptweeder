@@ -51,15 +51,8 @@
     
     /********************************* Startup ************************************/    
 
-    function main()
-    {
-	// jsarmor ui's iframe, don't run in there !
-	if (window != window.top && window.name == 'jsarmor_iframe')	// TODO better way of id ?
-	    return;
-
-	debug_log("start");	
-	init();
-	
+    function startup_checks()
+    {	
 	// first run
 	if (global_setting('whitelist') == '')
 	{	    
@@ -93,6 +86,19 @@
 	
     }
 
-    main();
+    // to run safely as extension, only thing that can be done here is event registration.
+    // see http://my.opera.com/community/forums/topic.dml?id=1621542
+    // for userjs doesn't matter, we could init() here no problem.
+    function boot()
+    {
+	// jsarmor ui's iframe, don't run in there !
+	if (window != window.top && window.name == 'jsarmor_iframe')	// TODO better way of id ?
+	    return;
+	
+	setup_event_handlers();
+	debug_log("start");	
+    }
+    
+    boot();
 
 })(window.document, window.location, window.opera, window.opera.scriptStorage);

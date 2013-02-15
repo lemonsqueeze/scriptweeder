@@ -8,6 +8,7 @@ foreach my $s (<STDIN>)
     if ($s =~ m|url\('(\.\./.*)'\)|)
     {
 	my $file = $1;
+	(-f "$file") || die("file $file doesn't exist");
 	# print "found $file\n";
 
 	# base64 encoding
