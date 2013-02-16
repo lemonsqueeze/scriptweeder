@@ -1,160 +1,9 @@
-TODO
+[ TODO ]
 
----------------------------------------------------------------------------
-README:
-
-- similar projects
-ghostery etc ...
-
----------------------------------------------------------------------------
-
-[ main ]
-
-new features:
-
-  - option to start with blank settings.
-
-  - button ui options:
-    always hide and use opera button to show ?
-    no need to display it at all then ...
-
-  - bindings to do stuff from opera buttons ?
-
-  - batch settings editor
-
-  - reload method
-
-  - we're gonna need some kind of 'safe mode' startup in case we screw up
-    maybe load page with hash in url: #jsarmor_safemode ...
-
-wip:
-
-  - finish options menu !
-
-  - transparent button !
-
-  - ui bugs:
-    - autohide button + menu onclick -> button shouldn't disappear when menu is shown ...
-    - page scripts can interfere ?? ex: delay on myopera doesn't work...
-
-  - do we want placeholder icon for blocked iframes ?
-  - iframe recursion ? ie channel stuff from buried iframes to block/allow from iframes ?
-  - normal frames ?!
-
-  - custom styles: load / save
-    do *not* save it in export settings !
-    whatever is missing for user styling (classes, ids...)
-      - set class on checkbox parent (host table)
-      - what else ?
-    (put external css hack back in ?)
-    cool styles, please !
-
-  - what ui to access options menu ?
-    notebook ?  (inside a menu it's strange...)
-    popup ?
-  - tabs to organize options ?
-
-  - set_global_setting('version', version) on startup, 
-    will be needed later to detect upgrading...
-
-  - fix title bar bg image
-
-  - find way to make it work as extension !!
-
-  - some kind of test suite.
-
-doc:
-  - doc or startup: warn about 
-        - Speculative parser
-        - userjs on https
-
-mainstream show stoppers:
-  - ghostery's popup doesn't work
-  - extension !
-
-Urgent:
-
-  - block event handlers ! (onload onclick ...)
-
-  - Fix "event received before..." popup msg on install !
-
-  - upon new install, could import some default host settings so that
-    important sites work out of the box.
-    (ex: imdb which is broken even in relaxed mode)
+  - test suite.
 
   - Check what happens for http redirect on script url
     Which url shows up ??
-
-  - display something on main button to notify about important changes ?
-    say flash, or blink, small popup, tooltip ...
-    (especially important when new script is added after DOM loaded)
-
-  - IFrame handling !
-    Scripts from iframe's domain will be run by default
-      -> potentially any external script can be run !!
-    Also UI showing up: ugly and not useable.
-    
-    - better logic:
-       - merge iframe hosts in main menu (display special icon)
-       - iframe instance can get parent's url, and check if its host is allowed there.
-         if not -> block all, easy.
-         if yes -> use current settings (filtered, relaxed whatever)
-                   show ui if "show ui in iframe" enabled (?)
-       - cool bonus: placeholder + click to enable it (should jsarmor do this ?)
-           + option to do same for ppl using external iframe hider (wait -> becomes visible)
-
-    - add option:
-       - iframes handling "block all" "filtered = better logic" "treat as normal page"
-       - "show ui inside iframes"
-
-    - what do we do for normal frames ??
-      can we distinguish between frames and iframes ??
-
-------------------------------------------------------
-    - other ideas:
-
-      1) integrate with external iframe blocking ?
-         (so we don't have to click on them on allowed sites)
-         - UI: setting to block/allow per page/site/...
-         - jsarmor now knows what to do with js in iframes (when blocked at least)
-	   -> needs to be notified about click on placeholder.
-         - could make it a plugin since we still need privoxy anyway ...  
-	   (but ugly code ?)
-
-      2) and/or find a way to communicate iframe's scripts to parent
-        -> Parent displays them in menu
-           (with something to indicate it comes from an iframe ??)
-        -> Iframe needs no jsarmor UI and gets its settings from parent.
-  
-    - ideal (?): block loading + placeholder
-    - less ideal but should work:
-      don't show UI and block everything for external iframes
-      iframes from the same domain will use the settings from the main window
-      (can be scripts in them we don't know anything about but ...)
-
-  - when using 'block all' mode and 'block inline scripts', block these as well ?
-      - javascript url
-    cf http://www.howtocreate.co.uk/operaStuff/userjs/disablescript.js    
-
-Skin:
-  - can we use css for the layout as well ??
-
-Features:
-  - Settings window,
-    About
-    way to set defaults    
-    view/edit whitelist,
-    view/edit blacklist
-    reload method
-    change font, skin
-    import/export settings ...
-
-UI Enhancements:
-  - title bar: 2 color light effect
-  - Scrolling problems: can we put scrollbars in DIV ?
-    otherwise use popup window ?
-  - transparent button ?
-    dev.opera.com/articles/view/beautiful-ui-styling-with-css3-text-shadow-box-shadow-and-border-radius/
 
 Before Release:
   - test running inside frame
@@ -169,15 +18,11 @@ Before Release:
   - nice welcome message
   - needs setting to run on https sites
     -> can use opera.setPreference() to set it !!!
-  - decent iframe behaviour
   - Check UI with normal fonts
   - credits
   - clear ui, tooltips, doc ...
-  - config window, default settings etc
 
-Optimization/Cleanup:
-  - cache script storage settings instead of accessing every time ?
-  - move CSS out of javascript (prob. more efficient for browser?)
+
 
 --------------------------------------------------------------------------
 
@@ -196,39 +41,15 @@ Optimization/Cleanup:
 
 [ FIXME ]
 
+  - cache reload doesn't work sometimes, reload for real after timer ?
+    http://www.openwifispots.com/city_free_wifi_wireless_hotspot-Albertville_MN.aspx#45.233368,-93.663168,14
+
+  - autohide button + menu onclick -> button shouldn't disappear when menu is shown ...
+
   - investigate: with 'allow all' (and ghostery running)
     this one uses 'data:text/javascript' urls and the main display is getting
     confused. i suspect a trick to hide third party content there ...
     http://dictionary.reference.com/
-
-  - cleanup
-
-Extension problems (not userjs):
-  Really strange stuff going on right now like:
-  
-   * BeforeExternalScript not firing
-   and BeforeScript as well for some pages, but only when opened as a new tabs (how weird!!)
-   * reload logic not working (probably deserved, it's quite a hack =)
-   maybe createEvent / dispatchEvent can't be used inside extensions.
-   at any rate it seems i have to fall back to location.reload(true), which works but what a waste...
-  
-  I guess userjs and extension contexts are actually quite different.
-  
-  I put some debugging code in, turns out:
-   Part of the problem is a race condition which is sometimes lost between handler setup
-   and the first events firing, that i can deal with.
-   But there are also cases where the race is not lost and we still miss events.
-   As if events fired even before the extension started. (i have a bad feeling about this)
-  
-  Reproduce:
-    - get_domain_node() failed
-      when opening page as a new tab (reload is fine)
-        http://dev.opera.com/articles/view/converting-userjs-to-extensions/
-        (opened from google search)
-    - reload from cache not working, button goes away (wikipedia)
-      but full reload -> ok
-
-  Idea: just block scripts when we're stuck, and reload them later !
 
 
 Sites:
@@ -241,42 +62,34 @@ Sites:
     Error thrown at line 1404, column 1 in populate_iframe():
         iframe.contentWindow.name = 'noscript_iframe';
 
-  - http://biggeekdad.com/2011/01/wingsuit-basejumping/
-    why jsarmor doesn't show up inside iframe ?
-
-  - slate.com:
-    play with menu, after a while jsarmor ui disappears !
-
-  - google maps in iframe:
-    http://www.fermedescharrieres.fr/contact.html
-    can't load ...
-
   - http://www.instructables.com/id/Very-simple-PWM-with-555Modulate-every-thing/
     what is this data:javascript ... stuff ??
 
-  - Menu stops showing up (scroll down a little)
-    v1.38
-    http://www.imdb.com/title/tt0374546/
-    
-  - http://www.openwifispots.com/city_free_wifi_wireless_hotspot-Albertville_MN.aspx#45.233368,-93.663168,14
-    cached reload hack doesn't reload anything!
-  - http://www.costaroche.fr.st/
-    changing settings reloads current frame, but not others
-    -> how do we reload the whole page ??
-    top.location.reload() doesn't work either
-
   - http://precarioussecurity.blogspot.fr/2012/03/simulated-man-in-middle-with-privoxy.html
-    noscript ui not showing up!
-  - lemonde.fr
-    almost hides button
+    noscript ui not showing up!!
 
 ----------------------------------------------------------------------------  
 
 [ IDEAS ]
 
+- placeholder icon for blocked iframes ?
+- bindings to do stuff from opera buttons ?
+- can we use css for the layout as well ??
+- frameset shows ui everywhere ... forward to biggest frame ?
+
 Features:
+- options window, notebook style
+- animate/display something on main button to notify about changes ?
+  say flash, or blink, small popup, tooltip ...
+  (especially important when new script is added after DOM loaded)
+
+- upon new install, could import some default host settings so that
+  important sites work out of the box.
+  (ex: imdb which is broken even in relaxed mode)
 
 - animate menu!
+- could block page event handlers ! (onload onclick ...)
+  and javascript urls
 - option to build database of scripts used by websites ?
   would be useful for testing
 - show script sizes in kb for external scripts loaded
@@ -292,3 +105,5 @@ Features:
 - display info on startup ? in bottom bar a la noscript or with timer ?
 - way to disable / hide ui temporarily ?
 
+Optimization:
+  - could cache script storage settings instead of accessing every time

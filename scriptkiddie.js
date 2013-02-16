@@ -102,8 +102,8 @@
 	
     function load_global_settings()
     {
-	load_global_context(location.hostname);	
-	init_iframe_logic();
+	load_global_context(location.hostname);
+	init_iframe_logic();	
 	reload_method = global_setting('reload_method', default_reload_method);
     }
     
@@ -132,7 +132,7 @@
     function reload_page()
     {
 	if (window != window.top)		// in iframe, no choice there.
-	    window.top.location.reload();
+	    window.top.location.reload(false);
 	
 	// All of these reload from server ...
 	//   location.reload(false);
@@ -226,16 +226,15 @@
 	iframe_logic = global_setting('iframe_logic');
 	if (iframe_logic != 'block_all' && iframe_logic != 'filter' && iframe_logic != 'allow')
 	    iframe_logic = default_iframe_logic;
-	
+
 	if (window == window.top) // not running in iframe ?
 	    return;
-
+	
 	// tell parent about us so it can display our host in the menu.
 	window.top.postMessage(iframe_message_header + location.href, '*');
 	
 	// switch mode depending on iframe_logic
-	// TODO: add way to override with page setting *only*, which should be safe enough
-
+	// TODO: add way to override with page setting *only* ? should be safe enough
 	decide_iframe_mode();
     }
 
@@ -312,13 +311,37 @@
     function message_from_parent(e, answer)
     {
 	debug_log("[msg] from parent: " + answer);
+	assert(!topwin_cant_display, "topwin_cant_display logic shouldn't get called twice !");
 	
-	// crap, page uses frames. fall back to normal logic and show ui everywhere.
+	// crap, parent uses frameset, we're not in an iframe actually.
+	// -> fall back to normal logic and show ui everywhere.
+	// on top of that we need to undo what the iframe logic did.
+	// reset mode and reload unduly blocked scripts. (hopefully all of this
+	// is happening before domcontentloaded or they won't be too happy).
+	// reloading will make status look a little weird ... (script blocked, script loaded)
 	topwin_cant_display = true;
+	load_global_context(location.hostname);  // reset mode etc
+	reload_needed_scripts();
 	if (domcontentloaded)
 	    init_ui();
     }
 
+    function reload_needed_scripts()
+    {
+	foreach(blocked_script_elements, function(e)
+	{
+	    if ((!e.src && !block_inline_scripts) ||		// allowed inline script
+		(e.src  && allowed_host(url_hostname(e.src))))  // allowed external script
+		reload_script(e);
+	});
+    }    
+    
+    function reload_script(script)
+    {
+	var clone = script.cloneNode(true);
+	script.parentNode.replaceChild(clone, script);
+    }    
+    
     // can't use set_mode_no_update('block_all'), it would save the setting.
     function iframe_block_all_mode()
     {
@@ -597,6 +620,14 @@
     var total_inline = 0;
     var total_inline_size = 0;
 
+    var blocked_script_elements = []; // for reload_script()
+
+    function block_script(e)
+    {
+	e.preventDefault();	  
+	blocked_script_elements.push(e.element);
+    }
+    
     // Handler for both inline *and* external scripts
     function beforescript_handler(e)
     {
@@ -612,7 +643,7 @@
 	  repaint_ui();
       
       if (block_inline_scripts)
-	e.preventDefault();
+	  block_script(e);
     }
 
     function beforeextscript_handler(e)
@@ -641,7 +672,7 @@
 	}
 
         if (!allowed)
-	    e.preventDefault();
+	    block_script(e);
 	if (main_ui) // UIFIXME
 	    repaint_ui();
     }
@@ -2885,7 +2916,8 @@
     var builtin_style = 
 "/* scriptkiddie stylesheet */  \n\
   \n\
-body			{ margin:0px; background:transparent; white-space:nowrap; font-family:Ubuntu,Tahoma,Sans; }  \n\
+html			{ background:transparent; }  \n\
+body			{ margin:0px; white-space:nowrap; font-family:Ubuntu,Tahoma,Sans; }  \n\
 body.small_font		{ font-size:small; }  \n\
   \n\
 #main			{ position:absolute; width:auto; height:auto; margin-bottom:0px; }  \n\
@@ -3170,7 +3202,8 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
     /********************************* Defaults ************************************/
 
     var default_global_whitelist =
-    ['maps.google.com',
+    ['localhost',
+     'maps.google.com',
      'maps.gstatic.com',
 //     'ajax.googleapis.com',   // no need, relaxed mode will enable it
      's.ytimg.com',
@@ -3233,6 +3266,8 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
     {
 	// scriptkiddie ui's iframe, don't run in there !
 	if (window != window.top && window.name == 'scriptkiddie_iframe')	// TODO better way of id ?
+	    return;
+	if (location.hostname == "")	// bad url, opera's error page. 
 	    return;
 	
 	setup_event_handlers();

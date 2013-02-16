@@ -30,7 +30,8 @@
     /********************************* Defaults ************************************/
 
     var default_global_whitelist =
-    ['maps.google.com',
+    ['localhost',
+     'maps.google.com',
      'maps.gstatic.com',
 //     'ajax.googleapis.com',   // no need, relaxed mode will enable it
      's.ytimg.com',
@@ -93,6 +94,8 @@
     {
 	// scriptkiddie ui's iframe, don't run in there !
 	if (window != window.top && window.name == 'scriptkiddie_iframe')	// TODO better way of id ?
+	    return;
+	if (location.hostname == "")	// bad url, opera's error page. 
 	    return;
 	
 	setup_event_handlers();

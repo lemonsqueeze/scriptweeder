@@ -1,6 +1,7 @@
 /* scriptkiddie stylesheet */
 
-body			{ margin:0px; background:transparent; white-space:nowrap; font-family:Ubuntu,Tahoma,Sans; }
+html			{ background:transparent; }
+body			{ margin:0px; white-space:nowrap; font-family:Ubuntu,Tahoma,Sans; }
 body.small_font		{ font-size:small; }
 
 #main			{ position:absolute; width:auto; height:auto; margin-bottom:0px; }
