@@ -2,69 +2,18 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<link rel="stylesheet" href="../src/jsarmor.css" type="text/css" />
+<link rel="stylesheet" href="../src/scriptkiddie.css" type="text/css" />
 </head>
 <body>
 
-<script type="text/javascript">
-(function()
-{
-// http://www.opera.com/docs/userjs/examples/
-
-    //   running in frame
-    if (window != window.top)
-    {
-	var desc = location.href;
-	if (window.name == 'noscript_iframe')
-	{
-	    desc = "noscript iframe";
-	    log("not logging frame events (" + desc + ")");
-	    return;
-	}
-    }
-
-    function log(msg)
-    {
-        var h = "page logger: ";
-	var s =  "main  : ";
-	if (window != window.top)
-	    s = "iframe: ";
-	console.log(h + s + msg);
-    }
-
-    function handler(event)
-    {
-	//if (e.event.target && e.event.target.tagName &&
-	//e.event.target.tagName.toLowerCase() != "iframe")
-	//return;
-
-	if (event.target && event.target.tagName)
-	    log("event: " + event.type + "<" + event.target.tagName + ">");
-	else
-	    log("event: " + event.type);
-	// e.preventDefault();
-    }
-
-    var events = ['mousemove', 'mouseover', 'mouseout', 'mouseenter',
-		  'click', 'dblclick',
-		  'keydown', 'keyup', 'keypress',
-		  'blur', 'DOMFocusOut', 'DOMFocusIn', 'focusout', 'focusin',
-		  'error', 'resize', 'message',
-		  'load', 'readystatechange',
- 		  'DOMContentLoaded', 'DOMFrameContentLoaded'];
-    for (var i = 0; i < events.length; i++)
-	window.addEventListener(events[i], handler, false);
-    log("started");
-    
-})();
-</script>
+<script type="text/javascript" src="../utils/page_event_logger.js"></script>
 
 <h1>Page event logger</h1>
-Log of events -> console.
+Check console for log of events.
 <br>
 <br>
 
-
+<!-- copy of ui is more to have something to play with than anything ... -->
 <div id="main">
 <div id="main_menu" class="menu" onmouseout="" style="display:inline-block">
 <h1 id="menu_title" title="jsarmor v1.5.0 (dev)">JSArmor</h1>
@@ -115,7 +64,7 @@ Allow All
 </div>
 </div>
 
-<br><br>
+<div style="height:300px"></div>
 Iframe:<br>
 <iframe style="display:inline-block" width="800" height="400" src="index.html"></iframe>
 

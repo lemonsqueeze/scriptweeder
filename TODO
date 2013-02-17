@@ -74,6 +74,7 @@ Sites:
 
 - placeholder icon for blocked iframes ?
 - bindings to do stuff from opera buttons ?
+- use xhtml doctype, this way we can use real xml for ui layout
 - can we use css for the layout as well ??
 - frameset shows ui everywhere ... forward to biggest frame ?
 
