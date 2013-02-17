@@ -1,10 +1,14 @@
 <!-- interface layout
-     this stuff uses widgets and macros to allow for a little bit of structure.
+     This stuff uses widgets and macros to allow for a little bit of structure.
      widgets are run-time entities, macros are pre-processed.
 
      Macro syntax is somewhat similar to that of fxmacro, but the only
-     thing we really need here is attribute substitution. the whole macro
-     tree arguments thing isn't used here (or supported).
+     thing we need here is attribute substitution. The whole macro tree arguments
+     thing isn't supported, but by giving a definition for the closing macro tag
+     it's possible to encapsulate arbitrary content.
+
+     This goes through innerHTML in the end, and we're not using xhtml doctype
+     right now, so has to be something the html parser understands.
 
      Generated output ends up enclosed in '', so can't use single quotes in there.
 -->

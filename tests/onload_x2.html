@@ -1,0 +1,36 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head></head>
+<body>
+
+Test for what happens with beforeeventlistener whith 2 handlers on the same event
+<script> 
+function domloaded()
+{
+   var button = document.querySelector('button');
+   button.addEventListener('click', clicked1, false);
+   button.addEventListener('click', clicked2, false);
+}
+     
+function clicked1()
+{
+    var d = document.createElement('div');
+    d.innerText = "clicked1";
+    document.body.appendChild(d);
+}
+
+function clicked2()
+{
+    var d = document.createElement('div');
+    d.innerText = "clicked2";
+    document.body.appendChild(d);
+}
+     
+document.addEventListener('DOMContentLoaded', domloaded, false);
+</script>
+<br>
+<button>click me</button>
+
+</body>
+</html>
