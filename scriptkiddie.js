@@ -1335,8 +1335,16 @@
 	idoc = iwin.document;
 
 	// set doctype, we want strict mode, not quirks mode!
-	idoc.open();
-	idoc.write("<!DOCTYPE HTML>\n<html><head></head><body></body></html>");
+	idoc.open("application/xhtml+xml");
+//	idoc.write("<!DOCTYPE HTML>\n<html><head></head><body></body></html>");
+	idoc.write('\
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" \n\
+ "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> \n\
+<html xmlns="http://www.w3.org/1999/xhtml">  \
+<head>  \
+  <meta http-equiv="Content-Type" content="application/xhtml+xml"/>  \
+</head><body></body></html>');
+
 	idoc.close();
 
 	init_style();
