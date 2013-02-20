@@ -102,7 +102,7 @@
 	
     function load_global_settings()
     {
-	load_global_context(location.hostname);
+	load_global_context();
 	init_iframe_logic();	
 	reload_method = global_setting('reload_method', default_reload_method);
     }
@@ -110,12 +110,13 @@
     // can be used to check on another page's settings.
     // (normal page settings that is, without iframe logic kicking in)
     // call clear_domain_nodes() afterwards to discard store changes.
-    function load_global_context(host)
+    function load_global_context(url)
     {
-	current_host = host;
-	current_domain = get_domain(host);
+	url = (url ? url : location.href);
+	current_host = url_hostname(url);
+	current_domain = get_domain(current_host);
 	
-	init_scope();
+	init_scope(url);
 	init_mode();
     }
 
@@ -178,13 +179,13 @@
       if (mode != new_mode)
 	  set_setting('mode', new_mode);
       mode = new_mode;
-      
+
+      block_inline_scripts = false;
+      handle_noscript_tags = false;      
       if (new_mode == 'block_all')
       {
-	  block_inline_scripts = bool_setting('inline',
-					      default_block_inline_scripts);
-	  handle_noscript_tags = bool_setting('nstags',
-					      default_handle_noscript_tags);
+	  block_inline_scripts = bool_setting('inline', default_block_inline_scripts);
+	  handle_noscript_tags = bool_setting('nstags', default_handle_noscript_tags);
       }
     }
 
@@ -218,7 +219,7 @@
     {
 	// let contained iframes know their parent host.
 	if (window == window.top)
-	    set_global_setting('top_window_host', current_host);
+	    set_global_setting('top_window_url', location.href);
 	
 	show_ui_in_iframes = global_bool_setting('show_ui_in_iframes', default_show_ui_in_iframes);
 	message_handlers[iframe_message_header] = iframe_message_handler;
@@ -237,48 +238,67 @@
 	// TODO: add way to override with page setting *only* ? should be safe enough
 	decide_iframe_mode();
     }
-
+    
     function decide_iframe_mode()
-    {
-	if (iframe_logic != 'filter')
-	{
-	    if (iframe_logic == 'block_all')
-		iframe_block_all_mode();
-	    // 'allow' -> treat as normal page, nothing to do.
-	    return;
-	}
-	
-	// 'filter' logic uses parent window's settings to decide what to do with page scripts.
-	var parent_host = get_parent_host();
-	assert(parent_host != '', "parent_host is empty !");
-	
-	// does our parent allow us ?
-	load_global_context(parent_host);
-	var allowed = allowed_host(location.hostname);
-	clear_domain_nodes();	// wipe out hosts nodes this will have created
-	load_global_context(location.hostname);
-	
-	// alert("iframe " + location.hostname + " allowed: " + allowed);
-	if (!allowed)
+    {	
+	if (iframe_logic == 'block_all')
 	    iframe_block_all_mode();
-	// else: allowed. treat it as a normal page: current mode applies.	
+	else if (iframe_logic == 'filter')
+	    use_iframe_parent_mode(true);
+	else if (iframe_logic == 'allow')
+	    use_iframe_parent_mode(false);
+	else
+	    assert(false, "decide_iframe_mode(): invalid value for iframe_logic ! (" + iframe_logic + ")");
     }
 
-    function get_parent_host()
+    // set mode based on parent settings
+    function use_iframe_parent_mode(check_allowed)
+    {
+	// 'filter' logic uses parent window's settings to decide what to do with page scripts.
+	var parent_url = get_parent_url();
+	var allowed, parent_mode;
+	assert(parent_url != '', "parent_url is empty !");
+	
+	load_global_context(parent_url);		// get parent settings
+	parent_mode = mode;	
+	if (check_allowed)
+	{
+	    allowed = allowed_host(location.hostname);	// does parent allow us ?
+	    clear_domain_nodes();			// wipe out hosts nodes this will have created
+	}
+	load_global_context();
+	
+	// alert("iframe " + location.hostname + " allowed: " + allowed);
+	if (parent_mode == 'block_all' ||
+	    (check_allowed && !allowed))
+	    iframe_block_all_mode();
+	else
+	    mode = parent_mode;
+    }
+    
+    // can't use set_mode_no_update('block_all'), it would save the setting.
+    function iframe_block_all_mode()
+    {
+	mode = 'block_all';
+	block_inline_scripts = true;
+	handle_noscript_tags = true;
+    }
+    
+    function get_parent_url()
     {
 	// 1) try getting it directly. that won't work cross domain
-	try {  return window.top.location.hostname;  } catch(e) { }
+	try {  return window.top.location.href;  } catch(e) { }
 	
 	// 2) try document.referrer. not available if referrer disabled in opera ...
 	if (document.referrer != "")
-	    return url_hostname(document.referrer);
+	    return document.referrer;
 	
 	// 3) hack it. this will work unless loading multiple tabs with iframes simultaneously.
 	//    the proper way, sending it from top window with postMessage() is far more evil:
 	//    we'd need to store and cancel all events until init() finishes, reload blocked scripts
 	//    and replay/refire all events in order, hoping things like domcontentloaded can be fired
 	//    twice without side effects...
-    	return global_setting('top_window_host');
+    	return global_setting('top_window_url');
     }
     
     function iframe_message_handler(e, content)
@@ -320,7 +340,7 @@
 	// is happening before domcontentloaded or they won't be too happy).
 	// reloading will make status look a little weird ... (script blocked, script loaded)
 	topwin_cant_display = true;
-	load_global_context(location.hostname);  // reset mode etc
+	load_global_context();  // reset mode etc
 	reload_needed_scripts();
 	if (domcontentloaded)
 	    init_ui();
@@ -341,15 +361,7 @@
 	var clone = script.cloneNode(true);
 	script.parentNode.replaceChild(clone, script);
     }    
-    
-    // can't use set_mode_no_update('block_all'), it would save the setting.
-    function iframe_block_all_mode()
-    {
-	mode = 'block_all';
-	block_inline_scripts = true;
-	handle_noscript_tags = true;
-    }
-    
+        
     function add_iframe(url)
     {
 	var host = url_hostname(url);
@@ -818,10 +830,10 @@
     
     var scoped_prefixes;		// prefixes
     
-    function init_scope()
+    function init_scope(url)
     {
 	scoped_prefixes =
-	[strip_url_tail(location.href) + ':', current_host + ':', current_domain + ':', ''];
+	[strip_url_tail(url) + ':', current_host + ':', current_domain + ':', ''];
 	
 	for (scope = 0; scope < 3; scope++)
 	    if (setting('mode') != '')
@@ -950,7 +962,7 @@
     {
 	return (k == 'time' ||
 		k == 'timestamp' ||
-		k == 'top_window_host' ||
+		k == 'top_window_url' ||
 		is_prefix("noscript_", k));
     }
     
@@ -2685,7 +2697,7 @@
 	
 	if (iframe_logic == 'block_all')
 	    allowed = false;
-	if (iframe_logic == 'allowed')
+	if (iframe_logic == 'allow')
 	    allowed = true;
 	return {count:n, title:title, allowed:allowed};
     }
@@ -3138,13 +3150,13 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
       layout: '<widget name="disable_main_button" init><checkbox_item label="Disable main button"  		 title="Install opera button and use it to come back here first."  		 state="`disable_main_button"  		 callback="`toggle_disable_main_button"></checkbox_item></widget>' },
    'select_iframe_logic' : {
       init: select_iframe_logic_init,
-      layout: '<widget name="select_iframe_logic" init><table id="iframe_logic" class="dropdown_setting"   	 title="Block All: disable javascript in iframes. Filter: block if host not allowed in menu. Allow: treat as normal page, current mode applies (permissive)."><tr><td>Iframe policy</td><td><select><option value="block_all">Block All</option><option value="filter">Filter</option><option value="allow">Allow</option></select></td></tr></table></widget>' },
+      layout: '<widget name="select_iframe_logic" init><table id="iframe_logic" class="dropdown_setting"   	 title="Allowed iframes run in the current mode, blocked iframes run in Block All mode. The policy decides which iframes are allowed: [Block] no iframes allowed. [Filter] iframe allowed if host allowed in menu. [Allow] all iframes are allowed (permissive)."><tr><td>Iframe policy</td><td><select><option value="block_all">Block</option><option value="filter">Filter</option><option value="allow">Allow</option></select></td></tr></table></widget>' },
    'select_menu_display_logic' : {
       init: select_menu_display_logic_init,
       layout: '<widget name="select_menu_display_logic" init><table id="menu_display"  class="dropdown_setting"><tr><td>Menu popup</td><td><select><option value="auto">Auto</option><option value="delay">Delay</option><option value="click">Click</option></select></td></tr></table></widget>' },
    'select_reload_method' : {
       init: select_reload_method_init,
-      layout: '<widget name="select_reload_method" init><table id="reload_method" class="dropdown_setting"   	 title="Cache: reload from cache (fastest but…). Normal: slow but sure."><tr><td>Reload method</td><td><select><option value="cache">Cache</option><option value="normal">Normal</option></select></td></tr></table></widget>' },
+      layout: '<widget name="select_reload_method" init><table id="reload_method" class="dropdown_setting"   	 title="[Cache] reload from cache (fastest but…). [Normal] slow but sure."><tr><td>Reload method</td><td><select><option value="cache">Cache</option><option value="normal">Normal</option></select></td></tr></table></widget>' },
    'editor_window' : {
       init: editor_window_init,
       init_proxy: function(w, ph){ editor_window_init(w, ph.title, ph.text, ph.default_setting, ph.save_callback); },

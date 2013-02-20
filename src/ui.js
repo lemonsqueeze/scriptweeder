@@ -859,7 +859,7 @@ function(){   // fake line, keep_editor_happy
 	
 	if (iframe_logic == 'block_all')
 	    allowed = false;
-	if (iframe_logic == 'allowed')
+	if (iframe_logic == 'allow')
 	    allowed = true;
 	return {count:n, title:title, allowed:allowed};
     }

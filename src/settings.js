@@ -43,10 +43,10 @@ function(){   // fake line, keep_editor_happy
     
     var scoped_prefixes;		// prefixes
     
-    function init_scope()
+    function init_scope(url)
     {
 	scoped_prefixes =
-	[strip_url_tail(location.href) + ':', current_host + ':', current_domain + ':', ''];
+	[strip_url_tail(url) + ':', current_host + ':', current_domain + ':', ''];
 	
 	for (scope = 0; scope < 3; scope++)
 	    if (setting('mode') != '')
@@ -175,7 +175,7 @@ function(){   // fake line, keep_editor_happy
     {
 	return (k == 'time' ||
 		k == 'timestamp' ||
-		k == 'top_window_host' ||
+		k == 'top_window_url' ||
 		is_prefix("noscript_", k));
     }
     
