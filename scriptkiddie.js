@@ -3009,9 +3009,16 @@ textarea				{ width:400px; height:300px; }  \n\
 img	{ width:1px; height:1px; vertical-align:middle;   \n\
 	  background-size:contain; background-repeat:no-repeat; background-position:center }  \n\
   \n\
+/* mode icons (small) */  \n\
 .block_all img,  .filtered  img,  .relaxed  img,  .allow_all img { width:18px; height:18px; }  \n\
-.fat_icons .block_all img, .fat_icons .filtered img, .fat_icons .relaxed img, .fat_icons .allow_all img   \n\
-{ width:22px; height:22px; }  \n\
+.menu .block_all img, .menu .filtered  img,   \n\
+.menu .relaxed   img, .menu .allow_all img	{ margin: 3px }  \n\
+  \n\
+/* mode icons (fat) */  \n\
+.fat_icons .block_all img,  .fat_icons .filtered  img,   \n\
+.fat_icons .relaxed   img,  .fat_icons .allow_all img   { width:22px; height:22px; }  \n\
+.fat_icons .menu .block_all img,  .fat_icons .menu .filtered  img,   \n\
+.fat_icons .menu .relaxed   img,  .fat_icons .menu .allow_all img	{ margin: 4px }  \n\
   \n\
 .fat_icons .allowed img, .fat_icons .blocked img, .fat_icons .not_loaded img  { width:22px; height:22px; }  \n\
 /* left out:  .allowed_globally .*iframe */  \n\
