@@ -51,7 +51,9 @@
 
 <!-- host table -->
 <widget name="host_table">
-  <table id="host_table"></table>
+  <li id="host_table" class="inactive">
+    <table></table>
+  </li>
 </widget>
 
 <widget name="host_table_row">

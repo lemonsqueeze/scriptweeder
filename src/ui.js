@@ -743,9 +743,10 @@ function(){   // fake line, keep_editor_happy
     function position_submenu(sub, position)
     {
 	var tr = position.getBoundingClientRect();
+	var mr = nsmenu.getBoundingClientRect();
 	var left = (ui_hpos == 'right' ?
-		    tr.left - sub.offsetWidth - 3 :
-		    tr.right + 2);
+		    mr.left - sub.offsetWidth :
+		    mr.right - 1);
 	var top = tr.top;  // tr's top	
 	if (top + sub.offsetHeight > main_ui.offsetHeight) // bottom screens out
 	    top = main_ui.offsetHeight - sub.offsetHeight;
@@ -887,8 +888,9 @@ function(){   // fake line, keep_editor_happy
     
     function add_host_table_after(item)
     {
-	var t = new_widget("host_table");
-	item.parentNode.insertBefore(t, item.nextSibling);
+	var w = new_widget("host_table");	
+	item.parentNode.insertBefore(w, item.nextSibling);
+	var t = w.querySelector('table');
 	sort_domains();
 
 	var found_not_loaded = false;

@@ -2581,9 +2581,10 @@
     function position_submenu(sub, position)
     {
 	var tr = position.getBoundingClientRect();
+	var mr = nsmenu.getBoundingClientRect();
 	var left = (ui_hpos == 'right' ?
-		    tr.left - sub.offsetWidth - 3 :
-		    tr.right + 2);
+		    mr.left - sub.offsetWidth :
+		    mr.right - 1);
 	var top = tr.top;  // tr's top	
 	if (top + sub.offsetHeight > main_ui.offsetHeight) // bottom screens out
 	    top = main_ui.offsetHeight - sub.offsetHeight;
@@ -2725,8 +2726,9 @@
     
     function add_host_table_after(item)
     {
-	var t = new_widget("host_table");
-	item.parentNode.insertBefore(t, item.nextSibling);
+	var w = new_widget("host_table");	
+	item.parentNode.insertBefore(w, item.nextSibling);
+	var t = w.querySelector('table');
 	sort_domains();
 
 	var found_not_loaded = false;
@@ -2932,6 +2934,9 @@ html			{ background:transparent; }  \n\
 body			{ margin:0px; white-space:nowrap; font-family:Ubuntu,Tahoma,Sans; }  \n\
 body.small_font		{ font-size:small; }  \n\
   \n\
+/* sane padding/margin sizing, please !  http://css-tricks.com/box-sizing/  */  \n\
+*			{ box-sizing:border-box; }  \n\
+  \n\
 #main			{ position:absolute; width:auto; height:auto; margin-bottom:0px; }  \n\
   \n\
 /* main button */  \n\
@@ -2961,9 +2966,10 @@ body.top #main		{ top:0;    /* top align */ }  \n\
 /*************************************************************************************************************/  \n\
   \n\
 /* host table */  \n\
-#host_table			{ width:100%; }   \n\
-#host_table > tr > td		{ padding: 0px 0px 1px 0px;}   \n\
-#host_table > tr:hover		{ background:#ddd }  \n\
+li#host_table				{ padding:0; }  \n\
+#host_table table			{ width:100%; }   \n\
+#host_table table tr td			{ padding: 0px 0px 1px 0px;}   \n\
+#host_table table tr:hover		{ background:#ddd }  \n\
   \n\
 /* hostnames display */  \n\
 .td_not_loaded img		{ width:16px; height:16px; }  /* take up space even if all are empty */  \n\
@@ -2984,7 +2990,7 @@ body.top #main		{ top:0;    /* top align */ }  \n\
   \n\
 #options_details table				{ width:100% }  \n\
 .details_item , .options_item			{ text-align:center; }  \n\
-.details_item label, .options_item label	{ display:block; width:92%;  \n\
+.details_item label, .options_item label	{ display:block; width:100%;  \n\
 						  border-radius:6px; padding:1px 5px; text-decoration:none; }  \n\
 .details_item label:hover, .options_item label:hover	{ background:#ddd }  \n\
   \n\
@@ -3089,7 +3095,6 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
   \n\
 .dropdown_setting		{ width:100% }  \n\
 .dropdown_setting td + td	{ text-align:right; }  \n\
-.dropdown_setting select	{ width:100% }  \n\
   \n\
 .button_table  *		{ width:100% }  \n\
   \n\
@@ -3135,7 +3140,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
       init: main_menu_init,
       layout: '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown"><h1 id="menu_title" >Script Kiddie</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="Allow related and helper domains." oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li><li id="options_details" class="inactive"><table><tr><td class="options_item"><label onclick="options_menu">Options</label></td><td class="details_item"><label onclick="show_details">Details</label></td></tr></table></li></ul></div></widget>' },
    'host_table' : {
-      layout: '<widget name="host_table"><table id="host_table"></table></widget>' },
+      layout: '<widget name="host_table"><li id="host_table" class="inactive"><table></table></li></widget>' },
    'host_table_row' : {
       layout: '<widget name="host_table_row"><table><tr  onclick onmouseover onmouseout><td width="1%"></td><td width="1%" class="td_not_loaded"><img/></td><td width="1%" class="td_checkbox"><input type="checkbox"/></td><td width="1%" class="td_host">code.</td><td class="td_domain">jquery.com</td><td width="1%" class="td_iframe"><img/></td><td width="1%" class="td_allowed_globally allowed_globally" title="Allow globally"><img/></td><td width="1%" class="td_script_count">[x]</td></tr></table></widget>' },
    'submenu' : {

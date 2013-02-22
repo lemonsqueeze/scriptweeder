@@ -4,6 +4,9 @@ html			{ background:transparent; }
 body			{ margin:0px; white-space:nowrap; font-family:Ubuntu,Tahoma,Sans; }
 body.small_font		{ font-size:small; }
 
+/* sane padding/margin sizing, please !  http://css-tricks.com/box-sizing/  */
+*			{ box-sizing:border-box; }
+
 #main			{ position:absolute; width:auto; height:auto; margin-bottom:0px; }
 
 /* main button */
@@ -33,9 +36,10 @@ body.top #main		{ top:0;    /* top align */ }
 /*************************************************************************************************************/
 
 /* host table */
-#host_table			{ width:100%; } 
-#host_table > tr > td		{ padding: 0px 0px 1px 0px;} 
-#host_table > tr:hover		{ background:#ddd }
+li#host_table				{ padding:0; }
+#host_table table			{ width:100%; } 
+#host_table table tr td			{ padding: 0px 0px 1px 0px;} 
+#host_table table tr:hover		{ background:#ddd }
 
 /* hostnames display */
 .td_not_loaded img		{ width:16px; height:16px; }  /* take up space even if all are empty */
@@ -56,7 +60,7 @@ body.top #main		{ top:0;    /* top align */ }
 
 #options_details table				{ width:100% }
 .details_item , .options_item			{ text-align:center; }
-.details_item label, .options_item label	{ display:block; width:92%;
+.details_item label, .options_item label	{ display:block; width:100%;
 						  border-radius:6px; padding:1px 5px; text-decoration:none; }
 .details_item label:hover, .options_item label:hover	{ background:#ddd }
 
@@ -161,7 +165,6 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }
 
 .dropdown_setting		{ width:100% }
 .dropdown_setting td + td	{ text-align:right; }
-.dropdown_setting select	{ width:100% }
 
 .button_table  *		{ width:100% }
 
