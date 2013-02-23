@@ -1331,12 +1331,12 @@
     {	
 	// use custom style ?
 	var use_custom = (enable_custom_style && !rescue_mode());
-	var style = (use_custom ? global_setting('style') : '');
+	var style = (use_custom ? global_setting('css') : '');
 	style = (style == '' ? builtin_style : style);
 
 	// style patches
 	if (use_custom)
-	    style += '\n' + global_setting('style_patch');
+	    style += '\n' + global_setting('style');
 	new_style(style);
     }
 
@@ -1813,7 +1813,7 @@
 	var f = files[0];
 	var reader = new FileReader();
 	
-	reader.onload = function(e) { callback(e.target.result); };	
+	reader.onload = function(e) { callback(e.target.result, f.name); };	
 	reader.readAsBinaryString(f);
 	//reader.readAsText(f);
 	}
@@ -2043,46 +2043,46 @@
     
     function load_custom_style_init()
     {
-	var load_style = function(s)
+	var load_style = function(s, file)
 	{
-	    set_global_setting('style', s);
+	    var setting;
+	    if (file.match(/\.css$/))
+		setting = 'css';
+	    else if (file.match(/\.style$/))
+		setting = 'style';
+	    else
+	    {
+		my_alert(file + ":\nUnknown file type, should be a .style or .css");
+		return;
+	    }
+	    
+	    set_global_setting(setting, s);
+	    set_global_setting(setting + '_file', file); // filename
 	    alert("Loaded !");
 	    need_reload = true;
 	};
 	this.onchange = file_loader(load_style);
     }
 
-    function save_current_style()
-    {
-	save_file(builtin_style, true);
-    }
-
-    function edit_style_patch()
-    {
-	var w = new_editor_window("Patch Style",
-				  global_setting('style_patch'),
-				  '',
-				  function(text)
-        {
-	   set_global_setting('style_patch', text);
-	   need_reload = true;
-	   close_menu();
-	});
-	w.id = 'patch_style';
-	switch_menu(w);
-    }	
-    
     function clear_saved_style_init()
     {	
-	if (global_setting('style') == '' &&
-	    global_setting('style_patch') == '')
+	if (global_setting('css') == '' &&
+	    global_setting('style') == '')
+	{
 	    this.disabled = true;
+	    return;
+	}
+	var css_file =   (global_setting('css_file')   ? global_setting('css_file')   : "");
+	var style_file = (global_setting('style_file') ? global_setting('style_file') : "");
+	this.title = "Installed: " +  css_file + " " + style_file;
     }
     
     function clear_saved_style()
     {	
+	set_global_setting('css', '');
 	set_global_setting('style', '');
-	set_global_setting('style_patch', '');
+	set_global_setting('css_file', '');
+	set_global_setting('style_file', '');	
 	alert("Cleared !");
 	need_reload = true;
     }
@@ -3153,7 +3153,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
       init_proxy: function(w, ph){ script_detail_init(w, ph.host_node, ph.script, ph.iframe, ph.file_only); },
       layout: '<widget name="script_detail" host_node script iframe file_only init><li><img/><a></a></li></widget>' },
    'options_menu' : {
-      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div></td><td rowspan="2"><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Small font"   		   state="`small_font"  		   callback="`toggle_small_font"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_ui_position></select_ui_position></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><button onclick="edit_style_patch" title="Add rules on top of current stylesheet." >Patch style…</button></td></tr><tr><td><form id="load_custom_style"><input type="file" autocomplete="off" oninit="load_custom_style_init" /><button>Load stylesheet…</button></form></td></tr><tr><td><button onclick="save_current_style" title="" >Save stylesheet…</button></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a></div></td></tr><tr><td><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptkiddie/wiki">Help</a></div></td></tr></table></div></widget>' },
+      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div></td><td rowspan="2"><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Small font"   		   state="`small_font"  		   callback="`toggle_small_font"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_ui_position></select_ui_position></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><form id="load_custom_style" title="Load a .style or .css file (can install one of each)"><input type="file" autocomplete="off" oninit="load_custom_style_init"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><br><a href="http://github.com/lemonsqueeze/scriptkiddie/wiki/Custom-styles">Find styles</a></div></td></tr><tr><td><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptkiddie/wiki">Help</a></div></td></tr></table></div></widget>' },
    'select_ui_position' : {
       init: select_ui_position_init,
       layout: '<widget name="select_ui_position" init><table id="ui_position" class="dropdown_setting"><tr><td>Position</td><td><select><option value="top_left">top left</option><option value="top_right">top right</option><option value="bottom_left">bottom left</option><option value="bottom_right">bottom right</option></select></td></tr></table></widget>' },

@@ -2,7 +2,7 @@
 NAME	= scriptkiddie.js
 SRC	= main.js core.js settings.js utils.js userjs_ui.js ui.js
 GEN_SRC	= scriptkiddie_style.js scriptkiddie_widgets.js
-TMPFILES= scriptkiddie.xml scriptkiddie.inlined.css style.patch.css
+TMPFILES= scriptkiddie.xml scriptkiddie.inlined.css custom.style
 ALLSRC	= $(SRC) $(GEN_SRC)
 # where we save output from generate_layout.html
 GEN_LAYOUT=/home/opera/downloads/default
@@ -44,9 +44,7 @@ scriptkiddie_widgets.js: scriptkiddie.xml
 ###################################################################
 
 # using the dev environment to make style patches easily
-style_patch: style.patch.css
-
-style.patch.css : $(NAME)
+custom.style : $(NAME)
 	@echo generating $@ from $<
 	@git diff ../$(NAME) | grep -v '^+++' | grep '^+' |  \
 	 sed -e 's/^+//'  | sed -e 's|\\n\\$$||' > $@

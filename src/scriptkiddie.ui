@@ -176,13 +176,11 @@
 <def macro="options_custom_style">
   <frame title="Custom Style">
     <table class="button_table">
-      <tabled_button onclick="edit_style_patch" label="Patch style…" 
-		     title="Add rules on top of current stylesheet." />
       <tr><td><load_custom_style/></td></tr>
-      <tabled_button onclick="save_current_style" label="Save stylesheet…" />
       <tabled_button onclick="clear_saved_style" extra="oninit=clear_saved_style_init" label="Back to default"/>
     </table>
-    <a oninit="rescue_mode_link_init">Rescue mode</a>
+    <a oninit="rescue_mode_link_init">Rescue mode</a><br>
+    <a href="http://github.com/lemonsqueeze/scriptkiddie/wiki/Custom-styles">Find styles</a>
   </frame>
 </def>
 	  
@@ -264,8 +262,8 @@
 </def>
 
 <def macro="load_custom_style">
-  <form id="load_custom_style">
-      <input type="file" autocomplete="off" oninit="load_custom_style_init" /><button>Load stylesheet…</button>
+  <form id="load_custom_style" title="Load a .style or .css file (can install one of each)">
+      <input type="file" autocomplete="off" oninit="load_custom_style_init"/><button>Load style…</button>
   </form>
 </def>
 
@@ -343,7 +341,7 @@
   <label> $label </label>
 </def>
 
-<def macro="tabled_button" onclick title label oninit extra>
+<def macro="tabled_button" onclick title label extra>
   <tr><td>
       <button onclick="$onclick" title="$title" $extra>$label</button>
   </td></tr>

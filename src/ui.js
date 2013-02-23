@@ -205,46 +205,46 @@ function(){   // fake line, keep_editor_happy
     
     function load_custom_style_init()
     {
-	var load_style = function(s)
+	var load_style = function(s, file)
 	{
-	    set_global_setting('style', s);
+	    var setting;
+	    if (file.match(/\.css$/))
+		setting = 'css';
+	    else if (file.match(/\.style$/))
+		setting = 'style';
+	    else
+	    {
+		my_alert(file + ":\nUnknown file type, should be a .style or .css");
+		return;
+	    }
+	    
+	    set_global_setting(setting, s);
+	    set_global_setting(setting + '_file', file); // filename
 	    alert("Loaded !");
 	    need_reload = true;
 	};
 	this.onchange = file_loader(load_style);
     }
 
-    function save_current_style()
-    {
-	save_file(builtin_style, true);
-    }
-
-    function edit_style_patch()
-    {
-	var w = new_editor_window("Patch Style",
-				  global_setting('style_patch'),
-				  '',
-				  function(text)
-        {
-	   set_global_setting('style_patch', text);
-	   need_reload = true;
-	   close_menu();
-	});
-	w.id = 'patch_style';
-	switch_menu(w);
-    }	
-    
     function clear_saved_style_init()
     {	
-	if (global_setting('style') == '' &&
-	    global_setting('style_patch') == '')
+	if (global_setting('css') == '' &&
+	    global_setting('style') == '')
+	{
 	    this.disabled = true;
+	    return;
+	}
+	var css_file =   (global_setting('css_file')   ? global_setting('css_file')   : "");
+	var style_file = (global_setting('style_file') ? global_setting('style_file') : "");
+	this.title = "Installed: " +  css_file + " " + style_file;
     }
     
     function clear_saved_style()
     {	
+	set_global_setting('css', '');
 	set_global_setting('style', '');
-	set_global_setting('style_patch', '');
+	set_global_setting('css_file', '');
+	set_global_setting('style_file', '');	
 	alert("Cleared !");
 	need_reload = true;
     }

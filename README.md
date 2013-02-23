@@ -24,17 +24,21 @@ Other stuff
 Making custom styles
 --------------------
 
-The dev environment makes it very easy to create style patches:
-* Get a copy of the repository (see Hacking below)
+There are two kinds of custom styles:
+* `.style` files just add a few rules on top of the current stylesheet
+* `.css` files replace the whole stylesheet.
+
+The dev environment makes it very easy to create either. `.style` files first:
+* Get a fresh copy of the repository (see Hacking below)
 * Add your style patch rules at the end of `src/scriptkiddie.css` (don't change anything else ! If you want to change a rule, copy it first).
 * Add extra images to `img` directory and reference them with `url('../img/whacky_image.png')`.
   To set `width` and `height` automatically, add a `/*img_size*/` comment.
 * To test changes, just type `make` and try the generated `scriptkiddie.js`.
 
   Right now you're actually changing the default style, so either use `rescue mode` or make sure you reset custom styles with `Options->Back to default`.
-* Type `make style_patch` once you're happy with the changes. 
+* Type `make custom.style` once you're happy with the changes. 
 
-  Style patch is ready in `style.patch.css` !
+  Style file is ready in `custom.style` !
 
 Creating a completely new stylesheet is even easier: just replace the whole .css and type `make`. The generated stylesheet is in `src/scriptkiddie.inlined.css`.
 
