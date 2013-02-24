@@ -10,7 +10,7 @@ function(){   // fake line, keep_editor_happy
     var default_menu_display_logic = 'auto';
     var default_show_scripts_in_main_menu = true;
     
-    // can be used to display stuff in scriptkiddie menu from outside scripts.
+    // can be used to display stuff in scriptweeder menu from outside scripts.
     var enable_plugin_api = false;
 
     /********************************* UI Init *********************************/
@@ -36,9 +36,9 @@ function(){   // fake line, keep_editor_happy
     {
 	disable_main_button = global_bool_setting('disable_main_button', false);
 	
-	// window.opera.scriptkiddie.toggle_menu() api for opera buttons etc...
-	message_handlers['scriptkiddie_toggle_menu'] = api_toggle_menu;
-	window.opera.scriptkiddie.toggle_menu = function() { window.postMessage('scriptkiddie_toggle_menu', '*'); };
+	// window.opera.scriptweeder.toggle_menu() api for opera buttons etc...
+	message_handlers['scriptweeder_toggle_menu'] = api_toggle_menu;
+	window.opera.scriptweeder.toggle_menu = function() { window.postMessage('scriptweeder_toggle_menu', '*'); };
     }
 
     // normal case : called only once after domcontentloaded.
@@ -262,7 +262,7 @@ function(){   // fake line, keep_editor_happy
     function rescue_mode_link_init()
     {
 	var label = (!rescue_mode() ? 'Rescue mode' : 'Leave rescue mode');
-	var hash  = (!rescue_mode() ? '#scriptkiddie' : '#' );
+	var hash  = (!rescue_mode() ? '#scriptweeder' : '#' );
 	this.href = location.href.replace(/#.*/, '') + hash;
 	this.innerText = label;	
 	this.onclick = function() // link_loader() but we need to force reload
@@ -971,7 +971,7 @@ function(){   // fake line, keep_editor_happy
 	var plugin_items = new Object();       
 	
 	// API for plugins to add items to noscript's menu
-	window.scriptkiddie.add_item = function(name, value)
+	window.scriptweeder.add_item = function(name, value)
 	{
             plugin_items[name] = value;
 	    if (nsmenu)
@@ -1104,8 +1104,8 @@ function(){   // fake line, keep_editor_happy
 	    resize_iframe();
     }
 
-@include "scriptkiddie_style.js"
+@include "scriptweeder_style.js"
 
-@include "scriptkiddie_widgets.js"
+@include "scriptweeder_widgets.js"
 
 }   // keep_editor_happy

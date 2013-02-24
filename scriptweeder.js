@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name scriptkiddie
-// @author lemonsqueeze https://github.com/lemonsqueeze/scriptkiddie
+// @name scriptweeder
+// @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. kickass noscript for opera !
 // @license GNU GPL version 2 or later version.
 // @published 2013-02-12
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.0";
     var version_type = "userjs";
-    var version_full = "scriptkiddie v"+ version_number + " (" + version_type + ")";
+    var version_full = "scriptweeder v"+ version_number + " (" + version_type + ")";
     
 
     /************************* Default Settings *******************************/        
@@ -97,7 +97,7 @@
     {	
 	check_script_storage();
 	load_global_settings();
-	window.opera.scriptkiddie = new Object();	// external api
+	window.opera.scriptweeder = new Object();	// external api
     }
 	
     function load_global_settings()
@@ -126,7 +126,7 @@
     // running in rescue_mode ?
     function rescue_mode()
     {
-	return (location.hash == '#scriptkiddie');
+	return (location.hash == '#scriptweeder');
     }
     
     // reload top window really: with 'filtered' iframe logic, iframes need parent to reload.
@@ -212,7 +212,7 @@
     /***************************** filtering js in iframes **************************/
 
     var show_ui_in_iframes;    
-    var iframe_message_header = "scriptkiddie lost iframe rescue channel:";
+    var iframe_message_header = "scriptweeder lost iframe rescue channel:";
     var message_topwin_cant_display = "can't help you, i'm a frameset my dear";
     
     function init_iframe_logic()
@@ -794,9 +794,9 @@
 	if (!scriptStorage)
 	{
 	    location.href = "opera:config#PersistentStorage|UserJSStorageQuota";
-	    alert("Welcome to scriptkiddie !\n\n" +
+	    alert("Welcome to scriptweeder !\n\n" +
 		  "Script storage is currently disabled.\n" +
-		  "For scriptkiddie to work, set quota to\n" +
+		  "For scriptweeder to work, set quota to\n" +
 		  "                 1000\n" +
 		  "on the following page.");
 	}
@@ -1032,7 +1032,8 @@
     function import_check_file(a)
     {
 	if (!is_prefix("jsarmor", a[0]) &&
-	    !is_prefix("scriptkiddie", a[0]))
+	    !is_prefix("scriptkiddie", a[0]) &&
+	    !is_prefix("scriptweeder", a[0]))
 	    return false;
 	for (var i = 1; i < a.length; i++)
 	{
@@ -1113,7 +1114,7 @@
 
     /********************************* Core ui *********************************/
 
-    // whether to show scriptkiddie ui inside frames / iframes
+    // whether to show scriptweeder ui inside frames / iframes
     var default_show_ui_in_iframes = false;
 
     // use stored custom style ?
@@ -1134,7 +1135,7 @@
 
     /****************************** Widget API *************************/
 
-    // layout of interface used in scriptkiddie's iframe
+    // layout of interface used in scriptweeder's iframe
     function init_layout()
     {
 	// allow uppercase widget names, will be convenient later on...
@@ -1326,7 +1327,7 @@
 
     /**************************** Injected iframe logic ***********************/
 
-    // interface style used in scriptkiddie's iframe
+    // interface style used in scriptweeder's iframe
     function init_style()
     {	
 	// use custom style ?
@@ -1342,7 +1343,7 @@
 
     function populate_iframe()
     {
-	iframe.contentWindow.name = 'scriptkiddie_iframe';
+	iframe.contentWindow.name = 'scriptweeder_iframe';
 	iwin = iframe.contentWindow;
 	idoc = iwin.document;
 
@@ -1398,7 +1399,7 @@
     function create_iframe()
     {
 	iframe = document.createElement('iframe');
-	iframe.id = 'scriptkiddie_iframe';
+	iframe.id = 'scriptweeder_iframe';
 	iframe.style = "position:fixed !important;background:transparent !important;white-space:nowrap !important;z-index:2147483647 !important;direction:ltr !important;font-family:sans-serif !important; font-size:small !important; margin-bottom:0px !important;" +
  "width: 1px !important; height: 1px !important;"   +
 	"margin-top: 0px !important; margin-right: 0px !important; margin-bottom: 0px !important; margin-left: 0px !important; padding-top: 0px !important; padding-right: 0px !important; padding-bottom: 0px !important; padding-left: 0px !important; border-top-width: 0px !important; border-right-width: 0px !important; border-bottom-width: 0px !important; border-left-width: 0px !important; border-top-style: none !important; border-right-style: none !important; border-bottom-style: none !important; border-left-style: none !important; background-color: transparent !important; visibility: visible !important; content: normal !important; outline-width: medium !important; outline-style: none !important; background-image: none !important; min-width: 0px !important; min-height: 0px !important; " +
@@ -1763,9 +1764,9 @@
 
     function log(msg)
     {
-	var h = "scriptkiddie (main)  : ";
+	var h = "scriptweeder (main)  : ";
 	if (window != window.top)
-	    h = "scriptkiddie (iframe): ";
+	    h = "scriptweeder (iframe): ";
 	console.log(h + msg);
     }
 
@@ -1788,7 +1789,7 @@
     
     function my_alert(msg)
     {
-	var title = "scriptkiddie";
+	var title = "scriptweeder";
 	if (window != window.top)
 	    title += " (in iframe)"
 	alert(title + "\n\n" + msg);
@@ -1850,7 +1851,7 @@
     var default_menu_display_logic = 'auto';
     var default_show_scripts_in_main_menu = true;
     
-    // can be used to display stuff in scriptkiddie menu from outside scripts.
+    // can be used to display stuff in scriptweeder menu from outside scripts.
     var enable_plugin_api = false;
 
     /********************************* UI Init *********************************/
@@ -1876,9 +1877,9 @@
     {
 	disable_main_button = global_bool_setting('disable_main_button', false);
 	
-	// window.opera.scriptkiddie.toggle_menu() api for opera buttons etc...
-	message_handlers['scriptkiddie_toggle_menu'] = api_toggle_menu;
-	window.opera.scriptkiddie.toggle_menu = function() { window.postMessage('scriptkiddie_toggle_menu', '*'); };
+	// window.opera.scriptweeder.toggle_menu() api for opera buttons etc...
+	message_handlers['scriptweeder_toggle_menu'] = api_toggle_menu;
+	window.opera.scriptweeder.toggle_menu = function() { window.postMessage('scriptweeder_toggle_menu', '*'); };
     }
 
     // normal case : called only once after domcontentloaded.
@@ -2102,7 +2103,7 @@
     function rescue_mode_link_init()
     {
 	var label = (!rescue_mode() ? 'Rescue mode' : 'Leave rescue mode');
-	var hash  = (!rescue_mode() ? '#scriptkiddie' : '#' );
+	var hash  = (!rescue_mode() ? '#scriptweeder' : '#' );
 	this.href = location.href.replace(/#.*/, '') + hash;
 	this.innerText = label;	
 	this.onclick = function() // link_loader() but we need to force reload
@@ -2811,7 +2812,7 @@
 	var plugin_items = new Object();       
 	
 	// API for plugins to add items to noscript's menu
-	window.scriptkiddie.add_item = function(name, value)
+	window.scriptweeder.add_item = function(name, value)
 	{
             plugin_items[name] = value;
 	    if (nsmenu)
@@ -2945,7 +2946,7 @@
     }
 
     var builtin_style = 
-"/* scriptkiddie stylesheet */  \n\
+"/* scriptweeder stylesheet */  \n\
   \n\
 html			{ background:transparent; }  \n\
 body			{ margin:0px; white-space:nowrap; font-family:Ubuntu,Tahoma,Sans; font-size:normal; }  \n\
@@ -3149,7 +3150,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
   \n\
 ";
 
-    /* widgets (generated from scriptkiddie.xml). */
+    /* widgets (generated from scriptweeder.xml). */
     var widgets = {
    'main_ui' : {
       layout: '<widget name="main_ui"><div id="main"><main_button lazy/></div></widget>' },
@@ -3158,7 +3159,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
       layout: '<widget name="main_button" init><div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>' },
    'main_menu' : {
       init: main_menu_init,
-      layout: '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown"><h1 id="menu_title" >Script Kiddie</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="Allow related and helper domains." oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li><li id="options_details" class="inactive"><table><tr><td class="options_item"><label onclick="options_menu">Options</label></td><td class="details_item"><label onclick="show_details">Details</label></td></tr></table></li></ul></div></widget>' },
+      layout: '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown"><h1 id="menu_title" >Script Weeder</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="Allow related and helper domains." oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li><li id="options_details" class="inactive"><table><tr><td class="options_item"><label onclick="options_menu">Options</label></td><td class="details_item"><label onclick="show_details">Details</label></td></tr></table></li></ul></div></widget>' },
    'host_table' : {
       layout: '<widget name="host_table"><li id="host_table" class="inactive"><table></table></li></widget>' },
    'host_table_row' : {
@@ -3173,7 +3174,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
       init_proxy: function(w, ph){ script_detail_init(w, ph.host_node, ph.script, ph.iframe, ph.file_only); },
       layout: '<widget name="script_detail" host_node script iframe file_only init><li><img/><a href="" onclick="link_loader"></a></li></widget>' },
    'options_menu' : {
-      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div></td><td rowspan="2"><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_ui_position></select_ui_position></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><form id="load_custom_style" title="Load a .style or .css file (can install one of each)"><input type="file" autocomplete="off" oninit="load_custom_style_init"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><br><a href="https://github.com/lemonsqueeze/scriptkiddie/wiki/Custom-styles" onclick="link_loader">Find styles</a></div></td></tr><tr><td><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptkiddie/wiki" onclick="link_loader">Home</a></div></td></tr></table></div></widget>' },
+      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div></td><td rowspan="2"><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_ui_position></select_ui_position></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><form id="load_custom_style" title="Load a .style or .css file (can install one of each)"><input type="file" autocomplete="off" oninit="load_custom_style_init"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><br><a href="https://github.com/lemonsqueeze/scriptweeder/wiki/Custom-styles" onclick="link_loader">Find styles</a></div></td></tr><tr><td><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptweeder/wiki" onclick="link_loader">Home</a></div></td></tr></table></div></widget>' },
    'select_ui_position' : {
       init: select_ui_position_init,
       layout: '<widget name="select_ui_position" init><table id="ui_position" class="dropdown_setting"><tr><td>Position</td><td><select><option value="top_left">top left</option><option value="top_right">top right</option><option value="bottom_left">bottom left</option><option value="bottom_right">bottom right</option></select></td></tr></table></widget>' },
@@ -3277,7 +3278,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
 	if (global_setting('whitelist') == '')
 	{	    
 	    var load_defaults = confirm(
-		"scriptkiddie up and running !\n\n" +
+		"scriptweeder up and running !\n\n" +
 		"Click ok to start with useful defaults for the global whitelist/blacklist, " +
 		"or cancel to start from scratch.");
 
@@ -3311,8 +3312,8 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
     // for userjs doesn't matter, we could init() here no problem.
     function boot()
     {
-	// scriptkiddie ui's iframe, don't run in there !
-	if (window != window.top && window.name == 'scriptkiddie_iframe')	// TODO better way of id ?
+	// scriptweeder ui's iframe, don't run in there !
+	if (window != window.top && window.name == 'scriptweeder_iframe')	// TODO better way of id ?
 	    return;
 	if (location.hostname == "")	// bad url, opera's error page. 
 	    return;

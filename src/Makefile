@@ -1,8 +1,8 @@
 
-NAME	= scriptkiddie.js
+NAME	= scriptweeder.js
 SRC	= main.js core.js settings.js utils.js userjs_ui.js ui.js
-GEN_SRC	= scriptkiddie_style.js scriptkiddie_widgets.js
-TMPFILES= scriptkiddie.xml scriptkiddie.inlined.css custom.style
+GEN_SRC	= scriptweeder_style.js scriptweeder_widgets.js
+TMPFILES= scriptweeder.xml scriptweeder.inlined.css custom.style
 ALLSRC	= $(SRC) $(GEN_SRC)
 # where we save output from generate_layout.html
 GEN_LAYOUT=/home/opera/downloads/default
@@ -13,14 +13,14 @@ all: $(NAME)
 clean:
 	-rm $(NAME) $(GEN_SRC) $(TMPFILES) *~
 
-scriptkiddie.js: $(ALLSRC)
+scriptweeder.js: $(ALLSRC)
 	$(TOOLS)/jpp $<  > $@
 
-scriptkiddie.inlined.css: scriptkiddie.css
+scriptweeder.inlined.css: scriptweeder.css
 	@echo generating $@ from $<
 	@../tools/inline_images < $<  > $@
 
-scriptkiddie_style.js: scriptkiddie.inlined.css
+scriptweeder_style.js: scriptweeder.inlined.css
 	@echo generating $@ from $<
 	@echo "    var builtin_style = " > $@
 	@echo -n '"' >> $@
@@ -29,15 +29,15 @@ scriptkiddie_style.js: scriptkiddie.inlined.css
 
 
 # Layout generation pipeline:
-# - we start with the interface description in scriptkiddie.ui ...
-# - then expand the xml macros in there to get scriptkiddie.xml
+# - we start with the interface description in scriptweeder.ui ...
+# - then expand the xml macros in there to get scriptweeder.xml
 # - and turn that into js object with the html for each widget.
 
-scriptkiddie.xml: scriptkiddie.ui
+scriptweeder.xml: scriptweeder.ui
 	@echo generating $@ from $<
 	@$(TOOLS)/xml_macros < $<   > $@
 
-scriptkiddie_widgets.js: scriptkiddie.xml
+scriptweeder_widgets.js: scriptweeder.xml
 	@echo generating $@ from $<
 	@$(TOOLS)/pack_widgets $<  > $@
 

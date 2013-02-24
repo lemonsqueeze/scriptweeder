@@ -350,9 +350,9 @@ function(){   // fake line, keep_editor_happy
 
     function log(msg)
     {
-	var h = "scriptkiddie (main)  : ";
+	var h = "scriptweeder (main)  : ";
 	if (window != window.top)
-	    h = "scriptkiddie (iframe): ";
+	    h = "scriptweeder (iframe): ";
 	console.log(h + msg);
     }
 
@@ -375,7 +375,7 @@ function(){   // fake line, keep_editor_happy
     
     function my_alert(msg)
     {
-	var title = "scriptkiddie";
+	var title = "scriptweeder";
 	if (window != window.top)
 	    title += " (in iframe)"
 	alert(title + "\n\n" + msg);

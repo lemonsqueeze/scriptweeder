@@ -7,9 +7,9 @@ function(){   // fake line, keep_editor_happy
 	if (!scriptStorage)
 	{
 	    location.href = "opera:config#PersistentStorage|UserJSStorageQuota";
-	    alert("Welcome to scriptkiddie !\n\n" +
+	    alert("Welcome to scriptweeder !\n\n" +
 		  "Script storage is currently disabled.\n" +
-		  "For scriptkiddie to work, set quota to\n" +
+		  "For scriptweeder to work, set quota to\n" +
 		  "                 1000\n" +
 		  "on the following page.");
 	}
@@ -245,7 +245,8 @@ function(){   // fake line, keep_editor_happy
     function import_check_file(a)
     {
 	if (!is_prefix("jsarmor", a[0]) &&
-	    !is_prefix("scriptkiddie", a[0]))
+	    !is_prefix("scriptkiddie", a[0]) &&
+	    !is_prefix("scriptweeder", a[0]))
 	    return false;
 	for (var i = 1; i < a.length; i++)
 	{

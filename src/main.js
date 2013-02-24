@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name scriptkiddie
-// @author lemonsqueeze https://github.com/lemonsqueeze/scriptkiddie
+// @name scriptweeder
+// @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. kickass noscript for opera !
 // @license GNU GPL version 2 or later version.
 // @published 2013-02-12
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.0";
     var version_type = "userjs";
-    var version_full = "scriptkiddie v"+ version_number + " (" + version_type + ")";
+    var version_full = "scriptweeder v"+ version_number + " (" + version_type + ")";
     
 @include "core.js"
 @include "settings.js"    
@@ -58,7 +58,7 @@
 	if (global_setting('whitelist') == '')
 	{	    
 	    var load_defaults = confirm(
-		"scriptkiddie up and running !\n\n" +
+		"scriptweeder up and running !\n\n" +
 		"Click ok to start with useful defaults for the global whitelist/blacklist, " +
 		"or cancel to start from scratch.");
 
@@ -92,8 +92,8 @@
     // for userjs doesn't matter, we could init() here no problem.
     function boot()
     {
-	// scriptkiddie ui's iframe, don't run in there !
-	if (window != window.top && window.name == 'scriptkiddie_iframe')	// TODO better way of id ?
+	// scriptweeder ui's iframe, don't run in there !
+	if (window != window.top && window.name == 'scriptweeder_iframe')	// TODO better way of id ?
 	    return;
 	if (location.hostname == "")	// bad url, opera's error page. 
 	    return;

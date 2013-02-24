@@ -33,7 +33,7 @@
 <!-- main menu -->
 <widget name="main_menu" init>
   <div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown">
-    <menu_title title="Script Kiddie"/>
+    <menu_title title="Script Weeder"/>
     <ul>
       <scope_widget></scope_widget>
       <mode_menu_item mode="block_all" label="Block All" title="Block all scripts." />
@@ -178,7 +178,7 @@
       <tabled_button onclick="clear_saved_style" extra="oninit=clear_saved_style_init" label="Back to default"/>
     </table>
     <a oninit="rescue_mode_link_init">Rescue mode</a><br>
-    <link href="https://github.com/lemonsqueeze/scriptkiddie/wiki/Custom-styles" label="Find styles"/>
+    <link href="https://github.com/lemonsqueeze/scriptweeder/wiki/Custom-styles" label="Find styles"/>
   </frame>
 </def>
 
@@ -199,7 +199,7 @@
 
 <def macro="options_help">	  
 	  <frame>
-	    <link href="https://github.com/lemonsqueeze/scriptkiddie/wiki" label="Home"/>
+	    <link href="https://github.com/lemonsqueeze/scriptweeder/wiki" label="Home"/>
 	  </frame>
 </def>
 
