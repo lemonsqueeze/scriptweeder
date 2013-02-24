@@ -102,7 +102,7 @@
 </widget>
 
 <widget name="script_detail" host_node script iframe file_only init>
-    <li><img/><a></a></li>
+    <li><img/><link/></li>
 </widget>
 
 
@@ -178,8 +178,12 @@
       <tabled_button onclick="clear_saved_style" extra="oninit=clear_saved_style_init" label="Back to default"/>
     </table>
     <a oninit="rescue_mode_link_init">Rescue mode</a><br>
-    <a href="http://github.com/lemonsqueeze/scriptkiddie/wiki/Custom-styles">Find styles</a>
+    <link href="https://github.com/lemonsqueeze/scriptkiddie/wiki/Custom-styles" label="Find styles"/>
   </frame>
+</def>
+
+<def macro="link" href label>
+  <a href="$href" onclick="link_loader">$label</a>
 </def>
 	  
 <def macro="options_import_export">
@@ -195,7 +199,7 @@
 
 <def macro="options_help">	  
 	  <frame>
-	    <a href="https://github.com/lemonsqueeze/scriptkiddie/wiki">Help</a>
+	    <link href="https://github.com/lemonsqueeze/scriptkiddie/wiki" label="Home"/>
 	  </frame>
 </def>
 

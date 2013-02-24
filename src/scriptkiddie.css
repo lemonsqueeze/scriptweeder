@@ -6,7 +6,7 @@ body			{ margin:0px; white-space:nowrap; font-family:Ubuntu,Tahoma,Sans; font-si
 /* font sizes */
 body.small_font		{ font-size:small; }
 body.large_font 	{ font-size:1.3em; }
-button,select,textarea	{ font-family:inherit; font-size:inherit;} /* they don't get it in opera 12.14 otherwise (?!) */
+button,select,textarea	{ font-family:inherit; font-size:inherit;} /* why does opera 12.14 need this ?! */
 
 /* sane padding/margin sizing, please !  http://css-tricks.com/box-sizing/  */
 *			{ box-sizing:border-box; }
@@ -33,8 +33,8 @@ body.left #main		{ direction:ltr; left:0;  z-index:0; }
 body.left .submenu	{ z-index:1 }
 body.left #main_button	{ direction:ltr; }
 
-body.bottom #main	{ bottom:0; /* bottom align */ }
-body.top #main		{ top:0;    /* top align */ }
+body.bottom #main	{ bottom:0; } /* bottom align */
+body.top #main		{ top:0; }    /* top align */
 
 
 /*************************************************************************************************************/
@@ -84,29 +84,32 @@ input[type=radio]:checked + label	{ background-color: #fa4; }
 
 textarea				{ width:400px; height:300px; }
 
+a, a:visited				{ color:#00f }
+
 /* images */
 
 img	{ width:1px; height:1px; vertical-align:middle; 
 	  background-size:contain; background-repeat:no-repeat; background-position:center }
 
+/* bullet images by momentumdesignlab.com  */
 /* mode icons (small) */
-.block_all img,  .filtered  img,  .relaxed  img,  .allow_all img { width:18px; height:18px; }
 .menu .block_all img, .menu .filtered  img, 
-.menu .relaxed   img, .menu .allow_all img	{ margin: 3px }
+.menu .relaxed   img, .menu .allow_all img { margin: 3px }
+.block_all img		{ /*img_size*/ background-image:url('../img/block_all_16.png'); }
+.filtered  img		{ /*img_size*/ background-image:url('../img/filtered_16.png');  }
+.relaxed   img		{ /*img_size*/ background-image:url('../img/relaxed_16.png');  }
+.allow_all img		{ /*img_size*/ background-image:url('../img/allow_all_16.png'); }
 
 /* mode icons (fat) */
-.fat_icons .block_all img,  .fat_icons .filtered  img, 
-.fat_icons .relaxed   img,  .fat_icons .allow_all img   { width:22px; height:22px; }
-.fat_icons .menu .block_all img,  .fat_icons .menu .filtered  img, 
-.fat_icons .menu .relaxed   img,  .fat_icons .menu .allow_all img	{ margin: 4px }
+.fat_icons .menu .block_all img, .fat_icons .menu .filtered  img, 
+.fat_icons .menu .relaxed   img, .fat_icons .menu .allow_all img { margin: 4px }
+.fat_icons .block_all img		{ /*img_size*/ background-image:url('../img/block_all.png'); }
+.fat_icons .filtered  img		{ /*img_size*/ background-image:url('../img/filtered.png');  }
+.fat_icons .relaxed   img		{ /*img_size*/ background-image:url('../img/relaxed.png');  }
+.fat_icons .allow_all img		{ /*img_size*/ background-image:url('../img/allow_all.png'); }
 
 .fat_icons .allowed img, .fat_icons .blocked img, .fat_icons .not_loaded img  { width:22px; height:22px; }
 /* left out:  .allowed_globally .*iframe */
-
-.block_all img		{ background-image:-o-skin('Smiley Pacman'); }
-.filtered  img		{ background-image:-o-skin('Smiley Cool'); }
-.relaxed   img		{ background-image:-o-skin('Smiley Tongue'); }
-.allow_all img		{ background-image:-o-skin('Smiley Cry'); }
 
 .allowed img		{ /*img_size*/ background-image:url('../img/allowed.png'); }
 .blocked img		{ /*img_size*/ background-image:url('../img/blocked.png') }
@@ -149,9 +152,6 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }
 /* Options menu */
 
 #options_menu li:hover	{ background:inherit }
-/* how do we add cell spacing ??
-#options_menu table	{ cell-spacing: 5px; }
-*/
 #options_menu td	{ vertical-align:top; }
 
 .separator	{ height: 1px; display: block; background-color: #bbb; margin-left: auto; margin-right: auto; }
@@ -168,12 +168,10 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }
 	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }
 
 .dropdown_setting		{ width:100% }
-.dropdown_setting select	{ padding-right:5px } /* opera 12.14 truncates otherwise, bug ?! */
+.dropdown_setting select	{ padding-right:5px } /* why does opera 12.14 truncate otherwise ?! */
 .dropdown_setting td + td	{ text-align:right; }
 
 .button_table  *		{ width:100% }
-
-#patch_style textarea		{ width: 700px; height: 200px; }
 
 /********************************************************************************************************** 
  * transparent button 

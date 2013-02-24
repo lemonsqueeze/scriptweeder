@@ -2093,18 +2093,24 @@
 	need_reload = true;
     }
 
+    // since we're in iframe links need to reload main page to work
+    function link_loader()
+    {
+	location.href = this.href;
+    }
+    
     function rescue_mode_link_init()
     {
 	var label = (!rescue_mode() ? 'Rescue mode' : 'Leave rescue mode');
 	var hash  = (!rescue_mode() ? '#scriptkiddie' : '#' );
 	this.href = location.href.replace(/#.*/, '') + hash;
 	this.innerText = label;	
-	this.onclick = function() // why do we need this ?!
+	this.onclick = function() // link_loader() but we need to force reload
 	{
 	   location.href = this.href;
 	   location.reload(false);
 	}
-    }    
+    }
 
     function edit_site_settings()
     {
@@ -2947,7 +2953,7 @@ body			{ margin:0px; white-space:nowrap; font-family:Ubuntu,Tahoma,Sans; font-si
 /* font sizes */  \n\
 body.small_font		{ font-size:small; }  \n\
 body.large_font 	{ font-size:1.3em; }  \n\
-button,select,textarea	{ font-family:inherit; font-size:inherit;} /* they don't get it in opera 12.14 otherwise (?!) */  \n\
+button,select,textarea	{ font-family:inherit; font-size:inherit;} /* why does opera 12.14 need this ?! */  \n\
   \n\
 /* sane padding/margin sizing, please !  http://css-tricks.com/box-sizing/  */  \n\
 *			{ box-sizing:border-box; }  \n\
@@ -2974,8 +2980,8 @@ body.left #main		{ direction:ltr; left:0;  z-index:0; }  \n\
 body.left .submenu	{ z-index:1 }  \n\
 body.left #main_button	{ direction:ltr; }  \n\
   \n\
-body.bottom #main	{ bottom:0; /* bottom align */ }  \n\
-body.top #main		{ top:0;    /* top align */ }  \n\
+body.bottom #main	{ bottom:0; } /* bottom align */  \n\
+body.top #main		{ top:0; }    /* top align */  \n\
   \n\
   \n\
 /*************************************************************************************************************/  \n\
@@ -3025,29 +3031,32 @@ input[type=radio]:checked + label	{ background-color: #fa4; }   \n\
   \n\
 textarea				{ width:400px; height:300px; }  \n\
   \n\
+a, a:visited				{ color:#00f }  \n\
+  \n\
 /* images */  \n\
   \n\
 img	{ width:1px; height:1px; vertical-align:middle;   \n\
 	  background-size:contain; background-repeat:no-repeat; background-position:center }  \n\
   \n\
+/* bullet images by momentumdesignlab.com  */  \n\
 /* mode icons (small) */  \n\
-.block_all img,  .filtered  img,  .relaxed  img,  .allow_all img { width:18px; height:18px; }  \n\
 .menu .block_all img, .menu .filtered  img,   \n\
-.menu .relaxed   img, .menu .allow_all img	{ margin: 3px }  \n\
+.menu .relaxed   img, .menu .allow_all img { margin: 3px }  \n\
+.block_all img		{ width:17px; height:16px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABEAAAAQCAYAAADwMZRfAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90CFQk4EHqKxowAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAADBUlEQVQ4y4WRO2wcVRSG/zuPfd157OxmEThW1hn8FhAkLGQRJWkoaFAUUUCfEqd0S5F2KYgIHdCChKIIIYSgIYJEsqUYy0TKQ+s4Udi15d25szvvmfXMXArwyhYE/u5I53zn/88hrVYLq6urONSn16+LvuedyLNsihDyAiGkCPAkz3lPEMWniqJaV66sZIf9rVYL5LC4cfNbdDvPdNuy3nAG7HLou+9kWVotyLIAgOc5Boqm/6hWjc91o7bRnDKdSxffBYC/IN/cuIknj9sT+3u7HwxZ70NaLpmnmk3omgZCCDjniKII3W4Xrh/uKLrxWa3R+Hp2bnH3vUsXQT65dg2CIGhPttuX93c7VydPTiiTJychigInAOHjoJznHMSyGLp7u3611vho8lTzC0EQXUnTdPK4/ejMXrezUtU1pX6iwcM4Hrs8IgKAVyhFvVZXev3eSrFUumtOz96WGOuXXNc9Z9vMNE0TrueB838AjoHkQhFhFJlxHJ9jrH9XiqNIZ5Z1QRJlhFHMszR9HmAMIoLAS8USsSzrgl41vpSSZESZPZh2PQ+O544PeUz8eDhCCLggYDgYzmRZVpGyLDuI4jhfW1/H1tYWqdfrKBaLoJRClmVQSiFJEhzHQZqmCIIASZKQ/V4Py8vL2Wg0SiXGmE8pfcg5psMo5mGn+39xxt4qZfrA931P2NzcjIxq9YepZvPfPvLcu0w1m6jXa98/uH8/FDY2NniSxOsLC3PbqqocbvlPF4qqYHFhvp3n2frPt27lIue8MLDtdH52xpt48aXzfcYKcRzzIy89GgGGYZDzZ98KjKp+9dfbd9aGQ2ckApD8IBCZPejPTZ92Xl2cP6OqWtl2hmSUjMYEVVPJ8tISOfvmki1L0se/3Fn77tkfHRdASgAUAFQAqLRSabz+2iuLcy+ffl+h9G1REkuO60PXFGRpFgdh+FN75+lXv/1+757vBwyADyAmACQARQBlABSAUi6XtIIslyml5YUZc/bh9s4j3w+Cg4M0DKPI/XvYB5AAGP0JPRRnrh0w7AgAAAAASUVORK5CYII='); }  \n\
+.filtered  img		{ width:17px; height:16px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABEAAAAQCAYAAADwMZRfAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90CFQkmDyPD9KYAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAADFUlEQVQ4y32RzWtcZRTGf+d979yZe+fOZGIm7SQE0SQWrEIWIrqwduPChRR14de2S/s3VOnanbirripVKQpKEMV1TaiK0ja1NsQopu00H9OZzNe9933vcdHGDwR/8PBwOOd5NkdurZxg5unPOeD2pZesOtdE9SGEQyJSRklV9Q7CpgSlndaTn/mD+1srJ5CDYXvtDVxvOIHPnsDnJ6XQ542VhgShUVUtsryj1n6FMWcxwfdBo96dfvQcwL2S7Suvk/f6s+Tpa9YUb4aN6nx5+jBBVEZEURX8uCDb7ZB2uhve+/fU2o9KjcbN6cc+RNrfvUzhfJ18fLIUcCZqNZNyM8aUUkWcIAoqoFaLPJasowzbO/08HZ1Wa9+3pXLPKAjOLVljTlVnm0nUrKgxfRWfijiH5B5xDvGZGNPV8qTTZKaVBDY6JZ6lgkKMOlcxhmNRUpkPa1XE95HMC5miGZBx3xXJCjF+QBgXVCYa8zYIjpG7ipFCJ/ByPKwliMuU1Itmej/0b9dMIfWCG2o5qYOT4ygTQZppteJ10ZIiWQCF/P0ylH9ysBHjsSZEcx4hJA6809xnRcFoE/q/iGoZMWUwVZAS2BpoAEUH1KF+gNhA1LQoxnU/9sYF6xv7/SPT8c+qjUVcoJK2hf9BAMpTquG8ZCnXbu+N9s3ZCxuj7lC/HHUTsIeFIkJzgZz/SHOBIgLbkmG3xiBj+fzy70PzyTd/6OqV7dWdrfG6kwUI51SIUW/B8ZfUW4QYwjl1ssDezfGNH6/vrr778XphUcK1jbvu6GyyPxknz8ZTrdCEFZVCQa1ACUyMhA8oyQIuWJT2ZjH46fLOmbc/WFu508kyCwSdfWd/uNHZnqsG3boES6VaKwomHxRTm4HqLNQexlcWZLA/IVtr3b2Ll9rvvHXu2hdXfxv0ACdACMRArVENpl986tDRV56Ze3W+FT8Xx1IpxSH5MGM00vGvt4dfX7i4df7Tb9uX9/puF+gDYwECoAxEQFUgqcdBPSqZaKpeil54vHlk+eru9d1eNhhnxfDu0PX0XrgPpED2J5yIlLk6qkUEAAAAAElFTkSuQmCC');  }  \n\
+.relaxed   img		{ width:17px; height:16px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABEAAAAQCAYAAADwMZRfAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90CFQoFLD1LTOwAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAADGElEQVQ4y21QTWxUZRQ993vf+5uZzrSdkaGoBUrpwhpIxBCjIokxBkO0WzauXMraPexITDQm7gwLV8YdMUGMKw0LG2uC8lOJpRRK2xnaNzNv5s28ee/7uSw6FRY9ycnNvbn33HMvLSxs4dq1Kezh/Lmm4xdtTTh8hIgOEMEHkBnDT9nS2rAvdq7fqJu9/oWFLdBe8sHpNryJYSWo2FP1af6sesCeqx2k8TBwRK6Zmxum3dl2fmk8xndJS/xl4iD+dXECAHZFPnw7gjeZHRp/2V6YnsPn8yeCmWNHCyiGEoIAy0CWGTx6MsDtW8PVB/f422idfrBxuHnj5iScTz5ugqQpV14xnx4/LS6/9W65fuTwGLzAZUhBVgiwIyCk5PGKT7VDcsJI/U4v5u20b+/Nz3+RSdMHeXVzsjorLr7+RrlUrRVYEaAsEf6/HACBQILHKgWcOCVK0U58Me3ZpcGWuCmdkg2CijgzNefP1CZD5AZggADGPiAAXCj5ODxfmGk8SM+oxC5J4aLiFvhsvR7CaGLNTPuOP1chBvHUQZ9kYXCWJF+VxuTFnOVsrgjDnHc/PVLhfWwAABHDEw4U2+MgKkhrjer3YO9vWKxtWyoHgHSAwAVcYvgeQTAh1RbGEFJF0JaplSjEsTFGay3brZUkdI/922/b2dxn7lp+0QyYebT9eZWIWGeWBm29rHqNnqN1jrGJN0tM4Xmv4JIeMnTGMHvMR3yxppl2VvtIGp2v1le+/1M2Nn/kav39RYTFFTcMZmXoMkZu9oUg1qmiaD3+L4n+WXz08BvrAPB63WVdHHutRzz+niDfsyzYKIZWTHo3wihmo4C8q6izGfXj5p3LK7cv/ZHnT3MHgNSq7SSdW9tB+GosRfkkazc0VhAbAasBqwGVGVLdlAbtRivaWPxy9e9LP/V7d7sAtANAAHBU3kK7+fuTbBAtCa/igWnaDnNpshRqkCBLo2E3unN9ffnqlYd3v/5tOHjcAZABUARAAvABhACKAJWkVy47ThB6wUth9ehHc9Haz/fzYdQ3Oh3oPO4CnABIRiL5M67mtGhJBrD7AAAAAElFTkSuQmCC');  }  \n\
+.allow_all img		{ width:17px; height:16px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABEAAAAQCAYAAADwMZRfAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90CFQklHIxQ5rsAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAADDElEQVQ4y12QS28cRRSFz62q6fe0Z+yxY1vBIpYBCQlZwDqEBYtISPaKxz5LAv8gBMImCyRgAStgi9kgXhvyC7ACGyAJhoAcWbKxxzNjT/f0o6q7Lotxh4grnSodqeqeo48ONq5h6dv30Mzh5rvSsu4x+HEiWgCRC3DJlo8ItCvIOT73zfW6eX+wcQ3UmNErH6HQJzO2njzPjrli3foy+bIjXEewtWzHeiSM+oEK9akg72cv6J12v3wTAKZLBq9+iDI/XrY2fR2+ecM9P7vqX1hBK2oDRAAzqrJAvreP4kH/byT0MVl3y28v7c9uvQU63HwHTBTXxfAK+fpG9NSFyF9ehpSSAaZpDgMMrsFUDAdId3ZTe8JvCxF/JpQcCzge1fl4narsantpKQq7Cywzw5QUREkJSgpQUoLSkmSiOXRjjh87HwlhrrJJ1yFbpGw58URlLrqwq0FnDmKcA8yEaX7TAzQVAWBf+TCus5pXfNGWk58UKjPDeXrJ74YQmWZUNTW4G+oP6TeWiL0ooqx/eAlB63NV1iYUabqmWgKcTh6C/G/4rMojq4gghUSVpU9ILw6UsbWpytzmt+9D/XKXMDcDchwg9AElgTAAlAJOx0BdA1kBlIbMUR/Z4rladuYr9UcySBcF/z6uTtdadcI8OZpGNm347GiaEIEANmDK5MK9pEgSqcF4LupFyEcvV1mfNGtoLqC5nApnajwXKOyE0naMfG7xg63Rg9vqq/27/GJ7fvvZOL4fZv+scTlkgvwfy0cJ1Qw3piKO/9ypJtuf/LVtJTM7O9lJ9UzYTWa94IXKZE5W5WxgoWFJT29oWC5gAS8i7q1MdpW6cfPg3o+HZaolADUyhfxNT/qrbni6HMyst4KOn9easkpDA9AAyIsonFshCrvDO+D3bw73vruTDsYAKgLgAAgAtDtSzW9Gvac3nOC1FRIv+arl1cyQRCgqU+yxvfW9yb/4Ojn+dVCbAYAUQEEAFAAXgA8gJCCKScQ+CX9WOf5l4MlbwM6g1pPc2uyU7Zinn1MAJQD9L2cymwJFVQPcAAAAAElFTkSuQmCC'); }  \n\
   \n\
 /* mode icons (fat) */  \n\
-.fat_icons .block_all img,  .fat_icons .filtered  img,   \n\
-.fat_icons .relaxed   img,  .fat_icons .allow_all img   { width:22px; height:22px; }  \n\
-.fat_icons .menu .block_all img,  .fat_icons .menu .filtered  img,   \n\
-.fat_icons .menu .relaxed   img,  .fat_icons .menu .allow_all img	{ margin: 4px }  \n\
+.fat_icons .menu .block_all img, .fat_icons .menu .filtered  img,   \n\
+.fat_icons .menu .relaxed   img, .fat_icons .menu .allow_all img { margin: 4px }  \n\
+.fat_icons .block_all img		{ width:19px; height:20px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAYAAABvVQZ0AAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90CFQk3GPPJUnEAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAADPUlEQVQ4y52Uy28bZRTFfzPjsdM44/EzvGo7KWqrmKYhJqWVKFKkwqYqZMGuEhI7+B9YsWCHl0jdgdQtm64QKRISNEEoUVpFJK0bxXFCaN4z41fseXwzbCYBIQoJRzq7e893z9X9jhQEASdBpVL5z5rIcxpjQA54BUgDKuACBvA7sAfY/ypWqVRkIAtMbK6vfdIwDq4I34tHVVUByRfCb+vpzNzZ4vAdYB7YB/yjfunIZqVSiQLnGpb54eqTpY8zqWSmODxMPB5HQiIgwLEdtre3eLa1bRRevXBHT6buAjXAORYLJ7qwUa99vllfnRodvazkclkUWUGWpePJfT9A+IJOp8vS8pJIZnL3CkPnPgWeAr4c1qWNg/3bK8tLU2OvjysJTcd1PGzbptvtHdO2bVzHI6JEKJVKyv721pRxsH873CuKpmkSMP7L7IMvCsXiQCKh4wmB43k47j/Q83CFhxA+A4mEXH38uJQvDn0PbEaAM6ZpXNvb282WSiU6nUNOiiAIEL6fNU3jWiqVfhgBBjbW16/39w9IncMup4U2oEkb6+vXU6n03YjneX2maRWNRgPDMonFYqcSE0DTtIpALBIEgSt8XzypVqlWq+i6TjKZRJIkNE1DURTi8TiqqmJZFgDNZhPf92m32ximyeTkpHBd14vs7OwcappWs21nAqC3u8fO7t5pra42Go2OPDMzY2czmfuFfJ7/g0I+z+Dg4HcLCws9eW5uLmi127NvlMcPJEk6lZAkSUyUywfdXm92eno6UICoaZrByMXzvVxu8EattnZisXffucGLL2Q/+/GnmRnDMBwFiDabTcVqtjavjo+9lC/kR2prdYQQzxWJRqO8f+smQ2df/uaHBz9/ubKy0gI8JUyOiGVZ8m/Pth6VL41EJ99+65Ia65Nb7Tbd7p+3l8mkuXplgg/euylUWfr63rf3K/V63QjjSEhAFOgD4kBCVdVkeWx05M3xyx/piUQ5oqqa1WiR1DU81201W635uUeLX80/XPzVdV0LaAGHgCOFk0WBGNAfMh4+EE3q+pmx1y6eX1yuPjWtRieMm8O/0QFcCZCPrP5FNBamqwooR18xPHg3tHVEF/AA8QeQGYwK29PIMwAAAABJRU5ErkJggg=='); }  \n\
+.fat_icons .filtered  img		{ width:19px; height:20px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAYAAABvVQZ0AAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90CFQkTE5Xzal8AAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAADaElEQVQ4y42Uz2ucRRzGPzPz/t5dd91s28S13WjREBD8QYUqvfkHJOBBqAjezNWzB/HgST0KBREFkeJPFDwo3oRWSSLWXyipTUuaNNmmuzFud999531nxsNuSonUZuBhDjPzzPP9Pl8e4ZzjIKu9OH/XO94dHobAIaAJ1AEfyIEusAFsA9n/krUX5yXQAE7YQX9BFPmTQlESXqhwzlqtbzrPX5JJ6QywDNwA7N57sVdme3E+AB50Wr9A3n8patQmgnoTFQYI4XBOYLUj390hvb7Zdco/I4LgA2AV0LfIxooetmn6euDnc8nRlvKrETLIENKAcOAEziqsDil6PoNrayYbpF/KOH4FWAGsHCusuzw/HUV2rnJ8RoX3SlTQQ4oU4TKE1QiXIUWKCnoE1T7l1gMqrlTnXJ6fHvcV2V6cF8CMLMxC0mwqP8mQpIiigNyN2n4LDlEUSFL8eJdk6phS1lsAZgAhgZjCnEyqfsOPyggzhNyMie4EgzBDPH9I0jjcoDAngVgCZZfZU36pKoTVkBWg3d2RFQir8ZOqcJk9BZS9TNvIz2lJhojcgT3YEAMIVSCFh8tpCQg9a11uMgy6C/oPMBpUFRCgKoACVR7NrdkZsZjd0a5CnJ3C6tBkQ1N4F6/0BsejaNVRPoGNIOuA2zmALA+iJk4m6FRfamvdl+9+cjnbHeTfZv0KTkyAjaGQ+1zch0KCjXFigqxfYaDNN599vT6UH3215n7c7J3vrO50nDcN3hGwERgJBf+FkaNz7wjOm6Zzeafzy43++Tff+dMpILi6OXCPN0vDWq32TFKfQDgDxoKzI0MsgAQRjPoZNXGlWTqbHiu/X3/tjY//Ord2baAVEGxtD9VKN11/tKymkkp1NmkcRXgRiBBkMjLAq0F4GJJpbDzD9lXDyuL6p69+cent75a2e0ChxsnhbbRT+f2Vfy7MRCKIsuIRWT8mVfl+VHkS4ikotci9FjfTKps/bZgLy1vvv3z24ltLv3a74zgyAgiACCgB90Shqj339OTs809NvnjfRPhEGKuKXwrJ+xl6aHpbnWz5wx+23jt7buu3dGj+BnrAANBirCwAQiAZozT+IGjWw/jZxw499PnPN1bWO8P+OG4G+6CBXIw6Oyr1NtJwnK7+aGoBcIAZD0d2G/I9n/8FIRG29b8AI0wAAAAASUVORK5CYII=');  }  \n\
+.fat_icons .relaxed   img		{ width:19px; height:20px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAYAAABvVQZ0AAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90CFQoDNHh9czwAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAADS0lEQVQ4y5WUS2hcVRjHf+ecO/fOnUcek6ZjW0lR2jxo1dhGKFjcFFwaA64qBXfWlRt3rrpw5QM3QncKXVREmLp1FQQLocFa7KImJmhM0owznWYyjzv33vNwkWkItLbxD7/FOZzzP9/3nY9PzH65xbN048MyB5H3pE0xTwCMAseA0tx8NQOkQAPYAGqVSjl+qpmYRwKHgJnRsfTy4Kh5baQs8qGvVGqdrW6YdrOmbtXWMlfn5qqLQL1SKdu9+4/SFPP4wIvhkLk0dkq//8qZ/MjYkSxhViEFWAdJbKk2Yn5ZbDeWb6ur0ba6BqxWKuVkz6wf0XjxaPrJS2+o2empATUyFOD5EqXEXuTGOHRiaXcSfltqmYUf0x9am5mPgaVKpWxl/1zJL9qLJ173Zs9OD6vBUojzFVpIYiv20ELifEW2mOXlU0Pq7JvBrF+0F4ESgBTzCGBiYNJenpoaVEEu2DUxgp7mMWKzayoDn8mTA6p82n0ATMzNVYUEQhnac0fHc4eGBwK0hVS7Z6ItqCDD+HRhRIb2HBB6QEEW7PnRUiCM6Vf6gDJOcHjYF7LQOm8jec0zJs6COB71BFHs8BX/Qw6JRGOPA4EHNo27mPW6pda1FALIB7s/mPNBCUeQESgE3XS3pTo9gRXQSyz1hylJZI0ykfZ2dv7oOn18NWq5GWscUQtquMci+K913HV0GumKn9Y7yrlUhIWZghfm3vKyGUwCOnEHIo0tjT87NNeaX1Q3r9/21ta+deXyhZv3lwYeBIPhiFTegStmjWZreecB8d2b9+595hTgd6O/Xa74ak+YoQuZfIDVYLR7Kjq1NFabbNdXrvz1+6c/d7triQL8Xm9LpZ3l9ezw9BER5aaE8jFWYFKeiO4a2uvbbD9c+X79zpWvarWfWoBW/cnhRdGGbNcWfs2XJnzpcqdtLKVBgBFY7bDakSYa3YyIW3XTbNz5Znnho88bjVsNIAaMAHwgC+SBAaXCoedeeGfq2OS77wVh+YwnskUhFc4aDHGr191avL90/evNle/uGhNtAy2gCySiH5kPBECuT77/gJ/NPx8ePvH2yX9Wbiz12usdIOlf3k8CpAKQj1LdZxoAmT5qX3OZ/sSN95ECGjD/AqGf434hxZZlAAAAAElFTkSuQmCC');  }  \n\
+.fat_icons .allow_all img		{ width:19px; height:20px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAUCAYAAABvVQZ0AAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90CFQkQJ59qzSkAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAADNElEQVQ4y5WUv28cRRTHP7Oze7u399P2RXEMtgHJFgYHEctIKdJBjV3QEAmJDvgLUlBYFBRIAYkCKR1IaQBBkZ4GJNI4UoIUQWSDDY4d+ef57Lub293ZmaHIGkVEEOdJn27ed9578+YrnHOcJnYWl554xv+PxBA4AzwDDAMBoIE2sAXsAen/iu0sLnlAC5jXHL1vZPqaiLyKF4bSOWvtcdqTJlwOaFwDbgH7gD3JFydt7iwulYAXjEveyUX7vfj50ZHwuQn8cgwCcGB0Rrq9g7q30ZZZ7ZoU0XVgDcj+ESsqmtb68GNZHizUzs/K8EwL6UmEJzhRc9ZhrCFVfXp3fzP5nrkRBEMfAiuA9YoKh61Wl31zvNB8ZU7G1SH81OElBqFyhNIIleMlBj91xCKiOfOyLNXFgtXqcjFX5Ad3nAAumIONq80Xp6rlegMvtwhtIMsfQ2iDyC3SgF+re4P1tZe8sPEDsOkDZZuqi3FuWlGtgeinp1oVAZSso1KrtlSqLnphfNsHqqZzcCmq1oRQGU8TAggbddFdfXDJOxtf91ObR0b1Jz3tw1EXFwZPJeg50Ko/GUDoW+e0ssYkq+vY39cRjSqiUQMhoBaD50ElhsCHzvFDhW4frMP1FGm7zWD8WSOMzv3V7r5q+t5aLzuaD4WEvc7D/T5lpM6g/Ik/jpNuX2bOiLnmWNXr7r5pk0O0TchOSWoTetUqg9HJz77fXbntf7Pxi3vj7NTN88Otg/zorxF5yo8PYIQgGZ4+WEffvHrvRyeB0n3VcRfiZtKo1F9PO/fJnX4i2mnE+CzbfvDR5w9+/XlDdTIJlLaTrvwTtznvh+fqw+Mzve4u2ll0YRWPIX3Kk3Ps2/y7T3r7X/y0t94Fclk4h781OPaWnb3zKq400ZqcpTripdmALM/IgRwQUY3K6DSNoTGzpjpfXVHtT5fbm+3CjowASkAEVIB6JP3mW/HQzNth5d1zQTQXBVEtdxZfeKQ66W7r5NbXmfry2/7h3YHRHaALKCATRWUlIATigkpxQWlMBuVF4U3dcHZly+h+YTfqX2SAFoB30uojomHhrgEgi8dzgCnGlj6CLqZg/gaqKMTXfJ+9yQAAAABJRU5ErkJggg=='); }  \n\
   \n\
 .fat_icons .allowed img, .fat_icons .blocked img, .fat_icons .not_loaded img  { width:22px; height:22px; }  \n\
 /* left out:  .allowed_globally .*iframe */  \n\
-  \n\
-.block_all img		{ background-image:-o-skin('Smiley Pacman'); }  \n\
-.filtered  img		{ background-image:-o-skin('Smiley Cool'); }  \n\
-.relaxed   img		{ background-image:-o-skin('Smiley Tongue'); }  \n\
-.allow_all img		{ background-image:-o-skin('Smiley Cry'); }  \n\
   \n\
 .allowed img		{ width:16px; height:16px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNAay06AAAAAVdEVYdENyZWF0aW9uIFRpbWUAMTkvNS8wOcYlgL0AAAGASURBVDiNpZPLK0RRHMc/xz3FxmNBSEosBkVXSpQyFqRYTB4Lq2ujbCby/AuUZDESCyuWUwwp2ciwF3cjbMjWCoW45xoLznXnwcL86tSv7+/7e/+OSCQSZCM5WXkDUitCCA+c3c0dAcYB8xuygeXF0NuG5ujKhacIwexubhEQ9zmmig10LobeHrSf9FuVMv5y5tsWB5o04M0gHC2wHFeajivJ9KzWKHVlIRxXmuFogZU2A6WMid/SdgbGaKzoI08WcXZ3ADABbCZVoFxpKleiXElNcQdaLy806W2Y4+X9kdX4iMa9Nr0AjjJwlEFL1TBT3TsMNc/jKAOrbQUQLBwM8PT67PEytCBtwDy5ihEobaerfhSzsoeS/ErWTya5vb/20+30AK4RATYA1o5m+EgIOgKDbJ1GiF/GgJ+sQEQrSXcwsFJ9jm+Nwdp+jq9iqTO1t8M3TZnvwJVB4FgHObzYS6XYQNAPJFWgpXepzuJrVf5TjuxPX25qTtop/1ey/o2ftG6clPyKKlYAAAAASUVORK5CYII='); }  \n\
 .blocked img		{ width:16px; height:16px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNAay06AAAAAVdEVYdENyZWF0aW9uIFRpbWUAMTkvNS8wOcYlgL0AAAEHSURBVDiNpZNBagIxFIa/iAfoIRSKLXRc1YUL3XXRCwjCFC9QjzK9gOiqV+huNm66Mou2COMhPIB56aImTTIwgvND4OUlf/K/lz/KWksbdFqxga4LlFI+eViMX4BXIDunNPDWW23Xbo9TrnygFIfF+AYoA2IKDUx7q+3R8brhqjXSROa8VgJDl/A9qOajHCMZRrgwsmo+yms9sCdZhlf13z+jq6vZYzhdApv4ACNN0rFG0lISBfGGSwd4/PvAiI5qTRH3QdcVnKQA1m6+f35oElS4IPLBz9P9juZnBNCDj6+h48VWNjKplZJKNzIJKZECh+/pbc7fU4VWLu7K/caXnFr5WrT+jb97bZAgYc+wFgAAAABJRU5ErkJggg==') }  \n\
@@ -3090,9 +3099,6 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
 /* Options menu */  \n\
   \n\
 #options_menu li:hover	{ background:inherit }  \n\
-/* how do we add cell spacing ??  \n\
-#options_menu table	{ cell-spacing: 5px; }  \n\
-*/  \n\
 #options_menu td	{ vertical-align:top; }  \n\
   \n\
 .separator	{ height: 1px; display: block; background-color: #bbb; margin-left: auto; margin-right: auto; }  \n\
@@ -3109,12 +3115,10 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
 	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }  \n\
   \n\
 .dropdown_setting		{ width:100% }  \n\
-.dropdown_setting select	{ padding-right:5px } /* opera 12.14 truncates otherwise, bug ?! */  \n\
+.dropdown_setting select	{ padding-right:5px } /* why does opera 12.14 truncate otherwise ?! */  \n\
 .dropdown_setting td + td	{ text-align:right; }  \n\
   \n\
 .button_table  *		{ width:100% }  \n\
-  \n\
-#patch_style textarea		{ width: 700px; height: 200px; }  \n\
   \n\
 /**********************************************************************************************************   \n\
  * transparent button   \n\
@@ -3167,9 +3171,9 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
    'script_detail' : {
       init: script_detail_init,
       init_proxy: function(w, ph){ script_detail_init(w, ph.host_node, ph.script, ph.iframe, ph.file_only); },
-      layout: '<widget name="script_detail" host_node script iframe file_only init><li><img/><a></a></li></widget>' },
+      layout: '<widget name="script_detail" host_node script iframe file_only init><li><img/><a href="" onclick="link_loader"></a></li></widget>' },
    'options_menu' : {
-      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div></td><td rowspan="2"><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_ui_position></select_ui_position></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><form id="load_custom_style" title="Load a .style or .css file (can install one of each)"><input type="file" autocomplete="off" oninit="load_custom_style_init"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><br><a href="http://github.com/lemonsqueeze/scriptkiddie/wiki/Custom-styles">Find styles</a></div></td></tr><tr><td><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptkiddie/wiki">Help</a></div></td></tr></table></div></widget>' },
+      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div></td><td rowspan="2"><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_ui_position></select_ui_position></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><form id="load_custom_style" title="Load a .style or .css file (can install one of each)"><input type="file" autocomplete="off" oninit="load_custom_style_init"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><br><a href="https://github.com/lemonsqueeze/scriptkiddie/wiki/Custom-styles" onclick="link_loader">Find styles</a></div></td></tr><tr><td><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptkiddie/wiki" onclick="link_loader">Home</a></div></td></tr></table></div></widget>' },
    'select_ui_position' : {
       init: select_ui_position_init,
       layout: '<widget name="select_ui_position" init><table id="ui_position" class="dropdown_setting"><tr><td>Position</td><td><select><option value="top_left">top left</option><option value="top_right">top right</option><option value="bottom_left">bottom left</option><option value="bottom_right">bottom right</option></select></td></tr></table></widget>' },

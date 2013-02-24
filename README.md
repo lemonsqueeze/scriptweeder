@@ -79,3 +79,4 @@ UI layout is generated from `scriptkiddie.ui`, css from `scriptkiddie.css`. Imag
 
 UI code lives in `ui.js`, `userjs_ui.js` manages widgets and the injected iframe, and the filtering logic is in `core.js`.
 
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/lemonsqueeze/scriptkiddie/trend.png)](https://bitdeli.com/free "Bitdeli Badge")

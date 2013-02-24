@@ -253,18 +253,24 @@ function(){   // fake line, keep_editor_happy
 	need_reload = true;
     }
 
+    // since we're in iframe links need to reload main page to work
+    function link_loader()
+    {
+	location.href = this.href;
+    }
+    
     function rescue_mode_link_init()
     {
 	var label = (!rescue_mode() ? 'Rescue mode' : 'Leave rescue mode');
 	var hash  = (!rescue_mode() ? '#scriptkiddie' : '#' );
 	this.href = location.href.replace(/#.*/, '') + hash;
 	this.innerText = label;	
-	this.onclick = function() // why do we need this ?!
+	this.onclick = function() // link_loader() but we need to force reload
 	{
 	   location.href = this.href;
 	   location.reload(false);
 	}
-    }    
+    }
 
     function edit_site_settings()
     {
