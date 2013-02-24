@@ -1358,7 +1358,9 @@
 
     function resize_iframe()
     {
-	var content = idoc.body.firstChild;
+	// can't just idoc.body.firstChild with things like modern scroll extension adding their stuff in ...
+	var content = idoc.body.querySelector('#main');
+
 	var width = content.scrollWidth;
 	var height = content.scrollHeight;
 	
@@ -1844,7 +1846,7 @@
     var default_autohide_main_button = false;
     var default_transparent_main_button = true;
     var default_fat_icons = false;
-    var default_small_font = false;
+    var default_font_size = 'normal';
     var default_menu_display_logic = 'auto';
     var default_show_scripts_in_main_menu = true;
     
@@ -1857,7 +1859,7 @@
     var autohide_main_button;
     var transparent_main_button;
     var fat_icons;
-    var small_font;
+    var font_size;
     var disable_main_button;
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
@@ -1908,7 +1910,7 @@
 	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
 	transparent_main_button = global_bool_setting('transparent_main_button', default_transparent_main_button);
 	fat_icons = global_bool_setting('fat_icons', default_fat_icons);
-	small_font = global_bool_setting('small_font', default_small_font);
+	font_size = global_setting('font_size', default_font_size);
 	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);
 	show_scripts_in_main_menu = global_bool_setting('show_scripts_in_main_menu', default_show_scripts_in_main_menu);
 	
@@ -1928,7 +1930,11 @@
     {
 	main_ui = new_widget("main_ui");
 	set_unset_class(idoc.body, 'fat_icons', fat_icons);
-	set_unset_class(idoc.body, 'small_font', small_font);
+	// set font size
+	unset_class(idoc.body, 'small_font');
+	unset_class(idoc.body, 'large_font');
+	if (font_size != 'normal')
+	    set_class(idoc.body, font_size + '_font');
 	if (!disable_main_button)
 	    wakeup_lazy_widgets(main_ui);
     }
@@ -2226,6 +2232,17 @@
 	};
     }
 
+    function select_font_size_init(widget)
+    {
+	var select = widget.querySelector('select');
+	select.options.value = font_size;
+	select.onchange = function(n)
+	{
+	    font_size = this.value;
+	    set_global_setting('font_size', this.value);
+	    need_repaint = true;
+	};
+    }
 
     function select_menu_display_logic_init(widget)
     {
@@ -2285,12 +2302,6 @@
     function toggle_fat_icons(event)
     {
 	fat_icons = toggle_global_setting(this, fat_icons, 'fat_icons');
-	need_repaint = true;
-    }
-
-    function toggle_small_font(event)
-    {
-	small_font = toggle_global_setting(this, small_font, 'small_font');
 	need_repaint = true;
     }
     
@@ -2931,8 +2942,12 @@
 "/* scriptkiddie stylesheet */  \n\
   \n\
 html			{ background:transparent; }  \n\
-body			{ margin:0px; white-space:nowrap; font-family:Ubuntu,Tahoma,Sans; }  \n\
+body			{ margin:0px; white-space:nowrap; font-family:Ubuntu,Tahoma,Sans; font-size:normal; }  \n\
+  \n\
+/* font sizes */  \n\
 body.small_font		{ font-size:small; }  \n\
+body.large_font 	{ font-size:1.3em; }  \n\
+button,select,textarea	{ font-family:inherit; font-size:inherit;} /* they don't get it in opera 12.14 otherwise (?!) */  \n\
   \n\
 /* sane padding/margin sizing, please !  http://css-tricks.com/box-sizing/  */  \n\
 *			{ box-sizing:border-box; }  \n\
@@ -3094,6 +3109,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
 	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }  \n\
   \n\
 .dropdown_setting		{ width:100% }  \n\
+.dropdown_setting select	{ padding-right:5px } /* opera 12.14 truncates otherwise, bug ?! */  \n\
 .dropdown_setting td + td	{ text-align:right; }  \n\
   \n\
 .button_table  *		{ width:100% }  \n\
@@ -3153,7 +3169,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
       init_proxy: function(w, ph){ script_detail_init(w, ph.host_node, ph.script, ph.iframe, ph.file_only); },
       layout: '<widget name="script_detail" host_node script iframe file_only init><li><img/><a></a></li></widget>' },
    'options_menu' : {
-      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div></td><td rowspan="2"><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Small font"   		   state="`small_font"  		   callback="`toggle_small_font"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_ui_position></select_ui_position></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><form id="load_custom_style" title="Load a .style or .css file (can install one of each)"><input type="file" autocomplete="off" oninit="load_custom_style_init"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><br><a href="http://github.com/lemonsqueeze/scriptkiddie/wiki/Custom-styles">Find styles</a></div></td></tr><tr><td><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptkiddie/wiki">Help</a></div></td></tr></table></div></widget>' },
+      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div class="frame"><div class="frame_title">Core</div><select_iframe_logic></select_iframe_logic><select_reload_method></select_reload_method><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="For debugging mostly."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div></td><td rowspan="2"><div class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_ui_position></select_ui_position></div></td><td><div class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><form id="load_custom_style" title="Load a .style or .css file (can install one of each)"><input type="file" autocomplete="off" oninit="load_custom_style_init"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><br><a href="http://github.com/lemonsqueeze/scriptkiddie/wiki/Custom-styles">Find styles</a></div></td></tr><tr><td><div class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptkiddie/wiki">Help</a></div></td></tr></table></div></widget>' },
    'select_ui_position' : {
       init: select_ui_position_init,
       layout: '<widget name="select_ui_position" init><table id="ui_position" class="dropdown_setting"><tr><td>Position</td><td><select><option value="top_left">top left</option><option value="top_right">top right</option><option value="bottom_left">bottom left</option><option value="bottom_right">bottom right</option></select></td></tr></table></widget>' },
@@ -3163,6 +3179,9 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
    'select_iframe_logic' : {
       init: select_iframe_logic_init,
       layout: '<widget name="select_iframe_logic" init><table id="iframe_logic" class="dropdown_setting"   	 title="Allowed iframes run in the current mode, blocked iframes run in Block All mode. The policy decides which iframes are allowed: [Block] no iframes allowed. [Filter] iframe allowed if host allowed in menu. [Allow] all iframes are allowed (permissive)."><tr><td>Iframe policy</td><td><select><option value="block_all">Block</option><option value="filter">Filter</option><option value="allow">Allow</option></select></td></tr></table></widget>' },
+   'select_font_size' : {
+      init: select_font_size_init,
+      layout: '<widget name="select_font_size" init><table id="font_size"  class="dropdown_setting"><tr><td>Font size</td><td><select><option value="small">Small</option><option value="normal">Normal</option><option value="large">Large</option></select></td></tr></table></widget>' },
    'select_menu_display_logic' : {
       init: select_menu_display_logic_init,
       layout: '<widget name="select_menu_display_logic" init><table id="menu_display"  class="dropdown_setting"><tr><td>Menu popup</td><td><select><option value="auto">Auto</option><option value="delay">Delay</option><option value="click">Click</option></select></td></tr></table></widget>' },

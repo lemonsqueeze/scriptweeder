@@ -140,13 +140,11 @@
     <checkbox_item label="Fat icons" 
 		   state="`fat_icons"
 		   callback="`toggle_fat_icons"></checkbox_item>
-    <checkbox_item label="Small font" 
-		   state="`small_font"
-		   callback="`toggle_small_font"></checkbox_item>
     <checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"
 		   state="`show_scripts_in_main_menu"
 		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item>
     <select_menu_display_logic></select_menu_display_logic>
+    <select_font_size></select_font_size>
     <select_ui_position></select_ui_position>
   </frame>
 </def>
@@ -229,6 +227,17 @@
       <option value="block_all">Block</option>
       <option value="filter">Filter</option>
       <option value="allow">Allow</option>
+    </select></td>
+  </tr></table>
+</widget>
+
+<widget name="select_font_size" init>
+  <table id="font_size"  class="dropdown_setting"><tr>
+    <td>Font size</td>
+    <td><select>
+	<option value="small">Small</option>
+	<option value="normal">Normal</option>
+	<option value="large">Large</option>
     </select></td>
   </tr></table>
 </widget>

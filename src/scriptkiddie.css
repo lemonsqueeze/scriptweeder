@@ -1,8 +1,12 @@
 /* scriptkiddie stylesheet */
 
 html			{ background:transparent; }
-body			{ margin:0px; white-space:nowrap; font-family:Ubuntu,Tahoma,Sans; }
+body			{ margin:0px; white-space:nowrap; font-family:Ubuntu,Tahoma,Sans; font-size:normal; }
+
+/* font sizes */
 body.small_font		{ font-size:small; }
+body.large_font 	{ font-size:1.3em; }
+button,select,textarea	{ font-family:inherit; font-size:inherit;} /* they don't get it in opera 12.14 otherwise (?!) */
 
 /* sane padding/margin sizing, please !  http://css-tricks.com/box-sizing/  */
 *			{ box-sizing:border-box; }
@@ -164,6 +168,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }
 	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }
 
 .dropdown_setting		{ width:100% }
+.dropdown_setting select	{ padding-right:5px } /* opera 12.14 truncates otherwise, bug ?! */
 .dropdown_setting td + td	{ text-align:right; }
 
 .button_table  *		{ width:100% }

@@ -6,7 +6,7 @@ function(){   // fake line, keep_editor_happy
     var default_autohide_main_button = false;
     var default_transparent_main_button = true;
     var default_fat_icons = false;
-    var default_small_font = false;
+    var default_font_size = 'normal';
     var default_menu_display_logic = 'auto';
     var default_show_scripts_in_main_menu = true;
     
@@ -19,7 +19,7 @@ function(){   // fake line, keep_editor_happy
     var autohide_main_button;
     var transparent_main_button;
     var fat_icons;
-    var small_font;
+    var font_size;
     var disable_main_button;
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
@@ -70,7 +70,7 @@ function(){   // fake line, keep_editor_happy
 	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
 	transparent_main_button = global_bool_setting('transparent_main_button', default_transparent_main_button);
 	fat_icons = global_bool_setting('fat_icons', default_fat_icons);
-	small_font = global_bool_setting('small_font', default_small_font);
+	font_size = global_setting('font_size', default_font_size);
 	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);
 	show_scripts_in_main_menu = global_bool_setting('show_scripts_in_main_menu', default_show_scripts_in_main_menu);
 	
@@ -90,7 +90,11 @@ function(){   // fake line, keep_editor_happy
     {
 	main_ui = new_widget("main_ui");
 	set_unset_class(idoc.body, 'fat_icons', fat_icons);
-	set_unset_class(idoc.body, 'small_font', small_font);
+	// set font size
+	unset_class(idoc.body, 'small_font');
+	unset_class(idoc.body, 'large_font');
+	if (font_size != 'normal')
+	    set_class(idoc.body, font_size + '_font');
 	if (!disable_main_button)
 	    wakeup_lazy_widgets(main_ui);
     }
@@ -388,6 +392,17 @@ function(){   // fake line, keep_editor_happy
 	};
     }
 
+    function select_font_size_init(widget)
+    {
+	var select = widget.querySelector('select');
+	select.options.value = font_size;
+	select.onchange = function(n)
+	{
+	    font_size = this.value;
+	    set_global_setting('font_size', this.value);
+	    need_repaint = true;
+	};
+    }
 
     function select_menu_display_logic_init(widget)
     {
@@ -447,12 +462,6 @@ function(){   // fake line, keep_editor_happy
     function toggle_fat_icons(event)
     {
 	fat_icons = toggle_global_setting(this, fat_icons, 'fat_icons');
-	need_repaint = true;
-    }
-
-    function toggle_small_font(event)
-    {
-	small_font = toggle_global_setting(this, small_font, 'small_font');
 	need_repaint = true;
     }
     
