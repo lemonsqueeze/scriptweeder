@@ -18,5 +18,6 @@ custom.style: FORCE
 
 clean:
 	@cd src && $(MAKE) clean
+	@cd extension && $(MAKE) clean
 
 FORCE:
