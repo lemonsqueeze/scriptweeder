@@ -154,8 +154,6 @@
   <frame id="general_options" title="General">
     <button title="Turn it off to avoid fetching blocked scripts." 
 	    onclick="speculative_parser_onclick">Speculative parser…</button><br>
-    <button title="Enable to control secure pages." 
-	    onclick="userjs_on_https_onclick">userjs on secure pages…</button>
     <select_reload_method></select_reload_method>
     <select_iframe_logic></select_iframe_logic>
     <checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"
@@ -392,8 +390,9 @@
 </widget>
 
 <widget name="block_inline_scripts" >
-  <li id="block_inline_scripts">
-    <input type="checkbox"/>Block Inline Scripts
+  <li id="block_inline_scripts" class="not_loaded"
+      title="WARNING: the first inline script of a page cannot be blocked ! The userjs version of scriptweeder is not affected by this limitation.">
+    <input type="checkbox"/><img/>Block Inline Scripts<img/>
     <div class="right_item">[-2k]</div>
   </li>
 </widget>
