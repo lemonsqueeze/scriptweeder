@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" id="https://github.com/lemonsqueeze/scriptweeder" version="1.5.0">
+    <name>Script Weeder</name>
+    <description>Block unwanted javascript. Kickass noscript alternative !</description>
+    <author href="https://github.com/lemonsqueeze/scriptweeder">lemonsqueeze</author>
+    <icon src="scriptweeder.png"/>
+    <license href="http://www.gnu.org/licenses/gpl-2.0.html">
+    Licensed under the GNU GPL v2
+    </license>
+</widget>
