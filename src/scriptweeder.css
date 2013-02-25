@@ -171,7 +171,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }
 .dropdown_setting select	{ padding-right:5px } /* why does opera 12.14 truncate otherwise ?! */
 .dropdown_setting td + td	{ text-align:right; }
 
-.button_table  *		{ width:100% }
+.button_table  *, #general_options button	{ width:100% }
 
 /********************************************************************************************************** 
  * transparent button 

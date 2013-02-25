@@ -286,6 +286,9 @@ function(){   // fake line, keep_editor_happy
     var iwin;
     function create_iframe()
     {
+	assert(!document.querySelector('#scriptweeder_iframe'),
+	       "There are 2 scriptweeder instances running ! Both extension and userjs version installed maybe ?");
+	
 	iframe = document.createElement('iframe');
 	iframe.id = 'scriptweeder_iframe';
 	iframe.style = "position:fixed !important;background:transparent !important;white-space:nowrap !important;z-index:2147483647 !important;direction:ltr !important;font-family:sans-serif !important; font-size:small !important; margin-bottom:0px !important;" +

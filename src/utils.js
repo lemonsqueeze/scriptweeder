@@ -400,7 +400,7 @@ function(){   // fake line, keep_editor_happy
 	return function(e) {
 	var files = e.target.files; // FileList object
 	var f = files[0];
-	var reader = new FileReader();
+	var reader = new iwin.FileReader();
 	
 	reader.onload = function(e) { callback(e.target.result, f.name); };	
 	reader.readAsBinaryString(f);

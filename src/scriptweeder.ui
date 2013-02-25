@@ -150,11 +150,15 @@
 </def>
 
 <def macro="options_core">
-  <frame title="Core">
-    <select_iframe_logic></select_iframe_logic>
+  <frame id="general_options" title="General">
+    <button title="Turn it off to avoid fetching blocked scripts." 
+	    onclick="speculative_parser_onclick">Speculative parser…</button><br>
+    <button title="Enable to control secure pages." 
+	    onclick="userjs_on_https_onclick">Userjs on secure pages…</button>
     <select_reload_method></select_reload_method>
+    <select_iframe_logic></select_iframe_logic>
     <checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"
-		   state="`show_ui_in_iframes" title="For debugging mostly."
+		   state="`show_ui_in_iframes" title="Useful for debugging."
 		   callback="`toggle_show_ui_in_iframes"></checkbox_item>
   </frame>
 </def>
@@ -384,8 +388,8 @@
   </li>
 </widget>
 
-<def macro="frame" title>
-  <div class="frame">
+<def macro="frame" title id>
+  <div id="$id" class="frame">
     <div class="frame_title">$title</div>
 </def>
 
