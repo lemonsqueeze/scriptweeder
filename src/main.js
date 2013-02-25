@@ -56,32 +56,23 @@
     // quiet: no page redirect
     function startup_checks(quiet)
     {
-	var start_page = "https://github.com/lemonsqueeze/scriptweeder/wiki/scriptweeder-userjs-installed-!";
-	
+	var start_page = "https://github.com/lemonsqueeze/scriptweeder/wiki/scriptweeder-extension-installed-!";
+
         // first run setup
         if ((location.href == start_page || quiet) && global_setting('mode') == '')
-        {
-            set_global_setting('mode', default_mode);
-            set_global_setting('version_number', version_number);
-            set_global_setting('version_type', version_type);               
-            set_global_setting('whitelist',             serialize_name_hash(default_global_whitelist) );
-            set_global_setting('helper_blacklist',      serialize_name_hash(default_helper_blacklist) );
-        }
-	
-        // first run, send to start page
-        if (global_setting('mode') == '') // will work with old settings
-	    location.href = start_page;	
-	
-	// upgrade from 1.44 or before
-	if (global_setting('version_number') == '')
 	{
+	    set_global_setting('mode', default_mode);
 	    set_global_setting('version_number', version_number);
 	    set_global_setting('version_type', version_type);
-	    // didn't exist:
+	    set_global_setting('whitelist',		serialize_name_hash(default_global_whitelist) );
 	    set_global_setting('helper_blacklist',	serialize_name_hash(default_helper_blacklist) );
 	}
-
-	// upgrade from previous version
+	
+        // first run, send to start page
+	if (global_setting('mode') == '') // will work with old settings
+	    location.href = start_page;
+	
+	// upgrade from 1.5.0
 	if (global_setting('version_number') != version_number)
 	    set_global_setting('version_number', version_number);
 
@@ -107,4 +98,4 @@
     
     boot();
 
-})(window.document, window.location, window.opera, window.opera.scriptStorage);
+})(window.document, window.location, window.opera, widget.preferences);

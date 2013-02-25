@@ -482,11 +482,6 @@ function(){   // fake line, keep_editor_happy
     {
 	window.open("opera:config#Speculative");
     }
-
-    function userjs_on_https_onclick()
-    {
-	window.open("opera:config#User%20JavaScript%20on%20HTTPS");
-    }
     
     // returns toggled value, sets setting and updates this.checkbox
     function toggle_global_setting(w, value, setting)
