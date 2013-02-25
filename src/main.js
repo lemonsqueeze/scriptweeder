@@ -56,33 +56,24 @@
     // quiet: no page redirect
     function startup_checks(quiet)
     {
-	var start_page = "https://github.com/lemonsqueeze/scriptweeder/wiki/scriptweeder-userjs-installed-!";	
+	var start_page = "https://github.com/lemonsqueeze/scriptweeder/wiki/scriptweeder-extension-installed-!";
 	if (in_iframe()) // don't redirect to start page in iframes.
 	    return;
 	
-        // first run, send to start page
-        if (global_setting('mode') == '') // will work with old settings	
-        {
-	    // userjs_only: can't wait until we get there, userjs on https may not be enabled ...	    
-            set_global_setting('version_number', version_number);
-            set_global_setting('version_type', version_type);               
-            set_global_setting('whitelist',             serialize_name_hash(default_global_whitelist) );
-            set_global_setting('helper_blacklist',      serialize_name_hash(default_helper_blacklist) );
-            set_global_setting('mode', default_mode);	    
-
-	    if (!quiet)
-		location.href = start_page;	    
-        }
-	
-	// userjs_only: upgrade from 1.44 or before
-	if (global_setting('version_number') == '')
+        // first run setup
+        if ((location.href == start_page || quiet) && global_setting('mode') == '')
 	{
 	    set_global_setting('version_number', version_number);
 	    set_global_setting('version_type', version_type);
-	    // didn't exist:
+	    set_global_setting('whitelist',		serialize_name_hash(default_global_whitelist) );
 	    set_global_setting('helper_blacklist',	serialize_name_hash(default_helper_blacklist) );
+	    set_global_setting('mode', default_mode);	    
 	}
-
+	
+        // first run, send to start page
+	if (global_setting('mode') == '') // will work with old settings
+	    location.href = start_page;
+	
 	// upgrade from previous version
 	if (global_setting('version_number') != version_number)
 	{
@@ -123,4 +114,4 @@
 
     boot();
 
-})(window.document, window.location, window.opera, window.opera.scriptStorage);
+})(window.document, window.location, window.opera, widget.preferences);
