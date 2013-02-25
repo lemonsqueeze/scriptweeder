@@ -17,6 +17,8 @@ custom.style: FORCE
 	cp src/$@ .
 
 clean:
+	@-rm scriptweeder.js
 	@cd src && $(MAKE) clean
+	@cd extension && $(MAKE) clean
 
 FORCE:
