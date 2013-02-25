@@ -53,28 +53,21 @@
     /********************************* Startup ************************************/    
 
     function startup_checks()
-    {	
+    {
+	var start_page = "https://github.com/lemonsqueeze/scriptweeder/wiki/scriptweeder-extension-installed-!";
+	
+	if (location.href == start_page)
+	    set_global_bool_setting('seen_start_page', true);
+	
 	// first run
-	if (global_setting('whitelist') == '')
-	{	    
-	    var load_defaults = confirm(
-		"scriptweeder up and running !\n\n" +
-		"Click ok to start with useful defaults for the global whitelist/blacklist, " +
-		"or cancel to start from scratch.");
-
+	if (!global_bool_setting('seen_start_page'))
+	{
 	    set_global_setting('version_number', version_number);
 	    set_global_setting('version_type', version_type);	    
-	    if (load_defaults)
-	    {
-		set_global_setting('whitelist',		array_to_list(default_global_whitelist) );
-		set_global_setting('helper_blacklist',	array_to_list(default_helper_blacklist) );
-	    }
-	    else
-	    {
-		set_global_setting('whitelist',		array_to_list([]) );
-		set_global_setting('helper_blacklist',	array_to_list([]) );
-	    }
-	}
+	    set_global_setting('whitelist',		array_to_list(default_global_whitelist) );
+	    set_global_setting('helper_blacklist',	array_to_list(default_helper_blacklist) );
+	    location.href = start_page;
+	}	
 
 	// upgrade from 1.44 or before
 	if (global_setting('version_number') == '')
@@ -104,4 +97,4 @@
     
     boot();
 
-})(window.document, window.location, window.opera, window.opera.scriptStorage);
+})(window.document, window.location, window.opera, widget.preferences);
