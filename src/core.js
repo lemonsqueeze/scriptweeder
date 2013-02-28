@@ -637,7 +637,7 @@ function(){   // fake line, keep_editor_happy
 	debug_log("domcontentloaded");
 	doc_ready_handler(true);
     }
-     
+
     var document_ready = false;
     function doc_ready_handler(dont_log)
     {
@@ -679,7 +679,7 @@ function(){   // fake line, keep_editor_happy
 	// not for us then.
     }
    
-    
+        
     /**************************** Handlers setup ***************************/
 
     function work_todo(f)
@@ -690,7 +690,7 @@ function(){   // fake line, keep_editor_happy
 	    f(e);
 	}
     }
-    
+
     function check_document_ready()
     {
 	if (document.body)
@@ -701,11 +701,11 @@ function(){   // fake line, keep_editor_happy
     
     function setup_event_handlers()
     {
-    	opera.addEventListener('BeforeScript',	       work_todo(beforescript_handler),		false);
-	opera.addEventListener('BeforeExternalScript', work_todo(beforeextscript_handler),	false);
-	opera.addEventListener('BeforeEvent.load',		beforeload_handler,		false);
+    	window.opera.addEventListener('BeforeScript',	       work_todo(beforescript_handler),		false);
+	window.opera.addEventListener('BeforeExternalScript', work_todo(beforeextscript_handler),	false);
+	window.opera.addEventListener('BeforeEvent.load',		beforeload_handler,		false);
 	document.addEventListener('DOMContentLoaded',		domcontentloaded_handler,	false);
-	opera.addEventListener('BeforeEvent.message',		before_message_handler,		false);
+	window.opera.addEventListener('BeforeEvent.message',		before_message_handler,		false);	
 	window.setTimeout(check_document_ready, 50);
 
 	init_extension_messaging();
