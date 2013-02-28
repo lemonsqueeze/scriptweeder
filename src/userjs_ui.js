@@ -274,7 +274,7 @@ function(){   // fake line, keep_editor_happy
 	    if (e.offsetTop + e.realheight > main_ui.offsetTop + main_ui.scrollHeight) // bottom clipped
 		height += e.offsetTop + e.realheight - (main_ui.offsetTop + main_ui.scrollHeight);
 	}
-
+	
 	if (menu_shown())	// extra space for menu shadows
 	{
 	    width += 20;

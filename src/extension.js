@@ -31,38 +31,39 @@ function(){   // fake line, keep_editor_happy
 	return "";
     }
 
-    var extension_button;
-    function update_extension_button(force)
+    var bgproc;
+    var bgproc_button = 'undef';
+
+    function update_bgproc_button(force)
     {
-	if (in_iframe() ||
-	    (!force && !extension_button)) // not talking to extension (yet) - userjs_only
+	if (!bgproc)
 	    return;
 	
-	var needed = something_to_display();	
-	var status = (needed ? mode : 'off');
-	if (!force && extension_button == status) // already in the right state
+	var tmp = disable_main_button;
+	disable_main_button = false; // just want to know if there's something to display
+	var needed = (iframe || ui_needed());
+	disable_main_button = tmp;
+	
+	var status = (needed ? 'on' : 'off');
+	if (!force && bgproc_button == status)
 	    return;
-
-	// when button is not disabled, extension still needs disabled icon for next tab switch
-	var disabled_icon = get_icon_from_css('disabled', false);	
-	var icon = (needed ? get_icon_from_css(mode, true) : disabled_icon);
-	window.postMessage({scriptweeder:true, debug:debug_mode,			// userjs_only
-		            mode:mode, icon:icon, button:disable_main_button,
-		            disabled:!needed, disabled_icon:disabled_icon}, '*');
-	extension_button = status;
+	bgproc.postMessage({mode:mode, button:disable_main_button, disabled:!needed});
+	bgproc_button = status;
     }
     
-    function extension_message_handler(e)
+    function bgproc_message_handler(e)
     {
 	var m = e.data;
-	debug_log("message from extension !");
+	debug_log("message from background process !");
+	if (!bgproc)
+	    bgproc = e.source;
 	check_init();
-	update_extension_button(true);
+	update_bgproc_button(true);
     }
 
     function init_extension_messaging()
     {
-	message_handlers["scriptweeder background process:"] = extension_message_handler;
+	opera.extension.onmessage = bgproc_message_handler; // regular msg handler fires also		
     }
     
 }   // keep_editor_happy

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script>
+
+  var debug = false;
+
+  function debug_log(m)
+  {
+      if (debug)
+	  opera.postError("scriptweeder (bgprc): " + m);
+  }
+
+  function change_icon(mode)
+  {
+      if (!button)
+	  return;
+      var icon = "img/" + mode + ".png";
+      debug_log("changing icon to " + icon);
+      // button.disabled too buggy right now, gets ignored sometimes ...
+      //button.disabled = false;
+      button.icon = icon;
+      button.title = "";
+  }
+
+  function disable_button()
+  {
+      if (!button)
+	  return;
+      button.icon = "img/disabled.png";
+      //button.disabled = true;
+  }
+
+  function clicked(e)
+  {
+      if (button.icon == "img/disabled.png") // poor man's button.disabled =P
+	  return;
+      var tab = get_current_tab()
+      if (!tab)
+	  return;
+      tab.postMessage('scriptweeder_toggle_menu');
+  }
+
+  var button;
+  function create_button()
+  {
+      var ToolbarUIItemProperties =
+      {
+        //disabled: true,
+	title: "No scripts here",
+	icon: "img/disabled.png",
+      };
+      button = opera.contexts.toolbar.createItem(ToolbarUIItemProperties);
+      button.onclick = clicked;
+      opera.contexts.toolbar.addItem(button);  
+  }
+
+  function destroy_button()
+  {
+      opera.contexts.toolbar.removeItem(button);
+      button = null;
+  }
+
+  function get_current_tab()
+  {
+      var tab = opera.extension.tabs.getFocused();
+      if (tab && tab.url)
+	  return tab;
+      return null;
+  }
+
+  function messaged(e)
+  {
+      var m = e.data;
+      if (m.button && !button)
+	  create_button();
+      if (!m.button && button)
+	  destroy_button();
+      if (m.disabled)
+	  disable_button();
+      else
+	  change_icon(m.mode);
+  }
+
+  function request_mode(dest)
+  {
+      try
+      {
+	  // can get DOMException: INVALID_STATE_ERR if tab's in a weird state
+	  dest.postMessage("scriptweeder background process:");
+      }
+      catch(e) {}      
+  }
+
+  function tab_switched(e)
+  {
+      disable_button();      
+      var tab = get_current_tab();
+      if (!tab)
+	  return;
+      debug_log("tab_switched(), requesting mode");      
+      request_mode(tab);
+  }
+
+  function connected(e)
+  {
+      debug_log("connected");
+      // how do we find out if this is coming from the current tab ??
+      // (get_current_tab() == e.source) doesn't work.
+
+      if (get_current_tab())
+      {
+	  debug_log("requesting mode from current tab ...");	  
+	  request_mode(get_current_tab());
+      }
+  }
+
+  function loaded()
+  {
+      debug_log("loaded");
+      create_button();
+      
+      // when an injected script loads, background process gets a connect event      
+      opera.extension.onconnect = connected;
+      opera.extension.onmessage = messaged;
+      opera.extension.tabs.onfocus = tab_switched;
+      //opera.extension.tabs.onblur = ...
+  }
+
+  debug_log("start");
+  window.addEventListener("load", loaded, false);
+
+</script>
+</head>
+<body>
+</body>
+</html>
