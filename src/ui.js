@@ -2,12 +2,12 @@ function(){   // fake line, keep_editor_happy
 
     /********************************* Builtin ui *********************************/
 
-    var default_ui_position = 'bottom_right';
+    var default_ui_position = 'top_right';
     var default_autohide_main_button = false;
     var default_transparent_main_button = true;
     var default_fat_icons = false;
-    var default_font_size = 'normal';
-    var default_menu_display_logic = 'auto';
+    var default_font_size = 'large';
+    var default_menu_display_logic = 'click';
     var default_show_scripts_in_main_menu = true;
     
     // can be used to display stuff in scriptweeder menu from outside scripts.
@@ -34,7 +34,9 @@ function(){   // fake line, keep_editor_happy
     // called on script startup, no ui available at this stage.
     function register_ui()
     {
-	disable_main_button = global_bool_setting('disable_main_button', false);
+	disable_main_button = global_bool_setting('disable_main_button', true);
+	
+	// window.opera.scriptweeder.toggle_menu() api for opera buttons etc...
 	message_handlers['scriptweeder_toggle_menu'] = api_toggle_menu;
     }
 
@@ -67,7 +69,7 @@ function(){   // fake line, keep_editor_happy
     function init_ui_needed()
     {
 	if (init_ui_done || !document_ready)
-	    return false;
+	    return false;	
 	if (element_tag_is(document.body, 'frameset')) // frames, can't show ui in there !
 	    return false;
         if (!there_is_work_todo &&			// no scripts ?
@@ -125,7 +127,7 @@ function(){   // fake line, keep_editor_happy
     }
     
     function create_main_ui()
-    {
+    {	
 	main_ui = new_widget("main_ui");
 	set_unset_class(idoc.body, 'fat_icons', fat_icons);
 	// set font size
@@ -561,11 +563,6 @@ function(){   // fake line, keep_editor_happy
     {
 	var select = w.querySelector('select');
 	select.options.value = (get_disable_main_button() ? 'y' : 'n');
-	if (!extension_button)  // userjs_only: can't throw away main button if extension's not there !
-	{
-	    select.disabled = true;
-	    select.title = "Install scriptweeder extension to use toolbar button.";
-	}
 	select.onchange = function(n)
 	{
 	   if (this.value == 'y') // toolbar button
@@ -593,7 +590,7 @@ function(){   // fake line, keep_editor_happy
 	// disable ui button settings then
 	foreach(getElementsByClassName(this, 'button_ui_setting'), function(n)
 		{   disable_checkbox(n);  });
-	this.querySelector('#ui_position select').disabled = true;	
+	this.querySelector('#ui_position select').disabled = true;
     }
  
     
