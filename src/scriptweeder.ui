@@ -232,7 +232,6 @@
   </tr></table>
 </widget>
 
-
 <widget name="select_iframe_logic" init>
   <table id="iframe_logic" class="dropdown_setting" 
 	 title="Allowed iframes run in the current mode, blocked iframes run in Block All mode. The policy decides which iframes are allowed: [Block] no iframes allowed. [Filter] iframe allowed if host allowed in menu. [Allow] all iframes are allowed (permissive)."><tr>
@@ -390,7 +389,7 @@
 <widget name="block_inline_scripts" >
   <li id="block_inline_scripts" class="not_loaded"
       title="WARNING: the first inline script of a page cannot be blocked ! The userjs version of scriptweeder is not affected by this limitation.">
-    <input type="checkbox"/><img/>Block Inline Scripts<img/>
+    <input type="checkbox"/>Block Inline Scripts<img/>
     <div class="right_item">[-2k]</div>
   </li>
 </widget>

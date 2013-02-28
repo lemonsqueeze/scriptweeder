@@ -725,7 +725,7 @@ function(){   // fake line, keep_editor_happy
 	debug_log("domcontentloaded");
 	doc_ready_handler(true);
     }
-     
+
     var document_ready = false;
     function doc_ready_handler(dont_log)
     {
@@ -828,6 +828,39 @@ function(){   // fake line, keep_editor_happy
     }
 
     
+    /**************************** Extension messaging ***************************/
+
+    var bgproc;
+    var bgproc_button = 'undef';
+
+    function update_bgproc_button(force)
+    {
+	if (!bgproc)
+	    return;
+	
+	var tmp = disable_main_button;
+	disable_main_button = false; // just want to know if there's something to display
+	var needed = (iframe || ui_needed());
+	disable_main_button = tmp;
+	
+	var status = (needed ? 'on' : 'off');
+	if (!force && bgproc_button == status)
+	    return;
+	bgproc.postMessage({mode:mode, button:disable_main_button, disabled:!needed});
+	bgproc_button = status;
+    }
+    
+    function bgproc_message_handler(e)
+    {
+	var m = e.data;
+	debug_log("message from background process !");
+	if (!bgproc)
+	    bgproc = e.source;
+	check_init();
+	update_bgproc_button(true);
+    }
+
+    
     /**************************** Handlers setup ***************************/
 
     function work_todo(f)
@@ -838,7 +871,7 @@ function(){   // fake line, keep_editor_happy
 	    f(e);
 	}
     }
-    
+
     function check_document_ready()
     {
 	if (document.body)
@@ -849,12 +882,13 @@ function(){   // fake line, keep_editor_happy
     
     function setup_event_handlers()
     {
-    	opera.addEventListener('BeforeScript',	       work_todo(beforescript_handler),		false);
-	opera.addEventListener('BeforeExternalScript', work_todo(beforeextscript_handler),	false);
-	opera.addEventListener('BeforeEvent.load',		beforeload_handler,		false);
+    	window.opera.addEventListener('BeforeScript',	       work_todo(beforescript_handler),		false);
+	window.opera.addEventListener('BeforeExternalScript', work_todo(beforeextscript_handler),	false);
+	window.opera.addEventListener('BeforeEvent.load',		beforeload_handler,		false);
 	document.addEventListener('DOMContentLoaded',		domcontentloaded_handler,	false);
-	opera.addEventListener('BeforeEvent.message',		before_message_handler,		false);
+	window.opera.addEventListener('BeforeEvent.message',		before_message_handler,		false);	
 	window.setTimeout(check_document_ready, 50);
+	opera.extension.onmessage = bgproc_message_handler; // regular msg handler fires also	
     }
 
 

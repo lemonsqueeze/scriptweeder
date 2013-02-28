@@ -98,4 +98,4 @@
     
     boot();
 
-})(window.document, window.location, window.opera, widget.preferences);
+})(window.document, window.location, opera, widget.preferences);

@@ -9,7 +9,7 @@ VERSION=$(VERS_MAG)-$(VERS_MIN)
 
 all: $(EXT)
 
-$(EXT): $(DIR)/config.xml $(DIR)/includes/scriptweeder.js
+$(EXT): $(DIR)/config.xml $(DIR)/index.html $(DIR)/includes/scriptweeder.js 
 	@echo Generating $@
 	@-cd $(DIR) && rm *~ */*~ > /dev/null 2>&1
 	@cd $(DIR) && zip -r ../$@ *
@@ -21,3 +21,5 @@ $(DIR)/includes/scriptweeder.js: ../scriptweeder.js
 
 clean:
 	-rm *.oex *~ $(DIR)/includes/scriptweeder.js
+
+FORCE:
