@@ -110,7 +110,7 @@
     {
 	// scriptweeder ui's iframe, don't run in there !
 	if (window != window.top && window.name == 'scriptweeder_iframe')	// TODO better way of id ?
-	    return;
+	    return; 
 	if (location.hostname == "")	// bad url, opera's error page. 
 	    return;
 	

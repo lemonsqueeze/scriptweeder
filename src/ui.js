@@ -133,7 +133,7 @@ function(){   // fake line, keep_editor_happy
 	unset_class(idoc.body, 'large_font');
 	if (font_size != 'normal')
 	    set_class(idoc.body, font_size + '_font');
-	if (!disable_main_button || window != window.top)	    
+	if (!disable_main_button || window != window.top)
 	    wakeup_lazy_widgets(main_ui);
     }
 
@@ -497,7 +497,7 @@ function(){   // fake line, keep_editor_happy
 	   set_global_setting('reload_method', reload_method);
 	};	
     }
-
+    
     function speculative_parser_onclick()
     {
 	window.open("opera:config#Speculative");

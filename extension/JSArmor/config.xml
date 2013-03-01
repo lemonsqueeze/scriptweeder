@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets" id="https://github.com/lemonsqueeze/jsarmor" version="1.5.0">
+    <name>JSArmor</name>
+    <description>Block unwanted javascript. NoScript on steroids for opera !</description>
+    <author href="https://github.com/lemonsqueeze/jsarmor">lemonsqueeze</author>
+    <icon src="jsarmor.png"/>
+    <license href="http://www.gnu.org/licenses/gpl-2.0.html">
+    Licensed under the GNU GPL v2
+    </license>
+</widget>
