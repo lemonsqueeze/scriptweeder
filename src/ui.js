@@ -497,7 +497,7 @@ function(){   // fake line, keep_editor_happy
 	   set_global_setting('reload_method', reload_method);
 	};	
     }
-
+    
     function speculative_parser_onclick()
     {
 	window.open("opera:config#Speculative");
