@@ -17,7 +17,7 @@
 // but when running as an extension they're 2 different things, beware !
 (function(document, location, opera, scriptStorage)
 {
-    var version_number = "1.5.0";
+    var version_number = "1.5.1";
     var version_type = "userjs";
     var version_full = "scriptweeder v"+ version_number + " (" + version_type + ")";
     
@@ -84,7 +84,10 @@
 	    // didn't exist:
 	    set_global_setting('helper_blacklist',	array_to_list(default_helper_blacklist) );
 	}
-	
+
+	// upgrade from previous version
+	if (global_setting('version_number') != version_number)
+	    set_global_setting('version_number', version_number);
     }
 
     // to run safely as extension, only thing that can be done here is event registration.

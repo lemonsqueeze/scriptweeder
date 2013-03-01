@@ -17,7 +17,7 @@
 // but when running as an extension they're 2 different things, beware !
 (function(document, location, opera, scriptStorage)
 {
-    var version_number = "1.5.0";
+    var version_number = "1.5.1";
     var version_type = "userjs";
     var version_full = "scriptweeder v"+ version_number + " (" + version_type + ")";
     
@@ -305,7 +305,7 @@
     {
 	var source = e.source;	// WindowProxy of sender
 	// e.origin contains 'http://hostname' of the sender
-	if (source === top.window)
+	if (source === window.top)
 	    message_from_parent(e, content);
 	else
 	    message_from_iframe(e, content);
@@ -317,7 +317,7 @@
 	debug_log("[msg] from iframe: " + url_hostname(url));
 	
 	// fortunately this works even before domcontentloaded
-	if (element_tag_is(document.body, 'frameset')) // sorry, can't help you
+	if (element_tag_is(document.body, 'frameset')) // sorry, can't help you dear
 	{
 	    e.source.postMessage(iframe_message_header + message_topwin_cant_display, '*');
 	    return;
@@ -734,12 +734,6 @@
 
 	if (block_inline_scripts)
 	    check_handle_noscript_tags();
-
-	// don't display ui in iframes
-	if (window != window.top &&
-	    !topwin_cant_display &&
-	    !show_ui_in_iframes)
-	    return;
 	
 	init_ui();
     }
@@ -1392,6 +1386,7 @@
     var iwin;
     function create_iframe()
     {
+	debug_log("create_iframe()");
 	assert(!document.querySelector('#scriptweeder_iframe'),
 	       "There are 2 scriptweeder instances running ! Both extension and userjs version installed maybe ?");
 	
@@ -1884,6 +1879,7 @@
     var init_ui_done = false;
     function init_ui(force)
     {
+	debug_log("init_ui()");
 	ui_position = global_setting('ui_position', default_ui_position);
 	ui_vpos = ui_position.slice(0, ui_position.indexOf('_'));
 	ui_hpos = ui_position.slice(ui_position.indexOf('_') + 1);
@@ -1893,18 +1889,26 @@
 	create_iframe();	// calls start_ui() when ready
 	init_ui_done = true;
     }
-
+    
     function init_ui_needed()
     {
 	if (init_ui_done || !domcontentloaded)
 	    return false;
-	var not_needed = disable_main_button && !menu_request;	
-	return (rescue_mode() || !not_needed);
+	
+	var force_page_ui = (window != window.top && topwin_cant_display);
+	
+	// don't display ui in iframes unless needed
+	if (window != window.top)
+	    return (show_ui_in_iframes || force_page_ui);
+	
+	var not_needed = disable_main_button && !menu_request;		
+	return (rescue_mode() || force_page_ui || !not_needed);
     }
     
     // called only once when the injected iframe is ready to display stuff.
     function start_ui()
     {
+	debug_log("start_ui()");
 	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
 	transparent_main_button = global_bool_setting('transparent_main_button', default_transparent_main_button);
 	fat_icons = global_bool_setting('fat_icons', default_fat_icons);
@@ -1933,7 +1937,7 @@
 	unset_class(idoc.body, 'large_font');
 	if (font_size != 'normal')
 	    set_class(idoc.body, font_size + '_font');
-	if (!disable_main_button)
+	if (!disable_main_button || window != window.top)	    
 	    wakeup_lazy_widgets(main_ui);
     }
 
@@ -2322,12 +2326,22 @@
     function toggle_disable_main_button(event)
     {
 	disable_main_button = toggle_global_setting(this, disable_main_button, 'disable_main_button');
-	need_repaint = true;
+	if (disable_main_button) // toolbar button
+	{
+	    set_global_setting('ui_position', 'top_right');
+	    set_global_setting('menu_display_logic', 'click');
+	}
+	else
+	{
+	    set_global_setting('ui_position', 'bottom_right');
+	    set_global_setting('menu_display_logic', 'auto');
+	}	
+	need_reload = true;
     }
 
     function disable_main_button_init(w)
     {
-	if (using_opera_button)
+	if (using_opera_button || disable_main_button)
 	{
 	    w.title = "";
 	    return;
@@ -2342,6 +2356,7 @@
 	// disable ui button settings then
 	foreach(getElementsByClassName(this, 'button_ui_setting'), function(n)
 		{   disable_checkbox(n);  });
+	this.querySelector('#ui_position select').disabled = true;	
     }
  
     
@@ -3193,7 +3208,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
       init_proxy: function(w, ph){ script_detail_init(w, ph.host_node, ph.script, ph.iframe, ph.file_only); },
       layout: '<widget name="script_detail" host_node script iframe file_only init><li><img/><a href="" onclick="link_loader"></a></li></widget>' },
    'options_menu' : {
-      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div id="general_options" class="frame"><div class="frame_title">General</div><button title="Turn it off to avoid fetching blocked scripts."   	    onclick="speculative_parser_onclick">Speculative parser…</button><br><button title="Enable to control secure pages."   	    onclick="userjs_on_https_onclick">Userjs on secure pages…</button><select_reload_method></select_reload_method><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="Useful for debugging."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div></td><td rowspan="2"><div id="" class="frame"><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_ui_position></select_ui_position></div></td><td><div id="" class="frame"><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><form id="load_custom_style" title="Load a .style or .css file (can install one of each)"><input type="file" autocomplete="off" oninit="load_custom_style_init"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><br><a href="https://github.com/lemonsqueeze/scriptweeder/wiki/Custom-styles" onclick="link_loader">Find styles</a></div></td></tr><tr><td><div id="" class="frame"><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div id="" class="frame"><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div id="" class="frame"><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptweeder/wiki" onclick="link_loader">Home</a></div></td></tr></table></div></widget>' },
+      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div id="general_options" class="frame" ><div class="frame_title">General</div><button title="Turn it off to avoid fetching blocked scripts."   	    onclick="speculative_parser_onclick">Speculative parser…</button><br><button title="Enable to control secure pages."   	    onclick="userjs_on_https_onclick">Userjs on secure pages…</button><select_reload_method></select_reload_method><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="Useful for debugging."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div></td><td rowspan="2"><div id="" class="frame" oninit=check_disable_button_ui_settings><div class="frame_title">User Interface</div><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><disable_main_button></disable_main_button><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_ui_position></select_ui_position></div></td><td><div id="" class="frame" ><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><form id="load_custom_style" title="Load a .style or .css file (can install one of each)"><input type="file" autocomplete="off" oninit="load_custom_style_init"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><br><a href="https://github.com/lemonsqueeze/scriptweeder/wiki/Custom-styles" onclick="link_loader">Find styles</a></div></td></tr><tr><td><div id="" class="frame" ><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div id="" class="frame" ><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div id="" class="frame" ><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptweeder/wiki" onclick="link_loader">Home</a></div></td></tr></table></div></widget>' },
    'select_ui_position' : {
       init: select_ui_position_init,
       layout: '<widget name="select_ui_position" init><table id="ui_position" class="dropdown_setting"><tr><td>Position</td><td><select><option value="top_left">top left</option><option value="top_right">top right</option><option value="bottom_left">bottom left</option><option value="bottom_right">bottom right</option></select></td></tr></table></widget>' },
@@ -3323,7 +3338,10 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
 	    // didn't exist:
 	    set_global_setting('helper_blacklist',	array_to_list(default_helper_blacklist) );
 	}
-	
+
+	// upgrade from previous version
+	if (global_setting('version_number') != version_number)
+	    set_global_setting('version_number', version_number);
     }
 
     // to run safely as extension, only thing that can be done here is event registration.

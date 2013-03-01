@@ -283,7 +283,7 @@ function(){   // fake line, keep_editor_happy
     {
 	var source = e.source;	// WindowProxy of sender
 	// e.origin contains 'http://hostname' of the sender
-	if (source === top.window)
+	if (source === window.top)
 	    message_from_parent(e, content);
 	else
 	    message_from_iframe(e, content);
@@ -295,7 +295,7 @@ function(){   // fake line, keep_editor_happy
 	debug_log("[msg] from iframe: " + url_hostname(url));
 	
 	// fortunately this works even before domcontentloaded
-	if (element_tag_is(document.body, 'frameset')) // sorry, can't help you
+	if (element_tag_is(document.body, 'frameset')) // sorry, can't help you dear
 	{
 	    e.source.postMessage(iframe_message_header + message_topwin_cant_display, '*');
 	    return;
@@ -712,12 +712,6 @@ function(){   // fake line, keep_editor_happy
 
 	if (block_inline_scripts)
 	    check_handle_noscript_tags();
-
-	// don't display ui in iframes
-	if (window != window.top &&
-	    !topwin_cant_display &&
-	    !show_ui_in_iframes)
-	    return;
 	
 	init_ui();
     }

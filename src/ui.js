@@ -46,6 +46,7 @@ function(){   // fake line, keep_editor_happy
     var init_ui_done = false;
     function init_ui(force)
     {
+	debug_log("init_ui()");
 	ui_position = global_setting('ui_position', default_ui_position);
 	ui_vpos = ui_position.slice(0, ui_position.indexOf('_'));
 	ui_hpos = ui_position.slice(ui_position.indexOf('_') + 1);
@@ -55,18 +56,26 @@ function(){   // fake line, keep_editor_happy
 	create_iframe();	// calls start_ui() when ready
 	init_ui_done = true;
     }
-
+    
     function init_ui_needed()
     {
 	if (init_ui_done || !domcontentloaded)
 	    return false;
-	var not_needed = disable_main_button && !menu_request;	
-	return (rescue_mode() || !not_needed);
+	
+	var force_page_ui = (window != window.top && topwin_cant_display);
+	
+	// don't display ui in iframes unless needed
+	if (window != window.top)
+	    return (show_ui_in_iframes || force_page_ui);
+	
+	var not_needed = disable_main_button && !menu_request;		
+	return (rescue_mode() || force_page_ui || !not_needed);
     }
     
     // called only once when the injected iframe is ready to display stuff.
     function start_ui()
     {
+	debug_log("start_ui()");
 	autohide_main_button = global_bool_setting('autohide_main_button', default_autohide_main_button);
 	transparent_main_button = global_bool_setting('transparent_main_button', default_transparent_main_button);
 	fat_icons = global_bool_setting('fat_icons', default_fat_icons);
@@ -95,7 +104,7 @@ function(){   // fake line, keep_editor_happy
 	unset_class(idoc.body, 'large_font');
 	if (font_size != 'normal')
 	    set_class(idoc.body, font_size + '_font');
-	if (!disable_main_button)
+	if (!disable_main_button || window != window.top)	    
 	    wakeup_lazy_widgets(main_ui);
     }
 
@@ -484,12 +493,22 @@ function(){   // fake line, keep_editor_happy
     function toggle_disable_main_button(event)
     {
 	disable_main_button = toggle_global_setting(this, disable_main_button, 'disable_main_button');
-	need_repaint = true;
+	if (disable_main_button) // toolbar button
+	{
+	    set_global_setting('ui_position', 'top_right');
+	    set_global_setting('menu_display_logic', 'click');
+	}
+	else
+	{
+	    set_global_setting('ui_position', 'bottom_right');
+	    set_global_setting('menu_display_logic', 'auto');
+	}	
+	need_reload = true;
     }
 
     function disable_main_button_init(w)
     {
-	if (using_opera_button)
+	if (using_opera_button || disable_main_button)
 	{
 	    w.title = "";
 	    return;
@@ -504,6 +523,7 @@ function(){   // fake line, keep_editor_happy
 	// disable ui button settings then
 	foreach(getElementsByClassName(this, 'button_ui_setting'), function(n)
 		{   disable_checkbox(n);  });
+	this.querySelector('#ui_position select').disabled = true;	
     }
  
     

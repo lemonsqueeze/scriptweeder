@@ -129,7 +129,7 @@
 </widget>
 
 <def macro="options_user_interface">
-  <frame title="User Interface" oninit="check_disable_button_ui_settings">
+  <frame title="User Interface" extra="oninit=check_disable_button_ui_settings">
     <checkbox_item label="Auto-hide main button" klass="button_ui_setting"
 		   state="`autohide_main_button"
 		   callback="`toggle_autohide_main_button"></checkbox_item>
@@ -388,8 +388,8 @@
   </li>
 </widget>
 
-<def macro="frame" title id>
-  <div id="$id" class="frame">
+<def macro="frame" title id extra>
+  <div id="$id" class="frame" $extra>
     <div class="frame_title">$title</div>
 </def>
 

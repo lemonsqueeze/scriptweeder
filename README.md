@@ -3,30 +3,16 @@ scriptweeder
 
 [Home page](https://github.com/lemonsqueeze/scriptweeder/wiki) is in the wiki now. Or stay here for developper's corner.
 
-Extension
----------
-
-It's in the `extension` branch, but don't use it yet unless you feel like debugging it. There are [outstanding issues](http://my.opera.com/community/forums/topic.dml?id=1545262) remaining.
-
-Other stuff
------------
-
-`utils` directory has a few things which could be useful outside of this project:
-  * `google_nojs.js` example showing how to disable javascript but still allow userjs to run. This one does it for google search.
-  * `block_event_listeners.js` userjs to block page event listeners.
-  * `event_logger.js` userjs to log all events
-  * `page_event_logger.js` regular script to see what events page is getting.
-
-`xml_macros` (tools directory) takes care of expanding xml macros. Useful if you need modularity in xml or html. Syntax is inspired from [fxmacro](http://www2.informatik.tu-muenchen.de/~perst/fxmacro/) (couldn't get it to build so ended up writing this instead).
 
 Making custom styles
 --------------------
 
 There are two kinds of custom styles:
-* `.style` files just add a few rules on top of the current stylesheet
+* `.style` files add rules on top of the current stylesheet
 * `.css` files replace the whole stylesheet.
+.style are preferred: they can be combined with others and will likely work with future versions.
 
-The dev environment makes it very easy to create either. `.style` files first:
+The dev environment makes it very easy to create them:
 * Get a fresh copy of the repository (see Hacking below)
 * Add your style patch rules at the end of `src/scriptweeder.css` (don't change anything else ! If you want to change a rule, copy it first).
 * Add extra images to `img` directory and reference them with `url('../img/whacky_image.png')`.
@@ -38,7 +24,7 @@ The dev environment makes it very easy to create either. `.style` files first:
 
   Style file is ready in `custom.style` !
 
-Creating a completely new stylesheet is even easier: just replace the whole .css and type `make`. The generated stylesheet is in `src/scriptweeder.inlined.css`.
+Creating a completely new stylesheet is just as easy: just replace the whole .css and type `make`. The generated stylesheet is in `src/scriptweeder.inlined.css`.
 
 For example, this is the source for glowballs:
 ```
@@ -60,9 +46,10 @@ For example, this is the source for glowballs:
 ```
 
 
-
 Hacking
 -------
+
+The extension version is in the `extension` branch.
 
 The script is put together from the different bits and pieces in the `src` directory. You'll need some kind of unix environment with `git`, `perl`, `make` and `base64` (for windows get `cygwin`).
 
@@ -76,5 +63,18 @@ Then `make` to build.
 UI layout is generated from `scriptweeder.ui`, css from `scriptweeder.css`. Image references in the css are turned into `data:` urls automatically, so it's a convenient tool for hacking styles.
 
 UI code lives in `ui.js`, `userjs_ui.js` manages widgets and the injected iframe, and the filtering logic is in `core.js`.
+
+
+Other stuff
+-----------
+
+`utils` directory has a few things which could be useful outside of this project:
+  * `google_nojs.js` example showing how to disable javascript but still allow userjs to run. This one does it for google search.
+  * `block_event_listeners.js` userjs to block page event listeners.
+  * `event_logger.js` userjs to log all events
+  * `page_event_logger.js` regular script to see what events page is getting.
+
+`xml_macros` (tools directory) takes care of expanding xml macros. Useful if you need modularity in xml or html. Syntax is inspired from [fxmacro](http://www2.informatik.tu-muenchen.de/~perst/fxmacro/) (couldn't get it to build so ended up writing this instead).
+
 
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/lemonsqueeze/scriptweeder/trend.png)](https://bitdeli.com/free "Bitdeli Badge")

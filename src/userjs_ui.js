@@ -280,6 +280,7 @@ function(){   // fake line, keep_editor_happy
     var iwin;
     function create_iframe()
     {
+	debug_log("create_iframe()");
 	assert(!document.querySelector('#scriptweeder_iframe'),
 	       "There are 2 scriptweeder instances running ! Both extension and userjs version installed maybe ?");
 	
