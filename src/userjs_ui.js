@@ -247,35 +247,29 @@ function(){   // fake line, keep_editor_happy
 
     function resize_iframe()
     {
-	// can't just idoc.body.firstChild with things like modern scroll extension adding their stuff in ...
-	var content = idoc.body.querySelector('#main');
-
-	var width = content.scrollWidth;
-	var height = content.scrollHeight;
+	// note: never use idoc.body.firstChild to refer to main_ui: things like
+	//       modern scroll extension add their stuff in ...		
+	var width = main_ui.scrollWidth;
+	var height = main_ui.scrollHeight;
 	
 	// submenu uses absolute positioning, need to take it into account.
 	if (submenu)
 	{
-	    var e = submenu;	    
-	    if (e.offsetLeft < 0)
-	    {
-		width += -e.offsetLeft;
-		e.style.left = 0;
-	    }
-	    width = max(width, e.offsetLeft + e.realwidth);
-	    if (e.offsetTop < 0)
-	    {
-		height += -e.offsetTop;
-		e.style.top = 0;
-	    }
-	    height = max(height, e.realheight);
+	    var e = submenu;
+	    if (e.offsetLeft < main_ui.offsetLeft) // left clipped
+		width += main_ui.offsetLeft - e.offsetLeft;
+	    if (e.offsetLeft + e.realwidth > main_ui.offsetLeft + main_ui.scrollWidth) // right clipped
+		width += e.offsetLeft + e.realwidth - (main_ui.offsetLeft + main_ui.scrollWidth);
+	    	    
+	    if (e.offsetTop < main_ui.offsetTop) // top clipped 
+		height += main_ui.offsetTop - e.offsetTop;
+	    if (e.offsetTop + e.realheight > main_ui.offsetTop + main_ui.scrollHeight) // bottom clipped
+		height += e.offsetTop + e.realheight - (main_ui.offsetTop + main_ui.scrollHeight);
 	}
 
 	// extra space for menu shadows
-	if (ui_hpos == 'left')
-	    width += 30;
-	if (ui_vpos == 'top')
-	    height += 30;
+	width += 20;
+	height += 20;
 	
 	iframe.style.width = width + 'px';
 	iframe.style.height = height + 'px';

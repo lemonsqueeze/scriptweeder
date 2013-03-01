@@ -769,18 +769,30 @@ function(){   // fake line, keep_editor_happy
     {
 	var tr = position.getBoundingClientRect();
 	var mr = nsmenu.getBoundingClientRect();
-	var left = (ui_hpos == 'right' ?
-		    mr.left - sub.offsetWidth :
-		    mr.right - 1);
-	var top = tr.top;  // tr's top	
-	if (top + sub.offsetHeight > main_ui.offsetHeight) // bottom screens out
-	    top = main_ui.offsetHeight - sub.offsetHeight;
-
-	// offsetHeight changes afterwards in bottom-left layout, wtf ?!	
+	var doc_width = iframe.clientWidth;
+	var doc_height = iframe.clientHeight;
+	var top = tr.top;  // tr's top
+	
+	if (ui_vpos == 'bottom' &&
+	    top + sub.offsetHeight > doc_height) // bottom screens out
+	    top = doc_height - sub.offsetHeight;
+	if (ui_vpos == 'top' &&
+	    top + sub.offsetHeight > main_ui.offsetHeight) // bottom below menu
+	    top = max(main_ui.offsetHeight - sub.offsetHeight, 0);	
+	
+	// offsetHeight changes afterwards in bottom-left layout, wtf ?!
 	sub.realwidth = sub.offsetWidth;
 	sub.realheight = sub.offsetHeight;
+
+	var h = "right:" + ((doc_width - mr.right) + nsmenu.offsetWidth);
+	if (ui_hpos == 'left')
+	    h = "left:"  + (mr.right - 1);
 	
-	sub.style = ("left:" + left + 'px;' + "top:" + top + 'px;');	    
+	var v = "top:" + top;
+	if (ui_vpos == 'bottom')
+	    v = "bottom:" + (doc_height - (top + sub.realheight));
+	
+	sub.style = (h + 'px;') + (v + 'px;');
     }
 
     // TODO: show iframes as well ?
