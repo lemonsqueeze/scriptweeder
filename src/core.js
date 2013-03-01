@@ -850,7 +850,7 @@ function(){   // fake line, keep_editor_happy
 	bgproc_button = status;
     }
     
-    function bgproc_message_handler(e)
+    function bgproc_message_handler(e) 
     {
 	var m = e.data;
 	debug_log("message from background process !");
