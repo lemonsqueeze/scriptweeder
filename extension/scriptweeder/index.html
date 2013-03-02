@@ -3,7 +3,7 @@
 <head>
 <script>
 
-  var debug = false;
+  var debug = true;
 
   function debug_log(m)
   {
@@ -11,29 +11,32 @@
 	  opera.postError("scriptweeder (bgprc): " + m);
   }
 
-  function change_icon(mode)
+  function change_icon(mode, icon)
   {
       if (!button)
 	  return;
-      var icon = "img/" + mode + ".png";
-      debug_log("changing icon to " + icon);
+      debug_log("setting icon for " + mode + " mode");
       // button.disabled too buggy right now, gets ignored sometimes ...
       //button.disabled = false;
-      button.icon = icon;
-      button.title = "";
+
+      // this works but throws (?!)
+      try { button.icon = icon; }
+      catch(e) {}
   }
 
-  function disable_button()
+  function set_button_disabled(disabled)
   {
       if (!button)
 	  return;
-      button.icon = "img/disabled.png";
+      if (disabled)
+	  button.icon = disabled_icon;
+      button.is_disabled = disabled;
       //button.disabled = true;
   }
 
   function clicked(e)
   {
-      if (button.icon == "img/disabled.png") // poor man's button.disabled =P
+      if (button.is_disabled) // poor man's button.disabled =P
 	  return;
       var tab = get_current_tab()
       if (!tab)
@@ -42,13 +45,14 @@
   }
 
   var button;
+  var disabled_icon = "img/disabled.png";
   function create_button()
   {
       var ToolbarUIItemProperties =
       {
         //disabled: true,
-	title: "No scripts here",
-	icon: "img/disabled.png",
+	title: "",
+	icon: disabled_icon
       };
       button = opera.contexts.toolbar.createItem(ToolbarUIItemProperties);
       button.onclick = clicked;
@@ -76,10 +80,12 @@
 	  create_button();
       if (!m.button && button)
 	  destroy_button();
-      if (m.disabled)
-	  disable_button();
-      else
-	  change_icon(m.mode);
+      
+      if (m.disabled_icon != '')
+	  disabled_icon = m.disabled_icon;
+      
+      change_icon(m.mode, m.icon);
+      set_button_disabled(m.disabled);
   }
 
   function request_mode(dest)
@@ -94,7 +100,7 @@
 
   function tab_switched(e)
   {
-      disable_button();      
+      set_button_disabled(true);
       var tab = get_current_tab();
       if (!tab)
 	  return;
