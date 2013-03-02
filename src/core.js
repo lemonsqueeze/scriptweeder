@@ -831,8 +831,7 @@ function(){   // fake line, keep_editor_happy
     var extension_button;
     function update_extension_button(force)
     {
-	if (in_iframe() ||
-	    (!force && !extension_button)) // not talking to extension (yet) - userjs_only
+	if (in_iframe() || !bgproc)
 	    return;
 	
 	var needed = something_to_display();	
@@ -840,54 +839,23 @@ function(){   // fake line, keep_editor_happy
 	if (!force && extension_button == status) // already in the right state
 	    return;
 
-	// when button is not disabled, extension still needs disabled icon for next tab switch
+	// when button is not disabled, bgprocess still needs disabled icon for next tab switch
 	var disabled_icon = get_icon_from_css('disabled', false);	
 	var icon = (needed ? get_icon_from_css(mode, true) : disabled_icon);
-	window.postMessage({scriptweeder:true, debug:debug_mode,			// userjs_only
-		            mode:mode, icon:icon, button:disable_main_button,
-		            disabled:!needed, disabled_icon:disabled_icon}, '*');
+	bgproc.postMessage({debug:debug_mode, mode:mode, icon:icon, button:disable_main_button,
+		            disabled:!needed, disabled_icon:disabled_icon});
 	extension_button = status;
     }
-    
-    function extension_message_handler(e)
-    {
-	var m = e.data;
-	debug_log("message from extension !");
-	check_init();
-	update_extension_button(true);
-    }
 
-    
-    /**************************** Extension messaging ***************************/
-
-    var bgproc;
-    var bgproc_button = 'undef';
-
-    function update_bgproc_button(force)
-    {
-	if (!bgproc)
-	    return;
-	
-	var tmp = disable_main_button;
-	disable_main_button = false; // just want to know if there's something to display
-	var needed = (iframe || ui_needed());
-	disable_main_button = tmp;
-	
-	var status = (needed ? 'on' : 'off');
-	if (!force && bgproc_button == status)
-	    return;
-	bgproc.postMessage({mode:mode, button:disable_main_button, disabled:!needed});
-	bgproc_button = status;
-    }
-    
-    function bgproc_message_handler(e) 
+    var bgproc;    
+    function extension_message_handler(e) 
     {
 	var m = e.data;
 	debug_log("message from background process !");
 	if (!bgproc)
 	    bgproc = e.source;
 	check_init();
-	update_bgproc_button(true);
+	update_extension_button(true);
     }
 
     
@@ -919,7 +887,7 @@ function(){   // fake line, keep_editor_happy
 	window.opera.addEventListener('BeforeEvent.message',		before_message_handler,		false);	
 	window.setTimeout(check_document_ready, 50);
 
-	opera.extension.onmessage = bgproc_message_handler; // regular msg handler fires also	
+	opera.extension.onmessage = extension_message_handler; // regular msg handler fires also	
     }
 
 
