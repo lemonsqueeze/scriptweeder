@@ -1,7 +1,7 @@
 function(){   // fake line, keep_editor_happy
     
     /**************************** Extension messaging ***************************/
-    
+
     function get_icon_from_css(mode, fatal)
     {
 	var data_re = new RegExp(".*'(data:image/png;base64,[^']*)'.*");
@@ -31,39 +31,39 @@ function(){   // fake line, keep_editor_happy
 	return "";
     }
 
-    var bgproc;
-    var bgproc_button = 'undef';
-
-    function update_bgproc_button(force)
+    var extension_button;
+    function update_extension_button(force)
     {
-	if (!bgproc)
+	if (in_iframe() || !bgproc)
 	    return;
 	
-	var tmp = disable_main_button;
-	disable_main_button = false; // just want to know if there's something to display
-	var needed = (iframe || ui_needed());
-	disable_main_button = tmp;
-	
-	var status = (needed ? 'on' : 'off');
-	if (!force && bgproc_button == status)
+	var needed = something_to_display();	
+	var status = (needed ? mode : 'off');
+	if (!force && extension_button == status) // already in the right state
 	    return;
-	bgproc.postMessage({mode:mode, button:disable_main_button, disabled:!needed});
-	bgproc_button = status;
+
+	// when button is not disabled, bgprocess still needs disabled icon for next tab switch
+	var disabled_icon = get_icon_from_css('disabled', false);	
+	var icon = (needed ? get_icon_from_css(mode, true) : disabled_icon);
+	bgproc.postMessage({debug:debug_mode, mode:mode, icon:icon, button:disable_main_button,
+		            disabled:!needed, disabled_icon:disabled_icon});
+	extension_button = status;
     }
-    
-    function bgproc_message_handler(e)
+
+    var bgproc;    
+    function extension_message_handler(e) 
     {
 	var m = e.data;
 	debug_log("message from background process !");
 	if (!bgproc)
 	    bgproc = e.source;
 	check_init();
-	update_bgproc_button(true);
+	update_extension_button(true);
     }
 
     function init_extension_messaging()
     {
-	opera.extension.onmessage = bgproc_message_handler; // regular msg handler fires also		
+	opera.extension.onmessage = extension_message_handler; // regular msg handler fires also		
     }
     
 }   // keep_editor_happy
