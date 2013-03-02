@@ -91,22 +91,17 @@ a, a:visited				{ color:#00f }
 img	{ width:1px; height:1px; vertical-align:middle; 
 	  background-size:contain; background-repeat:no-repeat; background-position:center }
 
+/* only used by the extension toolbar button */
+#toolbar_button.disabled img	{ /*img_size*/ background-image:url('../img/disabled.png'); }
+
 /* bullet images by momentumdesignlab.com  */
-/* mode icons (small) */
+/* mode icons */
 .menu .block_all img, .menu .filtered  img, 
 .menu .relaxed   img, .menu .allow_all img { margin: 3px }
-.block_all img		{ /*img_size*/ background-image:url('../img/block_all_16.png'); }
-.filtered  img		{ /*img_size*/ background-image:url('../img/filtered_16.png');  }
-.relaxed   img		{ /*img_size*/ background-image:url('../img/relaxed_16.png');  }
-.allow_all img		{ /*img_size*/ background-image:url('../img/allow_all_16.png'); }
-
-/* mode icons (fat) */
-.fat_icons .menu .block_all img, .fat_icons .menu .filtered  img, 
-.fat_icons .menu .relaxed   img, .fat_icons .menu .allow_all img { margin: 4px }
-.fat_icons .block_all img		{ /*img_size*/ background-image:url('../img/block_all.png'); }
-.fat_icons .filtered  img		{ /*img_size*/ background-image:url('../img/filtered.png');  }
-.fat_icons .relaxed   img		{ /*img_size*/ background-image:url('../img/relaxed.png');  }
-.fat_icons .allow_all img		{ /*img_size*/ background-image:url('../img/allow_all.png'); }
+.block_all img		{ /*img_size*/ background-image:url('../img/block_all.png'); }
+.filtered  img		{ /*img_size*/ background-image:url('../img/filtered.png');  }
+.relaxed   img		{ /*img_size*/ background-image:url('../img/relaxed.png');  }
+.allow_all img		{ /*img_size*/ background-image:url('../img/allow_all.png'); }
 
 .fat_icons .allowed img, .fat_icons .blocked img, .fat_icons .not_loaded img  { width:22px; height:22px; }
 /* left out:  .allowed_globally .*iframe */

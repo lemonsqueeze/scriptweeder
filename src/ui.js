@@ -41,28 +41,36 @@ function(){   // fake line, keep_editor_happy
 	window.opera.scriptweeder.toggle_menu = function() { window.postMessage('scriptweeder_toggle_menu', '*'); };
     }
 
-    // normal case : called only once after domcontentloaded.
+    // normal case : called only once after document_ready.
     // however, can also be called from api_toggle_menu(). This could be anytime, do some checking.
     var init_ui_done = false;
-    function init_ui(force)
+    function init_ui()
     {
-	debug_log("init_ui()");
+	if (!ui_needed())
+	    return;
+	debug_log("init_ui()");	
+	
 	ui_position = global_setting('ui_position', default_ui_position);
 	ui_vpos = ui_position.slice(0, ui_position.indexOf('_'));
 	ui_hpos = ui_position.slice(ui_position.indexOf('_') + 1);
 	
-	if (!init_ui_needed())
-	    return;
 	create_iframe();	// calls start_ui() when ready
 	init_ui_done = true;
     }
     
-    function init_ui_needed()
+    function ui_needed()
     {
-	if (init_ui_done || !domcontentloaded)
+	if (init_ui_done || !document_ready)
 	    return false;
 	
-	var force_page_ui = (window != window.top && topwin_cant_display);
+	if (element_tag_is(document.body, 'frameset')) // frames, can't show ui in there !
+	    return false;
+        if (!there_is_work_todo &&			// no scripts ?
+	    !document.querySelector('iframe') &&	// no iframes ?
+	    !rescue_mode())				// rescue mode, always show ui
+            return false;				// don't show ui.
+	
+ 	var force_page_ui = (window != window.top && topwin_cant_display);
 	
 	// don't display ui in iframes unless needed
 	if (window != window.top)
@@ -118,7 +126,7 @@ function(){   // fake line, keep_editor_happy
     // FIXME why does it take forever to show up ?!
     function api_toggle_menu()
     {
-	// log("api_toggle_menu");
+	debug_log("api_toggle_menu");
 	using_opera_button = true;
 	if (!main_ui)
 	{
@@ -127,7 +135,6 @@ function(){   // fake line, keep_editor_happy
 	    return;
 	}	
 	show_hide_menu(true, true);	
-	// log("api_toggle_menu done");
     }
 
     /****************************** widget handlers *****************************/
@@ -1106,11 +1113,14 @@ function(){   // fake line, keep_editor_happy
     
     /***************************** Repaint logic ******************************/
 
-    var repaint_ui_count = 0;
     var repaint_ui_timer = null;
     function repaint_ui()
     {
-	repaint_ui_count++;
+	if (!main_ui)
+	{
+	    init_ui();
+	    return;
+	}	
 	if (repaint_ui_timer)
 	    return;
 	repaint_ui_timer = iwin.setTimeout(repaint_ui_now, 500);

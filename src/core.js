@@ -167,7 +167,6 @@ function(){   // fake line, keep_editor_happy
       }
     }
 
-// UIFIXME
     // Set mode, repaint ui, and flag for reload
     function set_mode(new_mode)
     {
@@ -301,8 +300,7 @@ function(){   // fake line, keep_editor_happy
 	    return;
 	}	
 	add_iframe(url);			// add to menu so we can block/allow it.
-	if (main_ui) // UIFIXME
-	    repaint_ui();	
+	repaint_ui();	
     }
 
     var topwin_cant_display = false;
@@ -320,7 +318,7 @@ function(){   // fake line, keep_editor_happy
 	topwin_cant_display = true;
 	load_global_context();  // reset mode etc
 	reload_needed_scripts();
-	if (domcontentloaded)
+	if (document_ready)
 	    init_ui();
     }
 
@@ -629,8 +627,7 @@ function(){   // fake line, keep_editor_happy
       total_inline++;
       total_inline_size += e.element.text.length;
       
-      if (main_ui) //UIFIXME
-	  repaint_ui();
+      repaint_ui();
       
       if (block_inline_scripts)
 	  block_script(e);
@@ -663,8 +660,7 @@ function(){   // fake line, keep_editor_happy
 
         if (!allowed)
 	    block_script(e);
-	if (main_ui) // UIFIXME
-	    repaint_ui();
+	repaint_ui();
     }
 
     // Find out which scripts are actually loaded,
@@ -694,22 +690,21 @@ function(){   // fake line, keep_editor_happy
 	if (nsmenu)
 	    repaint_ui();
     }
-    
-//UIFIXME
-    var domcontentloaded = false;
+
     function domcontentloaded_handler(e)
     {
 	debug_log("domcontentloaded");
+	doc_ready_handler(true);
+    }
+     
+    var document_ready = false;
+    function doc_ready_handler(dont_log)
+    {
+	if (!dont_log)
+	    debug_log("document ready");
 	check_init();
-	domcontentloaded = true;
-
-	if (element_tag_is(document.body, 'frameset')) // frames, can't show ui in there !
-	    return;
-        if (!there_is_work_todo &&			// no scripts ?
-	    !document.querySelector('iframe') &&	// no iframes ?
-	    !rescue_mode())				// rescue mode, always show ui
-            return;				// don't show ui.
-
+	document_ready = true;
+	
 	if (block_inline_scripts)
 	    check_handle_noscript_tags();
 	
@@ -747,14 +742,23 @@ function(){   // fake line, keep_editor_happy
 	    f(e);
 	}
     }
-
+    
+    function check_document_ready()
+    {
+	if (document.body)
+	    doc_ready_handler();
+	else
+	    window.setTimeout(check_document_ready, 50);
+    }
+    
     function setup_event_handlers()
     {
     	opera.addEventListener('BeforeScript',	       work_todo(beforescript_handler),		false);
 	opera.addEventListener('BeforeExternalScript', work_todo(beforeextscript_handler),	false);
 	opera.addEventListener('BeforeEvent.load',		beforeload_handler,		false);
 	document.addEventListener('DOMContentLoaded',		domcontentloaded_handler,	false);
-	opera.addEventListener('BeforeEvent.message',		before_message_handler,		false);	
+	opera.addEventListener('BeforeEvent.message',		before_message_handler,		false);
+	window.setTimeout(check_document_ready, 50);
     }
 
 

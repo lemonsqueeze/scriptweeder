@@ -267,9 +267,11 @@ function(){   // fake line, keep_editor_happy
 		height += e.offsetTop + e.realheight - (main_ui.offsetTop + main_ui.scrollHeight);
 	}
 
-	// extra space for menu shadows
-	width += 20;
-	height += 20;
+	if (menu_shown())	// extra space for menu shadows
+	{
+	    width += 20;
+	    height += 20;
+	}
 	
 	iframe.style.width = width + 'px';
 	iframe.style.height = height + 'px';
