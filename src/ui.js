@@ -6,7 +6,7 @@ function(){   // fake line, keep_editor_happy
     var default_autohide_main_button = false;
     var default_transparent_main_button = true;
     var default_fat_icons = false;
-    var default_font_size = 'large';
+    var default_font_size = 'normal';
     var default_menu_display_logic = 'click';
     var default_show_scripts_in_main_menu = true;
     
