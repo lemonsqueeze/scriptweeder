@@ -11,7 +11,7 @@ function(){   // fake line, keep_editor_happy
     /********************************* Style *********************************/
 
     // inject style as plain text with a <style> element.
-    function new_style(str)
+    function set_style(str)
     {
 	var el = idoc.createElement('style');
 	el.type = 'text/css';
@@ -215,18 +215,26 @@ function(){   // fake line, keep_editor_happy
 
     /**************************** Injected iframe logic ***********************/
 
-    // interface style used in scriptweeder's iframe
-    function init_style()
+    // css used in scriptweeder's iframe
+    var style;
+    function get_style()
     {	
+	if (style)
+	    return style;
 	// use custom style ?
 	var use_custom = (enable_custom_style && !rescue_mode());
-	var style = (use_custom ? global_setting('css') : '');
+	style = (use_custom ? global_setting('css') : '');
 	style = (style == '' ? builtin_style : style);
 
 	// style patches
 	if (use_custom)
 	    style += '\n' + global_setting('style');
-	new_style(style);
+	return style;
+    }
+
+    function init_style()
+    {
+	set_style(get_style());
     }
 
     function populate_iframe()

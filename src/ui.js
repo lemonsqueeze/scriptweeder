@@ -46,6 +46,7 @@ function(){   // fake line, keep_editor_happy
     var init_ui_done = false;
     function init_ui()
     {
+	update_extension_button();
 	if (!ui_needed())
 	    return;
 	debug_log("init_ui()");	
@@ -502,30 +503,32 @@ function(){   // fake line, keep_editor_happy
 	need_repaint = true;
     }
     
-    function toggle_disable_main_button(event)
+    function select_button_display_init(w)
     {
-	disable_main_button = toggle_global_setting(this, disable_main_button, 'disable_main_button');
-	if (disable_main_button) // toolbar button
+	var select = w.querySelector('select');
+	select.options.value = (disable_main_button ? 'y' : 'n');
+	if (!extension_button)  // can't throw away main button if extension's not there !
 	{
-	    set_global_setting('ui_position', 'top_right');
-	    set_global_setting('menu_display_logic', 'click');
+	    select.disabled = true;
+	    select.title = "Install scriptweeder extension to use toolbar button.";
 	}
-	else
+	select.onchange = function(n)
 	{
-	    set_global_setting('ui_position', 'bottom_right');
-	    set_global_setting('menu_display_logic', 'auto');
-	}	
-	need_reload = true;
-    }
-
-    function disable_main_button_init(w)
-    {
-	if (using_opera_button || disable_main_button)
-	{
-	    w.title = "";
-	    return;
-	}
-	disable_checkbox(w);
+	   if (this.value == 'y') // toolbar button
+	   {
+	      set_global_bool_setting('disable_main_button', true);
+	      set_global_setting('ui_position', 'top_right');
+	      set_global_setting('menu_display_logic', 'click');
+	   }
+	   else
+	   {
+	      set_global_bool_setting('disable_main_button', false);
+	      set_global_setting('ui_position', 'bottom_right');
+	      set_global_setting('menu_display_logic', 'auto');
+	   }
+	   
+	   need_reload = true;
+	};	
     }
     
     function check_disable_button_ui_settings()
@@ -1133,6 +1136,7 @@ function(){   // fake line, keep_editor_happy
 
     function repaint_ui_now()
     {
+	update_extension_button();
 	repaint_ui_timer = null;
 	//   debug: (note: can't call plugins' add_item() here (recursion))
 	//   plugin_items.repaint_ui = "late events:" + repaint_ui_count;	

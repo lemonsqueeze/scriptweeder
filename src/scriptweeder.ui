@@ -130,22 +130,22 @@
 
 <def macro="options_user_interface">
   <frame title="User Interface" extra="oninit=check_disable_button_ui_settings">
+    <select_menu_display_logic></select_menu_display_logic>
+    <select_font_size></select_font_size>
+    <select_button_display></select_button_display>
+    <select_ui_position></select_ui_position>
     <checkbox_item label="Auto-hide main button" klass="button_ui_setting"
 		   state="`autohide_main_button"
 		   callback="`toggle_autohide_main_button"></checkbox_item>
     <checkbox_item label="Transparent button !" klass="button_ui_setting"
 		   state="`transparent_main_button"
 		   callback="`toggle_transparent_main_button"></checkbox_item>
-    <disable_main_button></disable_main_button>
     <checkbox_item label="Fat icons" 
 		   state="`fat_icons"
 		   callback="`toggle_fat_icons"></checkbox_item>
     <checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"
 		   state="`show_scripts_in_main_menu"
 		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item>
-    <select_menu_display_logic></select_menu_display_logic>
-    <select_font_size></select_font_size>
-    <select_ui_position></select_ui_position>
   </frame>
 </def>
 
@@ -219,11 +219,14 @@
   </tr></table>
 </widget>
 
-<widget name="disable_main_button" init>
-  <checkbox_item label="Disable main button"
-		 title="Install opera button and use it to come back here first."
-		 state="`disable_main_button"
-		 callback="`toggle_disable_main_button"></checkbox_item>
+<widget name="select_button_display" init>
+  <table class="dropdown_setting"><tr>
+    <td>Button display</td>
+    <td><select>
+      <option value="y">Toolbar</option>
+      <option value="n">Page</option>
+    </select></td>
+  </tr></table>
 </widget>
 
 

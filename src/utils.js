@@ -350,9 +350,9 @@ function(){   // fake line, keep_editor_happy
 
     function log(msg)
     {
-	var h = "scriptweeder (main)  : ";
+	var h = "scriptweeder userjs (main)  : ";
 	if (window != window.top)
-	    h = "scriptweeder (iframe): ";
+	    h = "scriptweeder userjs (iframe): ";
 	console.log(h + msg);
     }
 
