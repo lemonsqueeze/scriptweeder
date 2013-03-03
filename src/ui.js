@@ -229,17 +229,22 @@ function(){   // fake line, keep_editor_happy
 	{
 	    var setting;
 	    if (file.match(/\.css$/))
-		setting = 'css';
+	    {
+		set_global_setting('css', s);
+		set_global_setting('css_file', file); // filename
+	    }
 	    else if (file.match(/\.style$/))
-		setting = 'style';
+	    {
+		var styles = global_setting('style');
+		var files = global_setting('style_file');
+		set_global_setting('style', styles + s);
+		set_global_setting('style_file', files + ' ' + file); // filename
+	    }
 	    else
 	    {
 		my_alert(file + ":\nUnknown file type, should be a .style or .css");
 		return;
-	    }
-	    
-	    set_global_setting(setting, s);
-	    set_global_setting(setting + '_file', file); // filename
+	    }	    
 	    alert("Loaded !");
 	    need_reload = true;
 	};
@@ -256,7 +261,7 @@ function(){   // fake line, keep_editor_happy
 	}
 	var css_file =   (global_setting('css_file')   ? global_setting('css_file')   : "");
 	var style_file = (global_setting('style_file') ? global_setting('style_file') : "");
-	this.title = "Installed: " +  css_file + " " + style_file;
+	this.title = "Loaded: " + css_file + style_file;
     }
     
     function clear_saved_style()

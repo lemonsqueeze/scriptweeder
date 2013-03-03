@@ -279,7 +279,7 @@
 </def>
 
 <def macro="load_custom_style">
-  <form id="load_custom_style" title="Load a .style or .css file (can install one of each)">
+  <form id="load_custom_style" title="Load a .style or .css file (can stack .style files)">
       <input type="file" autocomplete="off" oninit="load_custom_style_init"/><button>Load style…</button>
   </form>
 </def>
