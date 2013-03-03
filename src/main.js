@@ -109,9 +109,13 @@
 	window.opera.scriptweeder = new Object();	// external api
 	window.opera.scriptweeder.version = version_number;
 	window.opera.scriptweeder.version_type = version_type;	
-	debug_log("start");	
     }
 
+    debug_log("start");
+        
+    if (forward_to_userjs())  // userjs detected, let it takeover and forward messages to it.
+	return;
+    
     boot();
 
 })(window.document, window.location, opera, widget.preferences);

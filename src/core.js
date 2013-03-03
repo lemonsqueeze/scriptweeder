@@ -858,6 +858,46 @@ function(){   // fake line, keep_editor_happy
 	update_extension_button(true);
     }
 
+    /**************************** userjs messaging ***************************/
+
+    var bgproc;
+    function ujsfwd_before_message(ujs_event)
+    {
+	var e = ujs_event.event;
+	var m = e.data;
+
+	// if 2nd msg from bgproc,
+	// won't even get called, userjs uses beforeEvent.message and will cancel it.
+	debug_log("[msg] " + m);
+	
+	if (m == "scriptweeder bgproc to injected script:")  // hello from bgproc
+	{
+	    bgproc = e.source;
+	    ujs_event.preventDefault(); // keep this private
+	    return;
+	}
+	
+	if (m && m.scriptweeder) // from userjs, forward to bgproc
+	{
+	    debug_log("forwarding to bgproc");
+	    bgproc.postMessage(m);
+	    ujs_event.preventDefault(); // keep this private
+	}
+	// other msg, leave alone
+    }
+    
+    function forward_to_userjs()
+    {
+	if (!window.opera.scriptweeder) // userjs is not running
+	    return false;
+	
+	opera.extension.onmessage = function(){};  // just so we get an event
+	// this is enough for userjs beforeEvent to fire,
+	// so no need to forward anything in this direction.
+	window.opera.addEventListener('BeforeEvent.message', ujsfwd_before_message, false);
+	debug_log("userjs detected, handing over and forwarding");
+	return true;
+    }
     
     /**************************** Handlers setup ***************************/
 
