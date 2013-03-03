@@ -102,9 +102,6 @@
 	    return;
 	
 	setup_event_handlers();
-	// userjs registers right away so extension can detect it
-	window.opera.scriptweeder = new Object();	// external api
-	window.opera.scriptweeder.version = version_number;
 	debug_log("start");	
     }
     

@@ -73,7 +73,6 @@ function(){   // fake line, keep_editor_happy
     
     /******************************** Normal init *******************************/
 
-    // called once on startup
     function load_global_settings()
     {
 	load_global_context(location.href, true);
@@ -838,8 +837,6 @@ function(){   // fake line, keep_editor_happy
 	document.addEventListener('DOMContentLoaded',		domcontentloaded_handler,	false);
 	opera.addEventListener('BeforeEvent.message',		before_message_handler,		false);
 	window.setTimeout(check_document_ready, 50);
-
-	message_handlers["scriptweeder background process:"] = extension_message_handler;	
     }
 
 
