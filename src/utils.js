@@ -399,9 +399,9 @@ function(){   // fake line, keep_editor_happy
 
     function log(msg)
     {
-	var h = "scriptweeder userjs (main)  : ";
+	var h = "scriptweeder extension (main)  : ";
 	if (in_iframe())
-	    h = "scriptweeder userjs (iframe): ";
+	    h = "scriptweeder extension (iframe): ";
 	console.log(h + msg);
     }
 
