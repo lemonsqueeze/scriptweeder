@@ -93,8 +93,13 @@
 	    return;
 	
 	setup_event_handlers();
-	debug_log("start");	
     }
+    
+    debug_log("start");
+    
+    // userjs detected, let it takeover and forward messages to it.
+    if (forward_to_userjs())
+	return;
     
     boot();
 
