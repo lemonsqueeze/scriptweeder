@@ -3,7 +3,7 @@
 <head>
 <script>
 
-  var debug = true;
+  var debug = false;
 
   function debug_log(m)
   {
@@ -93,6 +93,7 @@
       try
       {
 	  // can get DOMException: INVALID_STATE_ERR if tab's in a weird state
+	  dest.postMessage("scriptweeder bgproc to injected script:");
 	  dest.postMessage("scriptweeder background process:");
       }
       catch(e) {}      
