@@ -21,7 +21,8 @@ function(){   // fake line, keep_editor_happy
     
     /********************************* Globals *********************************/
 
-    var debug_mode = false;
+    // FIXME this doesn't work for iframes ...
+    var debug_mode = (location.hash == '#swdebug');
     var paranoid = false;
     
     /* stuff load_global_settings() takes care of */
@@ -783,8 +784,9 @@ function(){   // fake line, keep_editor_happy
 	var icon = disabled_icon;
 	if (needed)
 	    icon = get_icon_from_css(mode, true);
-	window.postMessage({scriptweeder:true, mode:mode, icon:icon, button:disable_main_button,
-		disabled:!needed, disabled_icon:disabled_icon}, '*');
+	window.postMessage({scriptweeder:true, debug:debug_mode,
+		            mode:mode, icon:icon, button:disable_main_button,
+		            disabled:!needed, disabled_icon:disabled_icon}, '*');
 	extension_button = status;
     }
     

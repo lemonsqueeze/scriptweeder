@@ -1,11 +1,18 @@
 #!/usr/bin/perl
-# the javascript preprocessor
+# the javascript preprocessor =)
 
 sub doit
 {
     my ($in) = @_;
     foreach my $s (<$in>)
     {
+	# $Date$ substitution
+	if ($s =~ m|\$Date\$|)
+	{
+	    my $d = `date +"%b %d %Y"`;
+	    chomp($d);
+	    $s =~ s|\$Date\$|$d|;
+	}
 	if ($s =~ m|//.*keep_editor_happy|)
 	{ next; }
 	if ($s =~ m|^\@include \"(.*)\"|)

@@ -124,7 +124,6 @@ function(){   // fake line, keep_editor_happy
 
     /****************************** external api *****************************/
 
-    // FIXME why does it take forever to show up ?!
     function api_toggle_menu()
     {
 	debug_log("api_toggle_menu");
@@ -134,8 +133,11 @@ function(){   // fake line, keep_editor_happy
 	    menu_request = true;	    
 	    init_ui();	// safe to call multiple times
 	    return;
-	}	
-	show_hide_menu(true, true);	
+	}
+	if (nsmenu)
+	    close_menu();
+	else	    
+	    show_hide_menu(true);
     }
 
     /****************************** widget handlers *****************************/

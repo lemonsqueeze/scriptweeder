@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published 2013-02-12
+// @published Mar 05 2013
 // ==/UserScript==
 
 
@@ -19,7 +19,8 @@
 {
     var version_number = "1.5.1";
     var version_type = "userjs";
-    var version_full = "scriptweeder v"+ version_number + " (" + version_type + ")";
+    var version_date = "Mar 05 2013";
+    var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
     /************************* Default Settings *******************************/        
@@ -43,7 +44,8 @@
     
     /********************************* Globals *********************************/
 
-    var debug_mode = false;
+    // FIXME this doesn't work for iframes ...
+    var debug_mode = (location.hash == '#swdebug');
     var paranoid = false;
     
     /* stuff load_global_settings() takes care of */
@@ -805,8 +807,9 @@
 	var icon = disabled_icon;
 	if (needed)
 	    icon = get_icon_from_css(mode, true);
-	window.postMessage({scriptweeder:true, mode:mode, icon:icon, button:disable_main_button,
-		disabled:!needed, disabled_icon:disabled_icon}, '*');
+	window.postMessage({scriptweeder:true, debug:debug_mode,
+		            mode:mode, icon:icon, button:disable_main_button,
+		            disabled:!needed, disabled_icon:disabled_icon}, '*');
 	extension_button = status;
     }
     
@@ -1140,12 +1143,14 @@
 	var a = s.split('\n');
 	if (!import_check_file(a))
 	{
-	    my_alert("This file doesn't look like a valid settings file.");
+	    my_alert("This doesn't look like a valid settings file.");
 	    return;
 	}	    
 	scriptStorage.clear();	// clear current settings.
 	import_settings(a);
+	set_global_setting('version_type', version_type); // keep it consistent
 	alert("Loaded !");
+	startup_checks(true);   // upgrade settings, no page redirect
     }
 	
     function reset_settings()
@@ -2038,7 +2043,6 @@
 
     /****************************** external api *****************************/
 
-    // FIXME why does it take forever to show up ?!
     function api_toggle_menu()
     {
 	debug_log("api_toggle_menu");
@@ -2048,8 +2052,11 @@
 	    menu_request = true;	    
 	    init_ui();	// safe to call multiple times
 	    return;
-	}	
-	show_hide_menu(true, true);	
+	}
+	if (nsmenu)
+	    close_menu();
+	else	    
+	    show_hide_menu(true);
     }
 
     /****************************** widget handlers *****************************/
@@ -3401,7 +3408,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
     
     /********************************* Startup ************************************/    
 
-    function startup_checks()
+    function startup_checks(quiet)
     {	
 	// first run
 	if (global_setting('whitelist') == '')

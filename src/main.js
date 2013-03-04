@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published 2013-02-12
+// @published $Date$
 // ==/UserScript==
 
 
@@ -19,7 +19,8 @@
 {
     var version_number = "1.5.1";
     var version_type = "userjs";
-    var version_full = "scriptweeder v"+ version_number + " (" + version_type + ")";
+    var version_date = "$Date$";
+    var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 @include "core.js"
 @include "settings.js"    
@@ -52,7 +53,7 @@
     
     /********************************* Startup ************************************/    
 
-    function startup_checks()
+    function startup_checks(quiet)
     {	
 	// first run
 	if (global_setting('whitelist') == '')

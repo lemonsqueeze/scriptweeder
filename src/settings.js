@@ -288,12 +288,14 @@ function(){   // fake line, keep_editor_happy
 	var a = s.split('\n');
 	if (!import_check_file(a))
 	{
-	    my_alert("This file doesn't look like a valid settings file.");
+	    my_alert("This doesn't look like a valid settings file.");
 	    return;
 	}	    
 	scriptStorage.clear();	// clear current settings.
 	import_settings(a);
+	set_global_setting('version_type', version_type); // keep it consistent
 	alert("Loaded !");
+	startup_checks(true);   // upgrade settings, no page redirect
     }
 	
     function reset_settings()
