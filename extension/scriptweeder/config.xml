@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<widget xmlns="http://www.w3.org/ns/widgets" id="https://github.com/lemonsqueeze/scriptweeder" 
-	version="1.5.1">
+<widget xmlns="http://www.w3.org/ns/widgets" version="1.5.1"
+	id="https://github.com/lemonsqueeze/scriptweeder">
     <name>scriptweeder</name>
     <description>Block unwanted scripts. Noscript on steroids for opera !</description>
     <author href="https://github.com/lemonsqueeze/scriptweeder">lemonsqueeze</author>
