@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <script>
-
-  var debug = false;
+  
+  var debug = false;   // enabled by '#swdebug' url hash
 
   function debug_log(m)
   {
@@ -51,7 +51,7 @@
       var ToolbarUIItemProperties =
       {
         //disabled: true,
-	title: "",
+	title: "View scriptweeder's harvest",
 	icon: disabled_icon
       };
       button = opera.contexts.toolbar.createItem(ToolbarUIItemProperties);
@@ -76,6 +76,7 @@
   function messaged(e)
   {
       var m = e.data;
+      debug = m.debug;
       if (m.button && !button)
 	  create_button();
       if (!m.button && button)
