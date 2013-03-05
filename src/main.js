@@ -31,49 +31,50 @@
     /********************************* Defaults ************************************/
 
     var default_global_whitelist =
-    ['localhost',
-     'maps.google.com',
-     'maps.gstatic.com',
-//     'ajax.googleapis.com',   // no need, relaxed mode will enable it
-     's.ytimg.com',
-     'code.jquery.com',
-     'z-ecx.images-amazon.com',
-     'st.deviantart.net',
-     'static.tumblr.com',
-     'codysherman.com'
-    ];
+    { 'localhost':1,
+      'maps.google.com':1,
+      'maps.gstatic.com':1,
+//    'ajax.googleapis.com':1,   // no need, relaxed mode will enable it
+      's.ytimg.com':1,
+      'code.jquery.com':1,
+      'z-ecx.images-amazon.com':1,
+      'st.deviantart.net':1,
+      'static.tumblr.com':1,
+      'codysherman.com':1
+    };
 
     // Stuff we don't want to allow in relaxed mode which would otherwise be.
     var default_helper_blacklist =     // FIXME add ui to edit ?
-    [ 'apis.google.com',	// only used for google plus one
-      'widgets.twimg.com',	// twitter
-      'static.ak.fbcdn.net'	// facebook
-    ];
+    { 'apis.google.com':1,	// only used for google plus one
+      'widgets.twimg.com':1,	// twitter
+      'static.ak.fbcdn.net':1	// facebook
+    };
 
     
     /********************************* Startup ************************************/    
 
     function startup_checks(quiet)
-    {	
+    {
 	// first run
-	if (global_setting('whitelist') == '')
+	if (global_setting('mode') == '') // will work with old settings
 	{	    
 	    var load_defaults = confirm(
 		"scriptweeder up and running !\n\n" +
 		"Click ok to start with useful defaults for the global whitelist/blacklist, " +
 		"or cancel to start from scratch.");
 
+	    set_global_setting('mode', default_mode);
 	    set_global_setting('version_number', version_number);
-	    set_global_setting('version_type', version_type);	    
+	    set_global_setting('version_type', version_type);
 	    if (load_defaults)
 	    {
-		set_global_setting('whitelist',		array_to_list(default_global_whitelist) );
-		set_global_setting('helper_blacklist',	array_to_list(default_helper_blacklist) );
+		set_global_setting('whitelist',		serialize_name_hash(default_global_whitelist) );
+		set_global_setting('helper_blacklist',	serialize_name_hash(default_helper_blacklist) );
 	    }
 	    else
 	    {
-		set_global_setting('whitelist',		array_to_list([]) );
-		set_global_setting('helper_blacklist',	array_to_list([]) );
+		set_global_setting('whitelist',		serialize_name_hash({}) );
+		set_global_setting('helper_blacklist',	serialize_name_hash({}) );
 	    }
 	}
 
@@ -83,12 +84,16 @@
 	    set_global_setting('version_number', version_number);
 	    set_global_setting('version_type', version_type);
 	    // didn't exist:
-	    set_global_setting('helper_blacklist',	array_to_list(default_helper_blacklist) );
+	    set_global_setting('helper_blacklist',	serialize_name_hash(default_helper_blacklist) );
 	}
 
 	// upgrade from previous version
 	if (global_setting('version_number') != version_number)
 	    set_global_setting('version_number', version_number);
+
+	// get rid of old list settings
+	if (global_setting('whitelist')[0] == '.')
+	    convert_old_list_settings();
     }
 
     // to run safely as extension, only thing that can be done here is event registration.

@@ -18,12 +18,12 @@ function(){   // fake line, keep_editor_happy
     function scoped_setting(scope, name)
     {
 	// to view content -> opera:webstorage  
-	var o=scriptStorage.getItem(scoped_prefixes[scope] + name);
+	var o = scriptStorage.getItem(scoped_prefixes[scope] + name);
 	if (o == null)
 	    return '';
 	return o;
     }
-
+    
     var timestamp;			// settings timestamp    
     function set_scoped_setting(scope, name, value)
     {
@@ -142,18 +142,20 @@ function(){   // fake line, keep_editor_happy
     // all hosts settings should be accessed through these so default val get translated
     function hosts_setting()
     {
-       var hosts = setting('hosts');
-       if (hosts == '') // current host allowed by default in filtered mode
-           hosts = '. ' + current_host;
-       return hosts;
+	var hosts = setting('hosts');
+	if (hosts == '') // current host allowed by default in filtered mode
+	    hosts = current_host;
+	return ' ' + hosts;
     }
     
     function set_hosts_setting(hosts)
     {
-       if (hosts == '. ' + current_host)
-           hosts = '';
-       set_setting('hosts', hosts);
+	hosts = hosts.replace(/^ */, '');
+	if (hosts == current_host)
+	    hosts = '';
+	set_setting('hosts', hosts);
     }
+
 
     /**************************** Import/export settings *************************/
     
@@ -296,6 +298,7 @@ function(){   // fake line, keep_editor_happy
 	set_global_setting('version_type', version_type); // keep it consistent
 	alert("Loaded !");
 	startup_checks(true);   // upgrade settings, no page redirect
+	need_reload = true;
     }
 	
     function reset_settings()
@@ -303,6 +306,7 @@ function(){   // fake line, keep_editor_happy
 	if (!confirm("WARNING: All settings will be cleared !\n\nContinue ?"))
 	    return;
 	scriptStorage.clear();
+	need_reload = true;
     }
 
     
@@ -325,5 +329,35 @@ function(){   // fake line, keep_editor_happy
 	}
 	return sites;
     }
+
+    
+    /**************************** old settings conversion  *************************/
+
+    // old format:   whitelist:. code.jquery.com codysherman.com maps.google.com
+    // new format:   whitelist:code.jquery.com codysherman.com maps.google.com
+    function convert_old_list_settings()
+    {
+	function convert_setting(key)
+	{
+	    var  s = global_setting(key);
+	    if (s.slice(0, 2) == '. ') // old format ...
+	    {
+		s = s.slice(2);
+		set_global_setting(key, s);
+	    }
+	}
+	
+	convert_setting('whitelist');
+	convert_setting('helper_blacklist');
+	// hosts settings
+	for (key in scriptStorage)
+	{
+	    if (key.indexOf(':hosts') != -1)
+		convert_setting(key);
+	}		
+    }
+
     
 }   // keep_editor_happy
+
+

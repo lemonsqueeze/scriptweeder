@@ -25,8 +25,7 @@
 
     /************************* Default Settings *******************************/        
     
-    // default mode for new pages:
-    //   block_all, filtered, relaxed or allow_all    
+    // default mode on new install
     var default_mode = 'relaxed';
 
     // block inline scripts by default for block_all mode ?
@@ -50,7 +49,9 @@
     
     /* stuff load_global_settings() takes care of */
     var current_host;
-    var current_domain;    
+    var current_domain;
+    var whitelist;
+    var helper_blacklist;
     var block_inline_scripts = false;
     var handle_noscript_tags = false;
     var reload_method;
@@ -79,10 +80,10 @@
     var init_done = false;
 
     function init()
-    {	
-	init_core();
+    {
+	check_script_storage();
+	load_global_settings();	
 	register_ui();
-	startup_checks();	
 	init_done = true;
     }
 
@@ -95,15 +96,11 @@
     
     /******************************** Normal init *******************************/
 
-    function init_core()
-    {	
-	check_script_storage();
-	load_global_settings();
-    }
-	
+    // called once on startup
     function load_global_settings()
     {
-	load_global_context();
+	load_global_context(location.href, true);
+	
 	init_iframe_logic();	
 	reload_method = global_setting('reload_method', default_reload_method);
     }
@@ -111,7 +108,7 @@
     // can be used to check on another page's settings.
     // (normal page settings that is, without iframe logic kicking in)
     // call clear_domain_nodes() afterwards to discard store changes.
-    function load_global_context(url)
+    function load_global_context(url, do_startup_checks)
     {
 	url = (url ? url : location.href);
 	current_host = url_hostname(url);
@@ -119,6 +116,12 @@
 	
 	init_scope(url);
 	init_mode();
+
+	if (do_startup_checks)
+	    startup_checks();
+	
+	whitelist = deserialize_name_hash(global_setting('whitelist'));
+	helper_blacklist = deserialize_name_hash(global_setting('helper_blacklist'));
     }
 
     
@@ -387,11 +390,8 @@
 
     function global_allow_host(host)
     {
-	var l = global_setting('whitelist');
-	l = (l == '' ? '.' : l);	
-	if (list_contains(l, host))
-	    return;
-	set_global_setting('whitelist', l + ' ' + host);
+	whitelist[host] = 1;
+	set_global_setting('whitelist', serialize_name_hash(whitelist));
     }
     
     function remove_host(host)
@@ -403,21 +403,26 @@
 
     function global_remove_host(host)
     {
-      var l = global_setting('whitelist');
-      l = l.replace(' ' + host, '');
-      set_global_setting('whitelist', l);
+	delete whitelist[host];
+	// remove domain also if it's there
+	delete whitelist[get_domain(host)];
+	set_global_setting('whitelist', serialize_name_hash(whitelist));
     }
     
     function host_allowed_globally(host)
     {
-	var l = global_setting('whitelist');
-	return list_contains(l, host);
+	if (whitelist[host])
+	    return true;	
+	// whole domain allowed ?
+	return (whitelist[get_domain(host)] ? true : false);
     }
 
     function on_helper_blacklist(host)
     {
-	var l = global_setting('helper_blacklist');
-	return list_contains(l, host);
+	if (helper_blacklist[host])
+	    return true;	
+	// whole domain blacklisted ?
+	return (helper_blacklist[get_domain(host)] ? true : false);
     }
     
     function host_allowed_locally(host)
@@ -880,12 +885,12 @@
     function scoped_setting(scope, name)
     {
 	// to view content -> opera:webstorage  
-	var o=scriptStorage.getItem(scoped_prefixes[scope] + name);
+	var o = scriptStorage.getItem(scoped_prefixes[scope] + name);
 	if (o == null)
 	    return '';
 	return o;
     }
-
+    
     var timestamp;			// settings timestamp    
     function set_scoped_setting(scope, name, value)
     {
@@ -1004,18 +1009,20 @@
     // all hosts settings should be accessed through these so default val get translated
     function hosts_setting()
     {
-       var hosts = setting('hosts');
-       if (hosts == '') // current host allowed by default in filtered mode
-           hosts = '. ' + current_host;
-       return hosts;
+	var hosts = setting('hosts');
+	if (hosts == '') // current host allowed by default in filtered mode
+	    hosts = current_host;
+	return ' ' + hosts;
     }
     
     function set_hosts_setting(hosts)
     {
-       if (hosts == '. ' + current_host)
-           hosts = '';
-       set_setting('hosts', hosts);
+	hosts = hosts.replace(/^ */, '');
+	if (hosts == current_host)
+	    hosts = '';
+	set_setting('hosts', hosts);
     }
+
 
     /**************************** Import/export settings *************************/
     
@@ -1158,6 +1165,7 @@
 	set_global_setting('version_type', version_type); // keep it consistent
 	alert("Loaded !");
 	startup_checks(true);   // upgrade settings, no page redirect
+	need_reload = true;
     }
 	
     function reset_settings()
@@ -1165,6 +1173,7 @@
 	if (!confirm("WARNING: All settings will be cleared !\n\nContinue ?"))
 	    return;
 	scriptStorage.clear();
+	need_reload = true;
     }
 
     
@@ -1187,7 +1196,37 @@
 	}
 	return sites;
     }
+
     
+    /**************************** old settings conversion  *************************/
+
+    // old format:   whitelist:. code.jquery.com codysherman.com maps.google.com
+    // new format:   whitelist:code.jquery.com codysherman.com maps.google.com
+    function convert_old_list_settings()
+    {
+	function convert_setting(key)
+	{
+	    var  s = global_setting(key);
+	    if (s.slice(0, 2) == '. ') // old format ...
+	    {
+		s = s.slice(2);
+		set_global_setting(key, s);
+	    }
+	}
+	
+	convert_setting('whitelist');
+	convert_setting('helper_blacklist');
+	// hosts settings
+	for (key in scriptStorage)
+	{
+	    if (key.indexOf(':hosts') != -1)
+		convert_setting(key);
+	}		
+    }
+
+    
+
+
 
     /********************************* Core ui *********************************/
 
@@ -1745,64 +1784,44 @@
 	    f(l[i]);
     }
 
+    function serialize_name_hash(h)
+    {
+	return get_keys(h).sort().join(' ');
+    }
+
+    function name_hash_to_textarea(h)
+    {
+	return get_keys(h).sort().join('\n');
+    }
+    
+    function deserialize_name_hash(s)
+    {
+	var h = new Object();	
+	foreach(s.split(' '), function(key)
+	{
+	    h[key] = 1;
+	});
+	return h;
+    }
+
+    function textarea_to_name_hash(s)
+    {
+	var h = new Object();
+	var a = textarea_lines_nows(s);
+	foreach(a, function(host)
+	{
+	    if (host != '')
+		h[host] = 1;
+	});
+	return h;
+    }    
+
+// FIXME !
     function list_contains(list, str)
     {
       return (list && list.indexOf(' ' + str) != -1);
     }
 
-    function array_to_list(a)
-    {
-	return ('. ' + a.join(' '));
-    }
-    
-    function list_to_string(list)
-    {
-	var d = '';
-	var comma = '';
-	var a=list.split(' ');
-	for (var i = 0; i < a.length; i++)
-	{ 
-	    if (a[i] != '.')
-	    {
-		d = d + comma + "'" + a[i] + "'";
-		comma = ', ';
-	    }
-	}
-	return '[' + d + ']';
-    }
-
-    function raw_list_to_string(list)
-    {
-	var d = '';
-	var comma = '';
-	var a = list.split(' ');
-	for (var i = 0; i < a.length; i++)
-	{ 
-	    if (a[i] != '.')
-	    {
-		d = d + comma + a[i];
-		comma = '\n';
-	    }
-	}
-	return d;
-    }
-
-    // str: text from textarea
-    function raw_string_to_list(str)
-    {
-	var a = textarea_lines_nows(str);
-	var l = '. ';
-	var sep = '';
-	for (var i = 0; i < a.length; i++)
-	{
-	    if (a[i] != '')
-	    {  // no blank lines
-		l = l + sep + a[i];
-		sep = ' ';
-	    }
-	}
-	return l;
-    }    
 
     // array of lines from textarea input, all whitespace cut out
     function textarea_lines_nows(str)
@@ -2257,6 +2276,7 @@
 		    set_global_setting(site + ':mode', '');
 	    });
 	    
+	    need_reload = true;	    
 	    close_menu();
 	};
 	
@@ -2267,11 +2287,13 @@
     function edit_whitelist()
     {
 	var w = new_editor_window("Whitelist",
-				  raw_list_to_string(global_setting('whitelist')),
-				  raw_list_to_string(array_to_list(default_global_whitelist)),
+				  name_hash_to_textarea(whitelist),
+				  name_hash_to_textarea(default_global_whitelist),
 				  function(text)
         {
-	   set_global_setting('whitelist', raw_string_to_list(text));
+	   whitelist = textarea_to_name_hash(text);
+	   set_global_setting('whitelist', serialize_name_hash(whitelist));
+	   need_reload = true;
 	   close_menu();
 	});
 	switch_menu(w);
@@ -2280,11 +2302,13 @@
     function edit_blacklist()
     {
 	var w = new_editor_window("Helper Blacklist",
-				  raw_list_to_string(global_setting('helper_blacklist')),
-				  raw_list_to_string(array_to_list(default_helper_blacklist)),			   
+				  name_hash_to_textarea(helper_blacklist),
+				  name_hash_to_textarea(default_helper_blacklist),
 				  function(text)
         {
-	   set_global_setting('helper_blacklist', raw_string_to_list(text));
+	   helper_blacklist = textarea_to_name_hash(text);	
+	   set_global_setting('helper_blacklist', serialize_name_hash(helper_blacklist));
+	   need_reload = true;	   
 	   close_menu();
 	});
 	switch_menu(w);
@@ -3400,49 +3424,50 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
     /********************************* Defaults ************************************/
 
     var default_global_whitelist =
-    ['localhost',
-     'maps.google.com',
-     'maps.gstatic.com',
-//     'ajax.googleapis.com',   // no need, relaxed mode will enable it
-     's.ytimg.com',
-     'code.jquery.com',
-     'z-ecx.images-amazon.com',
-     'st.deviantart.net',
-     'static.tumblr.com',
-     'codysherman.com'
-    ];
+    { 'localhost':1,
+      'maps.google.com':1,
+      'maps.gstatic.com':1,
+//    'ajax.googleapis.com':1,   // no need, relaxed mode will enable it
+      's.ytimg.com':1,
+      'code.jquery.com':1,
+      'z-ecx.images-amazon.com':1,
+      'st.deviantart.net':1,
+      'static.tumblr.com':1,
+      'codysherman.com':1
+    };
 
     // Stuff we don't want to allow in relaxed mode which would otherwise be.
     var default_helper_blacklist =     // FIXME add ui to edit ?
-    [ 'apis.google.com',	// only used for google plus one
-      'widgets.twimg.com',	// twitter
-      'static.ak.fbcdn.net'	// facebook
-    ];
+    { 'apis.google.com':1,	// only used for google plus one
+      'widgets.twimg.com':1,	// twitter
+      'static.ak.fbcdn.net':1	// facebook
+    };
 
     
     /********************************* Startup ************************************/    
 
     function startup_checks(quiet)
-    {	
+    {
 	// first run
-	if (global_setting('whitelist') == '')
+	if (global_setting('mode') == '') // will work with old settings
 	{	    
 	    var load_defaults = confirm(
 		"scriptweeder up and running !\n\n" +
 		"Click ok to start with useful defaults for the global whitelist/blacklist, " +
 		"or cancel to start from scratch.");
 
+	    set_global_setting('mode', default_mode);
 	    set_global_setting('version_number', version_number);
-	    set_global_setting('version_type', version_type);	    
+	    set_global_setting('version_type', version_type);
 	    if (load_defaults)
 	    {
-		set_global_setting('whitelist',		array_to_list(default_global_whitelist) );
-		set_global_setting('helper_blacklist',	array_to_list(default_helper_blacklist) );
+		set_global_setting('whitelist',		serialize_name_hash(default_global_whitelist) );
+		set_global_setting('helper_blacklist',	serialize_name_hash(default_helper_blacklist) );
 	    }
 	    else
 	    {
-		set_global_setting('whitelist',		array_to_list([]) );
-		set_global_setting('helper_blacklist',	array_to_list([]) );
+		set_global_setting('whitelist',		serialize_name_hash({}) );
+		set_global_setting('helper_blacklist',	serialize_name_hash({}) );
 	    }
 	}
 
@@ -3452,12 +3477,16 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
 	    set_global_setting('version_number', version_number);
 	    set_global_setting('version_type', version_type);
 	    // didn't exist:
-	    set_global_setting('helper_blacklist',	array_to_list(default_helper_blacklist) );
+	    set_global_setting('helper_blacklist',	serialize_name_hash(default_helper_blacklist) );
 	}
 
 	// upgrade from previous version
 	if (global_setting('version_number') != version_number)
 	    set_global_setting('version_number', version_number);
+
+	// get rid of old list settings
+	if (global_setting('whitelist')[0] == '.')
+	    convert_old_list_settings();
     }
 
     // to run safely as extension, only thing that can be done here is event registration.

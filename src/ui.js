@@ -331,6 +331,7 @@ function(){   // fake line, keep_editor_happy
 		    set_global_setting(site + ':mode', '');
 	    });
 	    
+	    need_reload = true;	    
 	    close_menu();
 	};
 	
@@ -341,11 +342,13 @@ function(){   // fake line, keep_editor_happy
     function edit_whitelist()
     {
 	var w = new_editor_window("Whitelist",
-				  raw_list_to_string(global_setting('whitelist')),
-				  raw_list_to_string(array_to_list(default_global_whitelist)),
+				  name_hash_to_textarea(whitelist),
+				  name_hash_to_textarea(default_global_whitelist),
 				  function(text)
         {
-	   set_global_setting('whitelist', raw_string_to_list(text));
+	   whitelist = textarea_to_name_hash(text);
+	   set_global_setting('whitelist', serialize_name_hash(whitelist));
+	   need_reload = true;
 	   close_menu();
 	});
 	switch_menu(w);
@@ -354,11 +357,13 @@ function(){   // fake line, keep_editor_happy
     function edit_blacklist()
     {
 	var w = new_editor_window("Helper Blacklist",
-				  raw_list_to_string(global_setting('helper_blacklist')),
-				  raw_list_to_string(array_to_list(default_helper_blacklist)),			   
+				  name_hash_to_textarea(helper_blacklist),
+				  name_hash_to_textarea(default_helper_blacklist),
 				  function(text)
         {
-	   set_global_setting('helper_blacklist', raw_string_to_list(text));
+	   helper_blacklist = textarea_to_name_hash(text);	
+	   set_global_setting('helper_blacklist', serialize_name_hash(helper_blacklist));
+	   need_reload = true;	   
 	   close_menu();
 	});
 	switch_menu(w);

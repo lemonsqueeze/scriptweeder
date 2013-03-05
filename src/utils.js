@@ -246,64 +246,44 @@ function(){   // fake line, keep_editor_happy
 	    f(l[i]);
     }
 
+    function serialize_name_hash(h)
+    {
+	return get_keys(h).sort().join(' ');
+    }
+
+    function name_hash_to_textarea(h)
+    {
+	return get_keys(h).sort().join('\n');
+    }
+    
+    function deserialize_name_hash(s)
+    {
+	var h = new Object();	
+	foreach(s.split(' '), function(key)
+	{
+	    h[key] = 1;
+	});
+	return h;
+    }
+
+    function textarea_to_name_hash(s)
+    {
+	var h = new Object();
+	var a = textarea_lines_nows(s);
+	foreach(a, function(host)
+	{
+	    if (host != '')
+		h[host] = 1;
+	});
+	return h;
+    }    
+
+// FIXME !
     function list_contains(list, str)
     {
       return (list && list.indexOf(' ' + str) != -1);
     }
 
-    function array_to_list(a)
-    {
-	return ('. ' + a.join(' '));
-    }
-    
-    function list_to_string(list)
-    {
-	var d = '';
-	var comma = '';
-	var a=list.split(' ');
-	for (var i = 0; i < a.length; i++)
-	{ 
-	    if (a[i] != '.')
-	    {
-		d = d + comma + "'" + a[i] + "'";
-		comma = ', ';
-	    }
-	}
-	return '[' + d + ']';
-    }
-
-    function raw_list_to_string(list)
-    {
-	var d = '';
-	var comma = '';
-	var a = list.split(' ');
-	for (var i = 0; i < a.length; i++)
-	{ 
-	    if (a[i] != '.')
-	    {
-		d = d + comma + a[i];
-		comma = '\n';
-	    }
-	}
-	return d;
-    }
-
-    // str: text from textarea
-    function raw_string_to_list(str)
-    {
-	var a = textarea_lines_nows(str);
-	var l = '. ';
-	var sep = '';
-	for (var i = 0; i < a.length; i++)
-	{
-	    if (a[i] != '')
-	    {  // no blank lines
-		l = l + sep + a[i];
-		sep = ' ';
-	    }
-	}
-	return l;
-    }    
 
     // array of lines from textarea input, all whitespace cut out
     function textarea_lines_nows(str)

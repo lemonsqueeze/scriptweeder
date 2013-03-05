@@ -2,8 +2,7 @@ function(){   // fake line, keep_editor_happy
 
     /************************* Default Settings *******************************/        
     
-    // default mode for new pages:
-    //   block_all, filtered, relaxed or allow_all    
+    // default mode on new install
     var default_mode = 'relaxed';
 
     // block inline scripts by default for block_all mode ?
@@ -27,7 +26,9 @@ function(){   // fake line, keep_editor_happy
     
     /* stuff load_global_settings() takes care of */
     var current_host;
-    var current_domain;    
+    var current_domain;
+    var whitelist;
+    var helper_blacklist;
     var block_inline_scripts = false;
     var handle_noscript_tags = false;
     var reload_method;
@@ -56,10 +57,10 @@ function(){   // fake line, keep_editor_happy
     var init_done = false;
 
     function init()
-    {	
-	init_core();
+    {
+	check_script_storage();
+	load_global_settings();	
 	register_ui();
-	startup_checks();	
 	init_done = true;
     }
 
@@ -72,15 +73,11 @@ function(){   // fake line, keep_editor_happy
     
     /******************************** Normal init *******************************/
 
-    function init_core()
-    {	
-	check_script_storage();
-	load_global_settings();
-    }
-	
+    // called once on startup
     function load_global_settings()
     {
-	load_global_context();
+	load_global_context(location.href, true);
+	
 	init_iframe_logic();	
 	reload_method = global_setting('reload_method', default_reload_method);
     }
@@ -88,7 +85,7 @@ function(){   // fake line, keep_editor_happy
     // can be used to check on another page's settings.
     // (normal page settings that is, without iframe logic kicking in)
     // call clear_domain_nodes() afterwards to discard store changes.
-    function load_global_context(url)
+    function load_global_context(url, do_startup_checks)
     {
 	url = (url ? url : location.href);
 	current_host = url_hostname(url);
@@ -96,6 +93,12 @@ function(){   // fake line, keep_editor_happy
 	
 	init_scope(url);
 	init_mode();
+
+	if (do_startup_checks)
+	    startup_checks();
+	
+	whitelist = deserialize_name_hash(global_setting('whitelist'));
+	helper_blacklist = deserialize_name_hash(global_setting('helper_blacklist'));
     }
 
     
@@ -364,11 +367,8 @@ function(){   // fake line, keep_editor_happy
 
     function global_allow_host(host)
     {
-	var l = global_setting('whitelist');
-	l = (l == '' ? '.' : l);	
-	if (list_contains(l, host))
-	    return;
-	set_global_setting('whitelist', l + ' ' + host);
+	whitelist[host] = 1;
+	set_global_setting('whitelist', serialize_name_hash(whitelist));
     }
     
     function remove_host(host)
@@ -380,21 +380,26 @@ function(){   // fake line, keep_editor_happy
 
     function global_remove_host(host)
     {
-      var l = global_setting('whitelist');
-      l = l.replace(' ' + host, '');
-      set_global_setting('whitelist', l);
+	delete whitelist[host];
+	// remove domain also if it's there
+	delete whitelist[get_domain(host)];
+	set_global_setting('whitelist', serialize_name_hash(whitelist));
     }
     
     function host_allowed_globally(host)
     {
-	var l = global_setting('whitelist');
-	return list_contains(l, host);
+	if (whitelist[host])
+	    return true;	
+	// whole domain allowed ?
+	return (whitelist[get_domain(host)] ? true : false);
     }
 
     function on_helper_blacklist(host)
     {
-	var l = global_setting('helper_blacklist');
-	return list_contains(l, host);
+	if (helper_blacklist[host])
+	    return true;	
+	// whole domain blacklisted ?
+	return (helper_blacklist[get_domain(host)] ? true : false);
     }
     
     function host_allowed_locally(host)
