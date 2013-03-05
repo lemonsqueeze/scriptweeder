@@ -626,7 +626,7 @@ function(){   // fake line, keep_editor_happy
     // Handler for both inline *and* external scripts
     function beforescript_handler(e)
     {
-	if (e.element.src) // external script, note script size
+	if (e.element.src) // external script
 	{
 	    var url = e.element.src;
 	    var script = find_script(url, url_hostname(url));
