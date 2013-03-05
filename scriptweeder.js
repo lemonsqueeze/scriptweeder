@@ -481,11 +481,13 @@
     }
     
     /**************************** Scripts store *******************************/
-    
+
+    // external script properties: url, size (if not blocked), loaded
     function new_script(url)
     {
 	var o = new Object();
 	o.url = url;
+	o.size = 0;
 	return o;
     }
 
@@ -642,18 +644,23 @@
     // Handler for both inline *and* external scripts
     function beforescript_handler(e)
     {
-      if (e.element.src) // external script
-	  return;     
-
-      check_init();
-      debug_log("beforescript");      
-      total_inline++;
-      total_inline_size += e.element.text.length;
-      
-      repaint_ui();
-      
-      if (block_inline_scripts)
-	  block_script(e);
+	if (e.element.src) // external script, note script size
+	{
+	    var url = e.element.src;
+	    var script = find_script(url, url_hostname(url));
+	    script.size = e.element.text.length;
+	    return;
+	}
+	
+	check_init();
+	debug_log("beforescript");      
+	total_inline++;
+	total_inline_size += e.element.text.length;
+	
+	repaint_ui();
+	
+	if (block_inline_scripts)
+	    block_script(e);
     }
 
     function beforeextscript_handler(e)
@@ -2877,7 +2884,13 @@
 	}
 	title += " See details.";
 	return title;
-    }    
+    }
+
+    function ext_scripts_size_tooltip(scripts)
+    {
+	var total = scripts.reduce(function(val, script){ return val + script.size }, 0);
+	return (total ? get_size_kb(total) + 'k' : '');
+    }
     
     function add_host_table_after(item)
     {
@@ -2929,6 +2942,7 @@
 		tr.childNodes[6].title = "Allowed globally";		
 	    }
 	    tr.childNodes[7].innerText = '[' + count + ']';		// scripts + iframes
+	    tr.childNodes[7].title = ext_scripts_size_tooltip(hn.scripts);
 
 	    if (not_loaded)
 		found_not_loaded = true;	    

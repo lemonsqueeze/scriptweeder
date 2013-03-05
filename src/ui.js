@@ -958,7 +958,13 @@ function(){   // fake line, keep_editor_happy
 	}
 	title += " See details.";
 	return title;
-    }    
+    }
+
+    function ext_scripts_size_tooltip(scripts)
+    {
+	var total = scripts.reduce(function(val, script){ return val + script.size }, 0);
+	return (total ? get_size_kb(total) + 'k' : '');
+    }
     
     function add_host_table_after(item)
     {
@@ -1010,6 +1016,7 @@ function(){   // fake line, keep_editor_happy
 		tr.childNodes[6].title = "Allowed globally";		
 	    }
 	    tr.childNodes[7].innerText = '[' + count + ']';		// scripts + iframes
+	    tr.childNodes[7].title = ext_scripts_size_tooltip(hn.scripts);
 
 	    if (not_loaded)
 		found_not_loaded = true;	    

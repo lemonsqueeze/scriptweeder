@@ -458,11 +458,13 @@ function(){   // fake line, keep_editor_happy
     }
     
     /**************************** Scripts store *******************************/
-    
+
+    // external script properties: url, size (if not blocked), loaded
     function new_script(url)
     {
 	var o = new Object();
 	o.url = url;
+	o.size = 0;
 	return o;
     }
 
@@ -619,18 +621,23 @@ function(){   // fake line, keep_editor_happy
     // Handler for both inline *and* external scripts
     function beforescript_handler(e)
     {
-      if (e.element.src) // external script
-	  return;     
-
-      check_init();
-      debug_log("beforescript");      
-      total_inline++;
-      total_inline_size += e.element.text.length;
-      
-      repaint_ui();
-      
-      if (block_inline_scripts)
-	  block_script(e);
+	if (e.element.src) // external script, note script size
+	{
+	    var url = e.element.src;
+	    var script = find_script(url, url_hostname(url));
+	    script.size = e.element.text.length;
+	    return;
+	}
+	
+	check_init();
+	debug_log("beforescript");      
+	total_inline++;
+	total_inline_size += e.element.text.length;
+	
+	repaint_ui();
+	
+	if (block_inline_scripts)
+	    block_script(e);
     }
 
     function beforeextscript_handler(e)
