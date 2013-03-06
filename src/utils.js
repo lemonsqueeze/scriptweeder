@@ -323,6 +323,14 @@ function(){   // fake line, keep_editor_happy
 	return k;
     }
 
+    function cmp_versions(v1, v2)
+    {	
+	function xform(v)	// "1.5.10" -> [" 1", " 5", "10" ]
+	{ return v.split('.').map(function(s){ return "  ".slice(0, 2 - s.length) + s });  }
+	
+	return (xform(v1) < xform(v2));
+    }
+    
     function function_exists(name)
     {
 	return eval("typeof " + name) == "function";

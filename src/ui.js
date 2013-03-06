@@ -247,11 +247,31 @@ function(){   // fake line, keep_editor_happy
 	    {
 		my_alert(file + ":\nUnknown file type, should be a .style or .css");
 		return;
-	    }	    
-	    alert("Loaded !");
+	    }
 	    need_reload = true;
 	};
 	this.onchange = file_loader(load_style);
+    }
+
+    function style_editor()
+    {
+        var w = new_editor_window("Style Editor",
+                                  global_setting('style'),
+                                  '',
+                                  function(text)
+        {
+           set_global_setting('style', text);
+           need_reload = true;
+           close_menu();
+        });
+        w.id = 'style_editor';
+        switch_menu(w);
+    }
+
+    function options_custom_style_init(w)
+    {
+	if (location.hash == '#swdev')
+	    wakeup_lazy_widgets(w);
     }
 
     function clear_saved_style_init()

@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Mar 05 2013
+// @published Mar 06 2013
 // ==/UserScript==
 
 
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.1";
     var version_type = "userjs";
-    var version_date = "Mar 05 2013";
+    var version_date = "Mar 06 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -1162,6 +1162,12 @@
 	}	    
 	scriptStorage.clear();	// clear current settings.
 	import_settings(a);
+	var vers_settings = global_setting('version_number');
+	if (cmp_versions(version_number, vers_settings)) // version_number < vers_settings
+	    my_alert("Settings come from a version more recent than mine ! " +
+		     "(" + vers_settings + " vs " + version_number + ")\n" +
+		     "i might not be able to handle that, better update me instead...");
+	
 	set_global_setting('version_type', version_type); // keep it consistent
 	alert("Loaded !");
 	startup_checks(true);   // upgrade settings, no page redirect
@@ -1861,6 +1867,14 @@
 	return k;
     }
 
+    function cmp_versions(v1, v2)
+    {	
+	function xform(v)	// "1.5.10" -> [" 1", " 5", "10" ]
+	{ return v.split('.').map(function(s){ return "  ".slice(0, 2 - s.length) + s });  }
+	
+	return (xform(v1) < xform(v2));
+    }
+    
     function function_exists(name)
     {
 	return eval("typeof " + name) == "function";
@@ -2192,11 +2206,31 @@
 	    {
 		my_alert(file + ":\nUnknown file type, should be a .style or .css");
 		return;
-	    }	    
-	    alert("Loaded !");
+	    }
 	    need_reload = true;
 	};
 	this.onchange = file_loader(load_style);
+    }
+
+    function style_editor()
+    {
+        var w = new_editor_window("Style Editor",
+                                  global_setting('style'),
+                                  '',
+                                  function(text)
+        {
+           set_global_setting('style', text);
+           need_reload = true;
+           close_menu();
+        });
+        w.id = 'style_editor';
+        switch_menu(w);
+    }
+
+    function options_custom_style_init(w)
+    {
+	if (location.hash == '#swdev')
+	    wakeup_lazy_widgets(w);
     }
 
     function clear_saved_style_init()
@@ -3295,6 +3329,8 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
   \n\
 .button_table  *, #general_options button	{ width:100% }  \n\
   \n\
+#style_editor textarea           { width: 800px; height: 300px; }  \n\
+  \n\
 /**********************************************************************************************************   \n\
  * transparent button   \n\
  * http://www.dreamtemplate.com/dreamcodes/documentation/buttons_transparent.html  \n\
@@ -3348,7 +3384,12 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
       init_proxy: function(w, ph){ script_detail_init(w, ph.host_node, ph.script, ph.iframe, ph.file_only); },
       layout: '<widget name="script_detail" host_node script iframe file_only init><li><img/><a href="" onclick="link_loader"></a></li></widget>' },
    'options_menu' : {
-      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div id="general_options" class="frame" ><div class="frame_title">General</div><button title="Turn it off to avoid fetching blocked scripts."   	    onclick="speculative_parser_onclick">Speculative parser…</button><br><button title="Enable to control secure pages."   	    onclick="userjs_on_https_onclick">Userjs on secure pages…</button><select_reload_method></select_reload_method><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="Useful for debugging."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div></td><td rowspan="2"><div id="" class="frame" oninit=check_disable_button_ui_settings><div class="frame_title">User Interface</div><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_button_display></select_button_display><select_ui_position></select_ui_position><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item></div></td><td><div id="" class="frame" ><div class="frame_title">Custom Style</div><table class="button_table"><tr><td><form id="load_custom_style" title="Load a .style or .css file (can stack .style files)"><input type="file" autocomplete="off" oninit="load_custom_style_init"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><br><a href="https://github.com/lemonsqueeze/scriptweeder/wiki/Custom-styles" onclick="link_loader">Find styles</a></div></td></tr><tr><td><div id="" class="frame" ><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div id="" class="frame" ><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div id="" class="frame" ><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptweeder/wiki" onclick="link_loader">Home</a></div></td></tr></table></div></widget>' },
+      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div id="general_options" class="frame" ><div class="frame_title">General</div><button title="Turn it off to avoid fetching blocked scripts."   	    onclick="speculative_parser_onclick">Speculative parser…</button><br><button title="Enable to control secure pages."   	    onclick="userjs_on_https_onclick">userjs on secure pages…</button><select_reload_method></select_reload_method><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="Useful for debugging."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div></td><td rowspan="2"><div id="" class="frame" oninit=check_disable_button_ui_settings><div class="frame_title">User Interface</div><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_button_display></select_button_display><select_ui_position></select_ui_position><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item></div></td><td><options_custom_style/></td></tr><tr><td><div id="" class="frame" ><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div id="" class="frame" ><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div id="" class="frame" ><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptweeder/wiki" onclick="link_loader">Home</a></div></td></tr></table></div></widget>' },
+   'options_custom_style' : {
+      init: options_custom_style_init,
+      layout: '<widget name="options_custom_style" init><div id="" class="frame" ><div class="frame_title">Custom Style</div><table class="button_table"><edit_style lazy></edit_style><tr><td><form id="load_custom_style" title="Load a .style or .css file (can stack .style files)"><input type="file" autocomplete="off" oninit="load_custom_style_init"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><br><a href="https://github.com/lemonsqueeze/scriptweeder/wiki/Custom-styles" onclick="link_loader">Find styles</a></div></widget>' },
+   'edit_style' : {
+      layout: '<widget name="edit_style"><tr><td><button onclick="style_editor" title="" >Edit style…</button></td></tr></widget>' },
    'select_ui_position' : {
       init: select_ui_position_init,
       layout: '<widget name="select_ui_position" init><table id="ui_position" class="dropdown_setting"><tr><td>Position</td><td><select><option value="top_left">top left</option><option value="top_right">top right</option><option value="bottom_left">bottom left</option><option value="bottom_right">bottom right</option></select></td></tr></table></widget>' },
@@ -3446,31 +3487,25 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
     
     /********************************* Startup ************************************/    
 
+    // quiet: no page redirect
     function startup_checks(quiet)
     {
-	// first run
-	if (global_setting('mode') == '') // will work with old settings
-	{	    
-	    var load_defaults = confirm(
-		"scriptweeder up and running !\n\n" +
-		"Click ok to start with useful defaults for the global whitelist/blacklist, " +
-		"or cancel to start from scratch.");
-
-	    set_global_setting('mode', default_mode);
-	    set_global_setting('version_number', version_number);
-	    set_global_setting('version_type', version_type);
-	    if (load_defaults)
-	    {
-		set_global_setting('whitelist',		serialize_name_hash(default_global_whitelist) );
-		set_global_setting('helper_blacklist',	serialize_name_hash(default_helper_blacklist) );
-	    }
-	    else
-	    {
-		set_global_setting('whitelist',		serialize_name_hash({}) );
-		set_global_setting('helper_blacklist',	serialize_name_hash({}) );
-	    }
-	}
-
+	var start_page = "https://github.com/lemonsqueeze/scriptweeder/wiki/scriptweeder-userjs-installed-!";
+	
+        // first run setup
+        if ((location.href == start_page || quiet) && global_setting('mode') == '')
+        {
+            set_global_setting('mode', default_mode);
+            set_global_setting('version_number', version_number);
+            set_global_setting('version_type', version_type);               
+            set_global_setting('whitelist',             serialize_name_hash(default_global_whitelist) );
+            set_global_setting('helper_blacklist',      serialize_name_hash(default_helper_blacklist) );
+        }
+	
+        // first run, send to start page
+        if (global_setting('mode') == '') // will work with old settings
+	    location.href = start_page;	
+	
 	// upgrade from 1.44 or before
 	if (global_setting('version_number') == '')
 	{
@@ -3484,7 +3519,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
 	if (global_setting('version_number') != version_number)
 	    set_global_setting('version_number', version_number);
 
-	// get rid of old list settings
+	// convert pre 1.5.1 list settings format
 	if (global_setting('whitelist')[0] == '.')
 	    convert_old_list_settings();
     }

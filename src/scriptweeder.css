@@ -168,6 +168,8 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }
 
 .button_table  *, #general_options button	{ width:100% }
 
+#style_editor textarea           { width: 800px; height: 300px; }
+
 /********************************************************************************************************** 
  * transparent button 
  * http://www.dreamtemplate.com/dreamcodes/documentation/buttons_transparent.html

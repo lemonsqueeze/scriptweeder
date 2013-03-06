@@ -295,6 +295,12 @@ function(){   // fake line, keep_editor_happy
 	}	    
 	scriptStorage.clear();	// clear current settings.
 	import_settings(a);
+	var vers_settings = global_setting('version_number');
+	if (cmp_versions(version_number, vers_settings)) // version_number < vers_settings
+	    my_alert("Settings come from a version more recent than mine ! " +
+		     "(" + vers_settings + " vs " + version_number + ")\n" +
+		     "i might not be able to handle that, better update me instead...");
+	
 	set_global_setting('version_type', version_type); // keep it consistent
 	alert("Loaded !");
 	startup_checks(true);   // upgrade settings, no page redirect
