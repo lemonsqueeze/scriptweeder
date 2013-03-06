@@ -1,28 +1,23 @@
 [ TODO ]
 
-  - test suite.
+  - other language support
+
+  - set scrollbar on htable: calc max-height
 
   - Check what happens for http redirect on script url
     Which url shows up ??
 
-Before Release:
-  - test running inside frame
-  - test running inside iframe
-  - test: - different versions of opera
-          - windows.
-  - documentation
-  - update global whitelist:
-    use current settings to compile whitelist.
-    make sure mainstream stuff works out of the box
-    (youtube, google maps, flickr ...)
-  - nice welcome message
-  - needs setting to run on https sites
-    -> can use opera.setPreference() to set it !!!
-  - Check UI with normal fonts
-  - credits
-  - clear ui, tooltips, doc ...
 
 
+--------------------------------------------------------------------------
+
+[ Extension <-> userjs interaction ]
+
+  - prevent userjs lockout
+  - register userjs, detect outside script interfering
+  - check ext/userjs version
+  - display status in options ?
+  - fix warning when both end up running
 
 --------------------------------------------------------------------------
 
@@ -41,14 +36,15 @@ Before Release:
 
 [ FIXME ]
 
-  - cache reload doesn't work sometimes, reload for real after timer ?
+  - fix reload from cache !
+    cache reload doesn't work sometimes, reload for real after timer ?
     http://www.openwifispots.com/city_free_wifi_wireless_hotspot-Albertville_MN.aspx#45.233368,-93.663168,14
 
   - autohide button + menu onclick -> button shouldn't disappear when menu is shown ...
 
   - investigate: with 'allow all' (and ghostery running)
     this one uses 'data:text/javascript' urls and the main display is getting
-    confused. i suspect a trick to hide third party content there ...
+    confused. (trick to hide third party content ?)
     http://dictionary.reference.com/
 
 
@@ -66,14 +62,13 @@ Sites:
     what is this data:javascript ... stuff ??
 
   - http://precarioussecurity.blogspot.fr/2012/03/simulated-man-in-middle-with-privoxy.html
-    noscript ui not showing up!!
+    ui not showing up!!
 
 ----------------------------------------------------------------------------  
 
 [ IDEAS ]
 
 - placeholder icon for blocked iframes ?
-- bindings to do stuff from opera buttons ?
 - use xhtml doctype, this way we can use real xml for ui layout
 - can we use css for the layout as well ??
 - frameset shows ui everywhere ... forward to biggest frame ?
@@ -88,23 +83,34 @@ Features:
   important sites work out of the box.
   (ex: imdb which is broken even in relaxed mode)
 
-- animate menu!
+- menu animation when switching mode !
 - could block page event handlers ! (onload onclick ...)
   and javascript urls
 - option to build database of scripts used by websites ?
   would be useful for testing
-- show script sizes in kb for external scripts loaded
 - way to find out about dns aliases in JS ?
-- shut the door! block outgoing requests once DOM loaded !!
+- shut the door option ? block outgoing requests once DOM loaded !!
 - show big inline scripts, allow to block them!
 - way to make it work when using offline with mht files ?
   (permission problem creating iframe ui...)
 
-- use JSON instead of de/serializing arrays by hand ?
 - XSS ??
 - Detect / block ajax ?
 - display info on startup ? in bottom bar a la noscript or with timer ?
-- way to disable / hide ui temporarily ?
 
-Optimization:
-  - could cache script storage settings instead of accessing every time
+--------------------------------------------------------
+
+Release checklist:
+  - test running inside frame
+  - test running inside iframe
+  - test: - different versions of opera
+          - windows, OSX.
+  - documentation
+  - update global whitelist:
+    use current settings to compile whitelist.
+    make sure mainstream stuff works out of the box
+    (youtube, google maps, flickr ...)
+  - welcome page
+  - Check UI with normal fonts
+  - credits
+  - tooltips etc 

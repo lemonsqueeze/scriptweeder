@@ -151,6 +151,8 @@ function(){   // fake line, keep_editor_happy
     function set_hosts_setting(hosts)
     {
 	hosts = hosts.replace(/^ */, '');
+	if (hosts == '')
+	    hosts = ' '; // can't store empty string, would mean current_host.
 	if (hosts == current_host)
 	    hosts = '';
 	set_setting('hosts', hosts);

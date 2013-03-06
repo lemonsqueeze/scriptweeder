@@ -3,16 +3,20 @@ scriptweeder
 
 [Home page](https://github.com/lemonsqueeze/scriptweeder/wiki) is in the wiki now. Or stay here for developper's corner.
 
+See also the project's [thread](http://my.opera.com/community/forums/topic.dml?id=1544682) in opera forums.
 
-Making custom styles
---------------------
+Custom Styles
+-------------
 
 There are two kinds of custom styles:
 * `.style` files add rules on top of the current stylesheet
 * `.css` files replace the whole stylesheet.
-.style are preferred: they can be combined with others and will likely work with future versions.
 
-The dev environment makes it very easy to create them:
+.css are best avoided unless absolutely necessary: .styles are smaller, easier to maintain, can be combined with others and are less likely to break when something changes.
+
+The **style editor** makes it easy to try changes without having to clear and reload style each time. `#swdev` url hash makes it show up in `options`.
+
+It's possible to edit files by hand, but a copy of the repository makes it easy to generate the data: urls:
 * Get a fresh copy of the repository (see Hacking below)
 * Add your style patch rules at the end of `src/scriptweeder.css` (don't change anything else ! If you want to change a rule, copy it first).
 * Add extra images to `img` directory and reference them with `url('../img/whacky_image.png')`.
@@ -44,6 +48,14 @@ For example, this is the source for glowballs:
 .fat_icons .menu .block_all img,  .fat_icons .menu .filtered  img, 
 .fat_icons .menu .relaxed   img,  .fat_icons .menu .allow_all img      { margin: 4px }
 ```
+
+For toolbar button styling it'll look for a data: url on these selectors (highest priority first)
+```
+#toolbar_button.block_all img  { background-image:url('data:...') }
+#main_button.block_all img     { background-image:url('data:...') }
+.block_all img                 { background-image:url('data:...') }
+```
+same for `.filtered`, `.relaxed` and `.allow_all`, plus a special `.disabled` for the disabled icon. it doesn't do multi-line matching so it must all be on the same line, and the image should be 18x18 or strange things will happen.
 
 
 Hacking

@@ -325,8 +325,15 @@ function(){   // fake line, keep_editor_happy
 
     function cmp_versions(v1, v2)
     {	
-	function xform(v)	// "1.5.10" -> [" 1", " 5", "10" ]
-	{ return v.split('.').map(function(s){ return "  ".slice(0, 2 - s.length) + s });  }
+	function xform(version)	// "1.5.10-tag" -> [" 1", " 5", "10", "tag" ]
+	{
+	    var v = version.split('-')[0];
+	    var tag = version.split('-')[1];
+	    tag = (tag ? tag : "");
+	    var r = v.split('.').map(function(s){ return "  ".slice(0, 2 - s.length) + s });
+	    r.push(tag);
+	    return r;
+	}
 	
 	return (xform(v1) < xform(v2));
     }
