@@ -1,0 +1,35 @@
+#!/usr/bin/perl
+# inline file references in the css:
+# encode files in url('imgurl') and replace with data: urls.
+# also set width and height for images if a /*img_size*/ comment is found.
+
+my %mime_types = 
+("png"  => "image/png",
+ "woff" => "font/woff"
+);
+
+foreach my $s (<STDIN>)
+{
+    if ($s =~ m|url\('(\.\./[^']*)'\)|)
+    {
+	my $file = $1;
+	my @t = split(/\./, $file);
+	my $ext = pop(@t);
+	(-f "$file") || die("file $file doesn't exist");
+	# print "found $file\n";
+
+	# base64 encoding
+	my $encoded = `base64 -w 0 $file`;
+	($mime_types{$ext} ne "") || die("i don't have a mime type for .$ext files");
+	$s =~ s|url\('[^']*'\)|url(\'data:$mime_types{$ext};base64,$encoded\')|;
+
+	# width and height
+	my $g = `file $file`;
+	$g =~ m|([0-9]+) x ([0-9]+)|;
+	my ($width, $height) = ($1, $2);
+	#print "size: $width, $height\n";
+	$s =~ s|/\* *img_size *\*/|width:${width}px; height:${height}px;|;
+
+    }
+    print $s;
+}

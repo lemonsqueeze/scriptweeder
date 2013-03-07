@@ -47,7 +47,7 @@ function(){   // fake line, keep_editor_happy
     function init_ui()
     {
 	update_extension_button();
-	if (!ui_needed())
+	if (!init_ui_needed())
 	    return;
 	debug_log("init_ui()");	
 	
@@ -59,11 +59,10 @@ function(){   // fake line, keep_editor_happy
 	init_ui_done = true;
     }
     
-    function ui_needed()
+    function init_ui_needed()
     {
 	if (init_ui_done || !document_ready)
 	    return false;
-	
 	if (element_tag_is(document.body, 'frameset')) // frames, can't show ui in there !
 	    return false;
         if (!there_is_work_todo &&			// no scripts ?
@@ -80,6 +79,12 @@ function(){   // fake line, keep_editor_happy
 	var not_needed = disable_main_button && !menu_request;		
 	return (rescue_mode() || force_page_ui || !not_needed);
     }
+
+    // not 100% foolproof, but for what it's used it'll be ok
+    function ui_needed()
+    {
+	return (iframe || init_ui_needed());
+    }    
     
     // called only once when the injected iframe is ready to display stuff.
     function start_ui()
@@ -248,6 +253,7 @@ function(){   // fake line, keep_editor_happy
 		my_alert(file + ":\nUnknown file type, should be a .style or .css");
 		return;
 	    }
+	    alert("Loaded !");
 	    need_reload = true;
 	};
 	this.onchange = file_loader(load_style);
@@ -625,8 +631,16 @@ function(){   // fake line, keep_editor_happy
 	switch_menu(w);		
     }
 
+    function details_menu_autoscroll()
+    {
+	var c = main_ui.querySelector('#menu_content');
+	autoscroll_element(c);
+	nsmenu.style = "bottom:0px;";  // who knows why we need this ...
+    }
+    
     function details_menu_init(realmenu)
-    {	    
+    {
+	realmenu.autoscroll = details_menu_autoscroll;
 	var menu = find_element(realmenu, "menu_content");
 	var last = find_element(realmenu, "last_item");
 
@@ -744,7 +758,9 @@ function(){   // fake line, keep_editor_happy
 	var d = (show ? 'inline-block' : 'none');	
 	if (toggle)
 	    d = (create || nsmenu.style.display == 'none' ? 'inline-block' : 'none');
-	nsmenu.style.display = d;      
+	nsmenu.style.display = d;
+	if (nsmenu.autoscroll)
+	    nsmenu.autoscroll();
 	resize_iframe();
     }
 
@@ -784,6 +800,13 @@ function(){   // fake line, keep_editor_happy
 	else
 	    this.onclick = function() { set_mode(for_mode); }	
     }
+
+    function main_menu_autoscroll()
+    {
+	var t = main_ui.querySelector('#host_table');
+	if (t)
+	    autoscroll_element(t);
+    }
     
     function main_menu_init(menu)
     {
@@ -796,6 +819,8 @@ function(){   // fake line, keep_editor_happy
 	// add host table
 	if (mode != 'block_all')
 	    add_host_table_after(menu.querySelector('li.' + mode));
+
+	menu.autoscroll = main_menu_autoscroll;
 	
 	// FIXME put it back one day
 	// plugin api
@@ -1051,6 +1076,25 @@ function(){   // fake line, keep_editor_happy
 //	    tr.childNodes[0].innerHTML = "&nbsp;&nbsp;";	
     }
 
+    // display scrollbar instead of screening out
+    function autoscroll_element(t)
+    {
+	var cs = iwin.getComputedStyle(t);	// can cs.getPropertyValue('overflow-y') also
+	if (cs.overflowY != 'auto' ||
+	    (cs.maxHeight[0] != '-' && cs.maxHeight != ''))
+	    return;	// current style doesn't want us to autoscroll
+	t.style = 'max-height:inherit;';
+	
+	var win_height = document.documentElement.clientHeight;
+	var ui_height = main_ui.offsetHeight;	
+	if (ui_height <= win_height)
+	    return;
+	// ui screens out, 
+	var max_height = win_height - (ui_height - t.offsetHeight);
+	max_height = max(max_height, 16);
+	t.style = 'max-height:' + max_height + 'px;';
+    }
+    
 
     /**************************** Plugin API **********************************/
 

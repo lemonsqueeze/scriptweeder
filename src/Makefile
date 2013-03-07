@@ -18,7 +18,7 @@ scriptweeder.js: $(ALLSRC)
 
 scriptweeder.inlined.css: scriptweeder.css
 	@echo generating $@ from $<
-	@../tools/inline_images < $<  > $@
+	@../tools/data_urls < $<  > $@
 
 scriptweeder_style.js: scriptweeder.inlined.css
 	@echo generating $@ from $<

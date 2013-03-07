@@ -784,7 +784,7 @@ function(){   // fake line, keep_editor_happy
 	
 	var tmp = disable_main_button;
 	disable_main_button = false; // just want to know if there's something to display
-	var needed = (iframe || ui_needed());
+	var needed = ui_needed();
 	disable_main_button = tmp;
 	
 	var status = (needed ? mode : 'off');
@@ -793,9 +793,7 @@ function(){   // fake line, keep_editor_happy
 
 	// when button is not disabled, extension still needs disabled icon for next tab switch
 	var disabled_icon = get_icon_from_css('disabled', false);	
-	var icon = disabled_icon;
-	if (needed)
-	    icon = get_icon_from_css(mode, true);
+	var icon = (needed ? get_icon_from_css(mode, true) : disabled_icon);
 	window.postMessage({scriptweeder:true, debug:debug_mode,
 		            mode:mode, icon:icon, button:disable_main_button,
 		            disabled:!needed, disabled_icon:disabled_icon}, '*');

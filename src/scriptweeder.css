@@ -122,6 +122,12 @@ img	{ width:1px; height:1px; vertical-align:middle;
 	display:table; background: #ccc; 
 }
 
+/* autoscroll these instead of screening out. 
+ * js will set the right max-height to make it work if it finds overflow is set but no max-height */
+#host_table,  
+#details_menu #menu_content { overflow-y:auto }
+
+
 /* menu title */
 h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;
 	  margin:0;
