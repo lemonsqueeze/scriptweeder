@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Mar 11 2013
+// @published Mar 16 2013
 // ==/UserScript==
 
 
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.1";
     var version_type = "userjs";
-    var version_date = "Mar 11 2013";
+    var version_date = "Mar 16 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -1470,7 +1470,7 @@
     {
 	set_style(get_style());
     }
-
+    
     function populate_iframe()
     {
 	iframe.contentWindow.name = 'scriptweeder_iframe';
@@ -1540,7 +1540,19 @@
 	iframe.allowtransparency="true";
 	
 	iframe.onload = populate_iframe;
+	// respawn if we get wiped out. This happens with CSS PrefixR extension for instance.
+	iframe.addEventListener('DOMNodeRemovedFromDocument', delayed(respawn_iframe, 10, true), false);
 	document.body.appendChild(iframe);
+    }
+
+    function respawn_iframe()
+    {
+	var zombie = document.querySelector('#scriptweeder_iframe');
+	if (zombie && zombie != iframe)
+	    zombie.parentNode.removeChild(zombie);
+	iframe = null;
+	reset_ui();
+	init_ui();
     }
 
 
@@ -1881,6 +1893,12 @@
 	
 	return (xform(v1) < xform(v2));
     }
+
+    function delayed(f, time, main_window)
+    {
+	var win = (main_window ? window : iwin);
+	return (function(){ win.setTimeout(f, time); });
+    }
     
     function function_exists(name)
     {
@@ -2005,6 +2023,14 @@
 	// window.opera.scriptweeder.toggle_menu() api for opera buttons etc...
 	message_handlers['scriptweeder_toggle_menu'] = api_toggle_menu;
 	window.opera.scriptweeder.toggle_menu = function() { window.postMessage('scriptweeder_toggle_menu', '*'); };
+    }
+
+    function reset_ui()
+    {
+	init_ui_done = false;
+	main_ui = null;
+	nsmenu = null;
+	submenu = null;
     }
 
     // normal case : called only once after document_ready.

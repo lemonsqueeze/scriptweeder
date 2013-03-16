@@ -337,6 +337,12 @@ function(){   // fake line, keep_editor_happy
 	
 	return (xform(v1) < xform(v2));
     }
+
+    function delayed(f, time, main_window)
+    {
+	var win = (main_window ? window : iwin);
+	return (function(){ win.setTimeout(f, time); });
+    }
     
     function function_exists(name)
     {

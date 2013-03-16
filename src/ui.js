@@ -41,6 +41,14 @@ function(){   // fake line, keep_editor_happy
 	window.opera.scriptweeder.toggle_menu = function() { window.postMessage('scriptweeder_toggle_menu', '*'); };
     }
 
+    function reset_ui()
+    {
+	init_ui_done = false;
+	main_ui = null;
+	nsmenu = null;
+	submenu = null;
+    }
+
     // normal case : called only once after document_ready.
     // however, can also be called from api_toggle_menu(). This could be anytime, do some checking.
     var init_ui_done = false;

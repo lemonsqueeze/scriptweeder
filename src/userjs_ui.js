@@ -236,7 +236,7 @@ function(){   // fake line, keep_editor_happy
     {
 	set_style(get_style());
     }
-
+    
     function populate_iframe()
     {
 	iframe.contentWindow.name = 'scriptweeder_iframe';
@@ -306,7 +306,19 @@ function(){   // fake line, keep_editor_happy
 	iframe.allowtransparency="true";
 	
 	iframe.onload = populate_iframe;
+	// respawn if we get wiped out. This happens with CSS PrefixR extension for instance.
+	iframe.addEventListener('DOMNodeRemovedFromDocument', delayed(respawn_iframe, 10, true), false);
 	document.body.appendChild(iframe);
+    }
+
+    function respawn_iframe()
+    {
+	var zombie = document.querySelector('#scriptweeder_iframe');
+	if (zombie && zombie != iframe)
+	    zombie.parentNode.removeChild(zombie);
+	iframe = null;
+	reset_ui();
+	init_ui();
     }
 
 }   // keep_editor_happy
