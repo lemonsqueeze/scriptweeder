@@ -6,7 +6,7 @@ function(){   // fake line, keep_editor_happy
     {
 	if (!scriptStorage)
 	{
-	    location.href = "opera:config#user%20js%20storage";
+	    location.href = "opera:config#user%20js%20storage";  // userjs_only
 	    alert("Welcome to scriptweeder !\n\n" +
 		  "Script storage is currently disabled.\n" +
 		  "For scriptweeder to work, set quota to\n" +

@@ -160,22 +160,27 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
 
 .separator	{ height: 1px; display: block; background-color: #bbb; margin-left: auto; margin-right: auto; }
 
-.frame		{ border:1px solid #bbb; margin:20px 10px; padding:9px; position:relative; min-width:200px; }
+.frame		{ margin:20px 10px; padding:9px 14px; position:relative; min-width:200px; 
+		  border:1px solid #bbb; border-radius:5px; }
 .frame td, .frame li	{ padding: 2px; }
 
 .frame_title	{ position:absolute; top:-10px; background: #ccc; }
 
 /* file input form styling: http://www.quirksmode.org/dom/inputfile.html */
-#import_settings, #load_custom_style
-	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }
-#import_settings input, #load_custom_style input
-	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }
+#import_settings, 
+#load_custom_style		{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }
+#import_settings input, 
+#load_custom_style input	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }
 
 .dropdown_setting		{ width:100% }
 .dropdown_setting select	{ padding-right:5px } /* why does opera 12.14 truncate otherwise ?! */
 .dropdown_setting td + td	{ text-align:right; }
 
-.button_table  *, #general_options button	{ width:100% }
+.button_table			{ margin: 0 auto } /* center it */
+.button_table,
+.button_table *,  #general_options button	{ width:100% }
+#settings_options .button_table			{ width: 90%; }
+.frame a			{ display:block; text-align:center }
 
 #style_editor textarea           { width: 800px; height: 300px; }
 

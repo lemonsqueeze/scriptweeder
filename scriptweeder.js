@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Mar 17 2013
+// @published Mar 18 2013
 // ==/UserScript==
 
 
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.2";
     var version_type = "userjs";
-    var version_date = "Mar 17 2013";
+    var version_date = "Mar 18 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -770,7 +770,7 @@
     
     /**************************** Extension messaging ***************************/
 
-    // prevent lockout if extension goes away and we were using its button.
+    // userjs_only: prevent lockout if extension goes away and we were using its button.
     function prevent_userjs_lockout()
     {
 	if (extension_button || !disable_main_button || !something_to_display())
@@ -815,7 +815,7 @@
     function update_extension_button(force)
     {
 	if (window != window.top ||
-	    (!force && !extension_button)) // not talking to extension (yet)
+	    (!force && !extension_button)) // not talking to extension (yet) - userjs_only
 	    return;
 	
 	var needed = something_to_display();	
@@ -826,7 +826,7 @@
 	// when button is not disabled, extension still needs disabled icon for next tab switch
 	var disabled_icon = get_icon_from_css('disabled', false);	
 	var icon = (needed ? get_icon_from_css(mode, true) : disabled_icon);
-	window.postMessage({scriptweeder:true, debug:debug_mode,
+	window.postMessage({scriptweeder:true, debug:debug_mode,			// userjs_only
 		            mode:mode, icon:icon, button:disable_main_button,
 		            disabled:!needed, disabled_icon:disabled_icon}, '*');
 	extension_button = status;
@@ -869,7 +869,7 @@
 	opera.addEventListener('BeforeEvent.message',		before_message_handler,		false);
 	window.setTimeout(check_document_ready, 50);
 
-	// userjs only stuff
+	// userjs_only stuff
 	message_handlers["scriptweeder background process:"] = extension_message_handler;
 	window.setTimeout(prevent_userjs_lockout, 500);
     }
@@ -882,7 +882,7 @@
     {
 	if (!scriptStorage)
 	{
-	    location.href = "opera:config#user%20js%20storage";
+	    location.href = "opera:config#user%20js%20storage";  // userjs_only
 	    alert("Welcome to scriptweeder !\n\n" +
 		  "Script storage is currently disabled.\n" +
 		  "For scriptweeder to work, set quota to\n" +
@@ -2501,6 +2501,7 @@
 	window.open("opera:config#Speculative");
     }
 
+    // userjs_only
     function userjs_on_https_onclick()
     {
 	window.open("opera:config#User%20JavaScript%20on%20HTTPS");
@@ -2549,7 +2550,7 @@
     {
 	var select = w.querySelector('select');
 	select.options.value = (disable_main_button ? 'y' : 'n');
-	if (!extension_button)  // can't throw away main button if extension's not there !
+	if (!extension_button)  // userjs_only: can't throw away main button if extension's not there !
 	{
 	    select.disabled = true;
 	    select.title = "Install scriptweeder extension to use toolbar button.";
@@ -3420,22 +3421,27 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
   \n\
 .separator	{ height: 1px; display: block; background-color: #bbb; margin-left: auto; margin-right: auto; }  \n\
   \n\
-.frame		{ border:1px solid #bbb; margin:20px 10px; padding:9px; position:relative; min-width:200px; }  \n\
+.frame		{ margin:20px 10px; padding:9px 14px; position:relative; min-width:200px;   \n\
+		  border:1px solid #bbb; border-radius:5px; }  \n\
 .frame td, .frame li	{ padding: 2px; }  \n\
   \n\
 .frame_title	{ position:absolute; top:-10px; background: #ccc; }  \n\
   \n\
 /* file input form styling: http://www.quirksmode.org/dom/inputfile.html */  \n\
-#import_settings, #load_custom_style  \n\
-	{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }  \n\
-#import_settings input, #load_custom_style input  \n\
-	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }  \n\
+#import_settings,   \n\
+#load_custom_style		{ display:inline-block; position:relative; overflow:hidden; vertical-align:text-bottom }  \n\
+#import_settings input,   \n\
+#load_custom_style input	{ display:block; position:absolute; top:0; right:0; margin:0; border:0; opacity:0 }  \n\
   \n\
 .dropdown_setting		{ width:100% }  \n\
 .dropdown_setting select	{ padding-right:5px } /* why does opera 12.14 truncate otherwise ?! */  \n\
 .dropdown_setting td + td	{ text-align:right; }  \n\
   \n\
-.button_table  *, #general_options button	{ width:100% }  \n\
+.button_table			{ margin: 0 auto } /* center it */  \n\
+.button_table,  \n\
+.button_table *,  #general_options button	{ width:100% }  \n\
+#settings_options .button_table			{ width: 90%; }  \n\
+.frame a			{ display:block; text-align:center }  \n\
   \n\
 #style_editor textarea           { width: 800px; height: 300px; }  \n\
   \n\
@@ -3492,10 +3498,10 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
       init_proxy: function(w, ph){ script_detail_init(w, ph.host_node, ph.script, ph.iframe, ph.file_only); },
       layout: '<widget name="script_detail" host_node script iframe file_only init><li><img/><a href="" onclick="link_loader"></a></li></widget>' },
    'options_menu' : {
-      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div id="general_options" class="frame" ><div class="frame_title">General</div><button title="Turn it off to avoid fetching blocked scripts."   	    onclick="speculative_parser_onclick">Speculative parser…</button><br><button title="Enable to control secure pages."   	    onclick="userjs_on_https_onclick">userjs on secure pages…</button><select_reload_method></select_reload_method><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="Useful for debugging."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div id="" class="frame" ><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div id="" class="frame" oninit=check_disable_button_ui_settings><div class="frame_title">User Interface</div><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_button_display></select_button_display><select_ui_position></select_ui_position><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item></div></td><td><options_custom_style></options_custom_style><div id="" class="frame" ><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div id="" class="frame" ><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptweeder/wiki" onclick="link_loader">Home</a></div></td></tr></table></div></widget>' },
+      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div id="general_options" class="frame" ><div class="frame_title">General</div><button title="Turn it off to avoid fetching blocked scripts."   	    onclick="speculative_parser_onclick">Speculative parser…</button><br><button title="Enable to control secure pages."   	    onclick="userjs_on_https_onclick">userjs on secure pages…</button><select_reload_method></select_reload_method><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="Useful for debugging."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div id="settings_options" class="frame" ><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div id="interface_options" class="frame" oninit="check_disable_button_ui_settings"><div class="frame_title">User Interface</div><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_button_display></select_button_display><select_ui_position></select_ui_position><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item></div></td><td><options_custom_style></options_custom_style><div id="export_options" class="frame" ><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div id="" class="frame" ><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptweeder/wiki" onclick="link_loader">Home</a></div></td></tr></table></div></widget>' },
    'options_custom_style' : {
       init: options_custom_style_init,
-      layout: '<widget name="options_custom_style" init><div id="" class="frame" ><div class="frame_title">Custom Style</div><table class="button_table"><edit_style lazy></edit_style><tr><td><form id="load_custom_style" title="Load a .style or .css file (can stack .style files)"><input type="file" autocomplete="off" onchange="file_loader(load_custom_style)"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><br><a href="https://github.com/lemonsqueeze/scriptweeder/wiki/Custom-styles" onclick="link_loader">Find styles</a></div></widget>' },
+      layout: '<widget name="options_custom_style" init><div id="style_options" class="frame" ><div class="frame_title">Custom Style</div><table class="button_table"><edit_style lazy></edit_style><tr><td><form id="load_custom_style" title="Load a .style or .css file (can stack .style files)"><input type="file" autocomplete="off" onchange="file_loader(load_custom_style)"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit="clear_saved_style_init">Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><a href="https://github.com/lemonsqueeze/scriptweeder/wiki/Custom-styles" onclick="link_loader">Find styles</a></div></widget>' },
    'edit_style' : {
       layout: '<widget name="edit_style"><tr><td><button onclick="style_editor" title="" >Edit style…</button></td></tr></widget>' },
    'select_ui_position' : {
@@ -3602,21 +3608,21 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
 	if (window != window.top) // don't redirect to start page in iframes.
 	    return;
 	
-        // first run setup
-        if ((location.href == start_page || quiet) && global_setting('mode') == '')
+        // first run, send to start page
+        if (global_setting('mode') == '') // will work with old settings	
         {
-            set_global_setting('mode', default_mode);
+	    // userjs_only: can't wait until we get there, userjs on https may not be enabled ...	    
             set_global_setting('version_number', version_number);
             set_global_setting('version_type', version_type);               
             set_global_setting('whitelist',             serialize_name_hash(default_global_whitelist) );
             set_global_setting('helper_blacklist',      serialize_name_hash(default_helper_blacklist) );
+            set_global_setting('mode', default_mode);	    
+
+	    if (!quiet)
+		location.href = start_page;	    
         }
 	
-        // first run, send to start page
-        if (global_setting('mode') == '') // will work with old settings
-	    location.href = start_page;	
-	
-	// upgrade from 1.44 or before
+	// userjs_only: upgrade from 1.44 or before
 	if (global_setting('version_number') == '')
 	{
 	    set_global_setting('version_number', version_number);
@@ -3646,7 +3652,7 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
 	    return;
 	
 	setup_event_handlers();
-	// userjs registers right away so extension can detect it
+	// userjs_only: register right away so extension can detect it
 	window.opera.scriptweeder = new Object();	// external api
 	window.opera.scriptweeder.version = version_number;
 	debug_log("start");	

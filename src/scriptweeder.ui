@@ -130,7 +130,7 @@
 </widget>
 
 <def macro="options_user_interface">
-  <frame title="User Interface" extra="oninit=check_disable_button_ui_settings">
+  <frame title="User Interface" id="interface_options" extra='oninit="check_disable_button_ui_settings"'>
     <select_menu_display_logic></select_menu_display_logic>
     <select_font_size></select_font_size>
     <select_button_display></select_button_display>
@@ -165,7 +165,7 @@
 </def>
 
 <def macro="options_edit_settings">
-  <frame title="Edit Settings">
+  <frame title="Edit Settings" id="settings_options">
     <table class="button_table">	  
       <tabled_button onclick="edit_site_settings"  label="Site settings…"
 		     title="View/edit site specific settings."/>
@@ -177,13 +177,13 @@
 </def>
 
 <widget name="options_custom_style" init>
-  <frame title="Custom Style">
+  <frame title="Custom Style" id="style_options">
     <table class="button_table">
       <edit_style lazy></edit_style>
       <tr><td><load_custom_style/></td></tr>
-      <tabled_button onclick="clear_saved_style" extra="oninit=clear_saved_style_init" label="Back to default"/>
+      <tabled_button onclick="clear_saved_style" extra='oninit="clear_saved_style_init"' label="Back to default"/>
     </table>
-    <a oninit="rescue_mode_link_init">Rescue mode</a><br>
+    <a oninit="rescue_mode_link_init">Rescue mode</a>
     <link href="https://github.com/lemonsqueeze/scriptweeder/wiki/Custom-styles" label="Find styles"/>
   </frame>
 </widget>
@@ -197,7 +197,7 @@
 </def>
 	  
 <def macro="options_import_export">
-	  <frame title="Import / Export">
+	  <frame title="Import / Export" id="export_options">
 	    <table class="button_table">
 	      <tr><td><import_settings/></td></tr>
 	      <tabled_button onclick="export_settings_onclick" label="Save settings…" 

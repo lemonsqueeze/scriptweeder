@@ -747,7 +747,7 @@ function(){   // fake line, keep_editor_happy
     
     /**************************** Extension messaging ***************************/
 
-    // prevent lockout if extension goes away and we were using its button.
+    // userjs_only: prevent lockout if extension goes away and we were using its button.
     function prevent_userjs_lockout()
     {
 	if (extension_button || !disable_main_button || !something_to_display())
@@ -792,7 +792,7 @@ function(){   // fake line, keep_editor_happy
     function update_extension_button(force)
     {
 	if (window != window.top ||
-	    (!force && !extension_button)) // not talking to extension (yet)
+	    (!force && !extension_button)) // not talking to extension (yet) - userjs_only
 	    return;
 	
 	var needed = something_to_display();	
@@ -803,7 +803,7 @@ function(){   // fake line, keep_editor_happy
 	// when button is not disabled, extension still needs disabled icon for next tab switch
 	var disabled_icon = get_icon_from_css('disabled', false);	
 	var icon = (needed ? get_icon_from_css(mode, true) : disabled_icon);
-	window.postMessage({scriptweeder:true, debug:debug_mode,
+	window.postMessage({scriptweeder:true, debug:debug_mode,			// userjs_only
 		            mode:mode, icon:icon, button:disable_main_button,
 		            disabled:!needed, disabled_icon:disabled_icon}, '*');
 	extension_button = status;
@@ -846,7 +846,7 @@ function(){   // fake line, keep_editor_happy
 	opera.addEventListener('BeforeEvent.message',		before_message_handler,		false);
 	window.setTimeout(check_document_ready, 50);
 
-	// userjs only stuff
+	// userjs_only stuff
 	message_handlers["scriptweeder background process:"] = extension_message_handler;
 	window.setTimeout(prevent_userjs_lockout, 500);
     }

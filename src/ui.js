@@ -506,6 +506,7 @@ function(){   // fake line, keep_editor_happy
 	window.open("opera:config#Speculative");
     }
 
+    // userjs_only
     function userjs_on_https_onclick()
     {
 	window.open("opera:config#User%20JavaScript%20on%20HTTPS");
@@ -554,7 +555,7 @@ function(){   // fake line, keep_editor_happy
     {
 	var select = w.querySelector('select');
 	select.options.value = (disable_main_button ? 'y' : 'n');
-	if (!extension_button)  // can't throw away main button if extension's not there !
+	if (!extension_button)  // userjs_only: can't throw away main button if extension's not there !
 	{
 	    select.disabled = true;
 	    select.title = "Install scriptweeder extension to use toolbar button.";

@@ -60,21 +60,21 @@
 	if (window != window.top) // don't redirect to start page in iframes.
 	    return;
 	
-        // first run setup
-        if ((location.href == start_page || quiet) && global_setting('mode') == '')
+        // first run, send to start page
+        if (global_setting('mode') == '') // will work with old settings	
         {
-            set_global_setting('mode', default_mode);
+	    // userjs_only: can't wait until we get there, userjs on https may not be enabled ...	    
             set_global_setting('version_number', version_number);
             set_global_setting('version_type', version_type);               
             set_global_setting('whitelist',             serialize_name_hash(default_global_whitelist) );
             set_global_setting('helper_blacklist',      serialize_name_hash(default_helper_blacklist) );
+            set_global_setting('mode', default_mode);	    
+
+	    if (!quiet)
+		location.href = start_page;	    
         }
 	
-        // first run, send to start page
-        if (global_setting('mode') == '') // will work with old settings
-	    location.href = start_page;	
-	
-	// upgrade from 1.44 or before
+	// userjs_only: upgrade from 1.44 or before
 	if (global_setting('version_number') == '')
 	{
 	    set_global_setting('version_number', version_number);
@@ -104,7 +104,7 @@
 	    return;
 	
 	setup_event_handlers();
-	// userjs registers right away so extension can detect it
+	// userjs_only: register right away so extension can detect it
 	window.opera.scriptweeder = new Object();	// external api
 	window.opera.scriptweeder.version = version_number;
 	debug_log("start");	
