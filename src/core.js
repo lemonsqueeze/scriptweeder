@@ -865,9 +865,6 @@ function(){   // fake line, keep_editor_happy
     {
 	var e = ujs_event.event;
 	var m = e.data;
-
-	// if 2nd msg from bgproc,
-	// won't even get called, userjs uses beforeEvent.message and will cancel it.
 	debug_log("[msg] " + m);
 	
 	if (m == "scriptweeder bgproc to injected script:")  // hello from bgproc
@@ -875,7 +872,7 @@ function(){   // fake line, keep_editor_happy
 	    bgproc = e.source;
 	    ujs_event.preventDefault(); // keep this private
 	    return;
-	}
+	}       	
 	
 	if (m && m.scriptweeder) // from userjs, forward to bgproc
 	{
@@ -886,16 +883,45 @@ function(){   // fake line, keep_editor_happy
 	// other msg, leave alone
     }
     
+    function ujsfwd_guard()
+    {
+	// userjs should have caught this one and cancelled it, something funny is going on !    
+	//if (m == "scriptweeder background process:")
+	//{
+	my_alert("WARNING there is something wrong here !\n\n" +
+		 "If the userjs version of scriptweeder is installed then it's not working properly, " +
+		 "otherwise there's a script on this page trying to pass as scriptweeder !");
+	opera.extension.onmessage = null;
+	//}
+    }
+    
+
+    function check_userjs_version()
+    {
+	var userjs_version = window.opera.scriptweeder.version;
+	var pair = userjs_version + ':' + version_number;
+	if (userjs_version != version_number &&
+	    global_setting('warn_userjs_version') != pair)
+	{
+	    set_global_setting('warn_userjs_version', pair);
+	    my_alert("userjs and extension versions differ:\n" +
+		     userjs_version + " vs " + version_number + "\n" +
+		     "This may not work, installing matching versions is recommended.");
+	}
+    }
+    
     function forward_to_userjs()
     {
 	if (!window.opera.scriptweeder) // userjs is not running
 	    return false;
-	
-	opera.extension.onmessage = function(){};  // just so we get an event
+
+	opera.extension.onmessage = ujsfwd_guard;
 	// this is enough for userjs beforeEvent to fire,
 	// so no need to forward anything in this direction.
 	window.opera.addEventListener('BeforeEvent.message', ujsfwd_before_message, false);
 	debug_log("userjs detected, handing over and forwarding");
+	
+	window.setTimeout(check_userjs_version, 10); // don't do it during async startup
 	return true;
     }
     
