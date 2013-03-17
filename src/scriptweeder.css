@@ -119,7 +119,7 @@ img	{ width:1px; height:1px; vertical-align:middle;
 	padding: 1px 1px; text-align:left; direction:ltr;
 	box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);
 	border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;
-	display:table; background: #ccc; 
+	display:table; background: #ccc;
 }
 
 /* autoscroll these instead of screening out. 
@@ -129,8 +129,8 @@ img	{ width:1px; height:1px; vertical-align:middle;
 
 
 /* menu title */
-h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;
-	  margin:0;
+h1	{ font-weight:bold; font-size: 1em; text-align: center; margin:0; 
+	  color:#fff; text-shadow: 0 1px 0 rgba(0,0,0,.2);
 	  background:url('../img/title_background.png') repeat-x;}
 
 /* menu item stuff */
@@ -157,7 +157,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }
 
 .separator	{ height: 1px; display: block; background-color: #bbb; margin-left: auto; margin-right: auto; }
 
-.frame		{ border:1px solid #bbb; margin:10px; padding:9px; position:relative; min-width:200px; }
+.frame		{ border:1px solid #bbb; margin:20px 10px; padding:9px; position:relative; min-width:200px; }
 .frame td, .frame li	{ padding: 2px; }
 
 .frame_title	{ position:absolute; top:-10px; background: #ccc; }

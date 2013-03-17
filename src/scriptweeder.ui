@@ -85,8 +85,8 @@
 <def macro="options_details">
   <li id="options_details" class="inactive">
     <table><tr>
-	<td class="options_item"><label onclick="options_menu">Options</label></td>
 	<td class="details_item"><label onclick="show_details">Details</label></td>
+	<td class="options_item"><label onclick="options_menu">Options</label></td>
     </tr></table>
   </li>
 </def>
@@ -112,14 +112,15 @@
     <menu_title title="Options"/>
     <table>
       <tr>
-	<td><options_core/></td>
-	<td rowspan="2"><options_user_interface/></td>
-	<td><options_custom_style/></td>
-      </tr>
-
-      <tr>
-	<td><options_edit_settings/></td>
 	<td>
+	  <options_core/>
+	  <options_edit_settings/>
+	</td>
+	<td>
+	  <options_user_interface/>
+	</td>
+	<td>
+	  <options_custom_style></options_custom_style>
 	  <options_import_export/>
 	  <options_help/>
 	</td>	
@@ -288,7 +289,7 @@
 
 <def macro="load_custom_style">
   <form id="load_custom_style" title="Load a .style or .css file (can stack .style files)">
-      <input type="file" autocomplete="off" oninit="load_custom_style_init"/><button>Load style…</button>
+      <input type="file" autocomplete="off" onchange="file_loader(load_custom_style)"/><button>Load style…</button>
   </form>
 </def>
 

@@ -56,7 +56,9 @@
     // quiet: no page redirect
     function startup_checks(quiet)
     {
-	var start_page = "https://github.com/lemonsqueeze/scriptweeder/wiki/scriptweeder-userjs-installed-!";
+	var start_page = "https://github.com/lemonsqueeze/scriptweeder/wiki/scriptweeder-userjs-installed-!";	
+	if (window != window.top) // don't redirect to start page in iframes.
+	    return;
 	
         // first run setup
         if ((location.href == start_page || quiet) && global_setting('mode') == '')

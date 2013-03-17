@@ -443,7 +443,7 @@ function(){   // fake line, keep_editor_happy
 	foreach_host_node(function(hn)
 	{
 	  var h = hn.name;
-	  if (relaxed_mode_allowed_host(h))
+	  if (relaxed_mode_allowed_host(h) && !filtered_mode_allowed_host(h))
 	  {
 	      if (h == host)
 		  remove_host(h);

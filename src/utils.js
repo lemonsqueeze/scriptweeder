@@ -403,7 +403,7 @@ function(){   // fake line, keep_editor_happy
 	var f = files[0];
 	var reader = new iwin.FileReader();
 	
-	reader.onload = function(e) { callback(e.target.result, f.name); };	
+	reader.onload = function(e) { callback(e.target.result, f.name); };
 	reader.readAsBinaryString(f);
 	//reader.readAsText(f);
 	}

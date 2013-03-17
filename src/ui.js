@@ -107,6 +107,7 @@ function(){   // fake line, keep_editor_happy
 	
 	if (menu_display_logic == 'click')
 	    window.addEventListener('click',  function (e) { close_menu(); }, false);
+	window.addEventListener('resize',  browser_resized, false);
 	
 	set_class(idoc.body, ui_hpos);
 	set_class(idoc.body, ui_vpos);
@@ -239,32 +240,28 @@ function(){   // fake line, keep_editor_happy
 	    export_settings();
     }
     
-    function load_custom_style_init()
+    function load_custom_style(s, file)
     {
-	var load_style = function(s, file)
+	var setting;
+	if (file.match(/\.css$/))
 	{
-	    var setting;
-	    if (file.match(/\.css$/))
-	    {
-		set_global_setting('css', s);
-		set_global_setting('css_file', file); // filename
-	    }
-	    else if (file.match(/\.style$/))
-	    {
-		var styles = global_setting('style');
-		var files = global_setting('style_file');
-		set_global_setting('style', styles + s);
-		set_global_setting('style_file', files + ' ' + file); // filename
-	    }
-	    else
-	    {
-		my_alert(file + ":\nUnknown file type, should be a .style or .css");
-		return;
-	    }
-	    alert("Loaded !");
-	    need_reload = true;
-	};
-	this.onchange = file_loader(load_style);
+	    set_global_setting('css', s);
+	    set_global_setting('css_file', file); // filename
+	}
+	else if (file.match(/\.style$/))
+	{
+	    var styles = global_setting('style');
+	    var files = global_setting('style_file');
+	    set_global_setting('style', styles + s);
+	    set_global_setting('style_file', files + ' ' + file); // filename
+	}
+	else
+	{
+	    my_alert(file + ":\nUnknown file type, should be a .style or .css");
+	    return;
+	}
+	alert("Loaded !");
+	need_reload = true;
     }
 
     function style_editor()
@@ -763,9 +760,9 @@ function(){   // fake line, keep_editor_happy
 	    nsmenu.style.display = 'none';
 	    parent_menu();	  
 	}
-	var d = (show ? 'inline-block' : 'none');	
+	var d = (show ? 'block' : 'none');	
 	if (toggle)
-	    d = (create || nsmenu.style.display == 'none' ? 'inline-block' : 'none');
+	    d = (create || nsmenu.style.display == 'none' ? 'block' : 'none');
 	nsmenu.style.display = d;
 	if (nsmenu.autoscroll)
 	    nsmenu.autoscroll();
@@ -1084,6 +1081,11 @@ function(){   // fake line, keep_editor_happy
 //	    tr.childNodes[0].innerHTML = "&nbsp;&nbsp;";	
     }
 
+    function browser_resized()
+    {
+	repaint_ui_now();  // update autoscroll_elements
+    }
+    
     // display scrollbar instead of screening out
     function autoscroll_element(t)
     {

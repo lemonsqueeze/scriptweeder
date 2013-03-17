@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Mar 16 2013
+// @published Mar 17 2013
 // ==/UserScript==
 
 
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.1";
     var version_type = "userjs";
-    var version_date = "Mar 16 2013";
+    var version_date = "Mar 17 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -466,7 +466,7 @@
 	foreach_host_node(function(hn)
 	{
 	  var h = hn.name;
-	  if (relaxed_mode_allowed_host(h))
+	  if (relaxed_mode_allowed_host(h) && !filtered_mode_allowed_host(h))
 	  {
 	      if (h == host)
 		  remove_host(h);
@@ -1959,7 +1959,7 @@
 	var f = files[0];
 	var reader = new iwin.FileReader();
 	
-	reader.onload = function(e) { callback(e.target.result, f.name); };	
+	reader.onload = function(e) { callback(e.target.result, f.name); };
 	reader.readAsBinaryString(f);
 	//reader.readAsText(f);
 	}
@@ -2091,6 +2091,7 @@
 	
 	if (menu_display_logic == 'click')
 	    window.addEventListener('click',  function (e) { close_menu(); }, false);
+	window.addEventListener('resize',  browser_resized, false);
 	
 	set_class(idoc.body, ui_hpos);
 	set_class(idoc.body, ui_vpos);
@@ -2223,32 +2224,28 @@
 	    export_settings();
     }
     
-    function load_custom_style_init()
+    function load_custom_style(s, file)
     {
-	var load_style = function(s, file)
+	var setting;
+	if (file.match(/\.css$/))
 	{
-	    var setting;
-	    if (file.match(/\.css$/))
-	    {
-		set_global_setting('css', s);
-		set_global_setting('css_file', file); // filename
-	    }
-	    else if (file.match(/\.style$/))
-	    {
-		var styles = global_setting('style');
-		var files = global_setting('style_file');
-		set_global_setting('style', styles + s);
-		set_global_setting('style_file', files + ' ' + file); // filename
-	    }
-	    else
-	    {
-		my_alert(file + ":\nUnknown file type, should be a .style or .css");
-		return;
-	    }
-	    alert("Loaded !");
-	    need_reload = true;
-	};
-	this.onchange = file_loader(load_style);
+	    set_global_setting('css', s);
+	    set_global_setting('css_file', file); // filename
+	}
+	else if (file.match(/\.style$/))
+	{
+	    var styles = global_setting('style');
+	    var files = global_setting('style_file');
+	    set_global_setting('style', styles + s);
+	    set_global_setting('style_file', files + ' ' + file); // filename
+	}
+	else
+	{
+	    my_alert(file + ":\nUnknown file type, should be a .style or .css");
+	    return;
+	}
+	alert("Loaded !");
+	need_reload = true;
     }
 
     function style_editor()
@@ -2747,9 +2744,9 @@
 	    nsmenu.style.display = 'none';
 	    parent_menu();	  
 	}
-	var d = (show ? 'inline-block' : 'none');	
+	var d = (show ? 'block' : 'none');	
 	if (toggle)
-	    d = (create || nsmenu.style.display == 'none' ? 'inline-block' : 'none');
+	    d = (create || nsmenu.style.display == 'none' ? 'block' : 'none');
 	nsmenu.style.display = d;
 	if (nsmenu.autoscroll)
 	    nsmenu.autoscroll();
@@ -3068,6 +3065,11 @@
 //	    tr.childNodes[0].innerHTML = "&nbsp;&nbsp;";	
     }
 
+    function browser_resized()
+    {
+	repaint_ui_now();  // update autoscroll_elements
+    }
+    
     // display scrollbar instead of screening out
     function autoscroll_element(t)
     {
@@ -3357,7 +3359,7 @@ img	{ width:1px; height:1px; vertical-align:middle;   \n\
 	padding: 1px 1px; text-align:left; direction:ltr;  \n\
 	box-shadow: 8px 10px 10px rgba(0,0,0,0.5), inset 2px 3px 3px rgba(255,255,255,0.75);  \n\
 	border-radius: 5px; border-width: 2px; border-style: outset; border-color: gray;  \n\
-	display:table; background: #ccc;   \n\
+	display:table; background: #ccc;  \n\
 }  \n\
   \n\
 /* autoscroll these instead of screening out.   \n\
@@ -3367,8 +3369,8 @@ img	{ width:1px; height:1px; vertical-align:middle;   \n\
   \n\
   \n\
 /* menu title */  \n\
-h1	{ color:#fff; font-weight:bold; font-size: 1em; text-align: center;  \n\
-	  margin:0;  \n\
+h1	{ font-weight:bold; font-size: 1em; text-align: center; margin:0;   \n\
+	  color:#fff; text-shadow: 0 1px 0 rgba(0,0,0,.2);  \n\
 	  background:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAATCAYAAABRC2cZAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90CChUXEHXQ4zwAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAATUlEQVQI1zXIMQqAMBAF0cmP3v82FjaeQxC01VYQTXazNtoMjyGWIcQ2IdYR4eVL2INKNVTNkbdAbhWdtyMlUE6B+pw+dfrffmU0H40XvEQkSOpTbpQAAAAASUVORK5CYII=') repeat-x;}  \n\
   \n\
 /* menu item stuff */  \n\
@@ -3395,7 +3397,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
   \n\
 .separator	{ height: 1px; display: block; background-color: #bbb; margin-left: auto; margin-right: auto; }  \n\
   \n\
-.frame		{ border:1px solid #bbb; margin:10px; padding:9px; position:relative; min-width:200px; }  \n\
+.frame		{ border:1px solid #bbb; margin:20px 10px; padding:9px; position:relative; min-width:200px; }  \n\
 .frame td, .frame li	{ padding: 2px; }  \n\
   \n\
 .frame_title	{ position:absolute; top:-10px; background: #ccc; }  \n\
@@ -3452,7 +3454,7 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
       layout: '<widget name="main_button" init><div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>' },
    'main_menu' : {
       init: main_menu_init,
-      layout: '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown"><h1 id="menu_title" >Script Weeder</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="Allow related and helper domains." oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li><li id="options_details" class="inactive"><table><tr><td class="options_item"><label onclick="options_menu">Options</label></td><td class="details_item"><label onclick="show_details">Details</label></td></tr></table></li></ul></div></widget>' },
+      layout: '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown"><h1 id="menu_title" >Script Weeder</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="Allow related and helper domains." oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li><li id="options_details" class="inactive"><table><tr><td class="details_item"><label onclick="show_details">Details</label></td><td class="options_item"><label onclick="options_menu">Options</label></td></tr></table></li></ul></div></widget>' },
    'host_table' : {
       layout: '<widget name="host_table"><li id="host_table" class="inactive"><table></table></li></widget>' },
    'host_table_row' : {
@@ -3467,10 +3469,10 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
       init_proxy: function(w, ph){ script_detail_init(w, ph.host_node, ph.script, ph.iframe, ph.file_only); },
       layout: '<widget name="script_detail" host_node script iframe file_only init><li><img/><a href="" onclick="link_loader"></a></li></widget>' },
    'options_menu' : {
-      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div id="general_options" class="frame" ><div class="frame_title">General</div><button title="Turn it off to avoid fetching blocked scripts."   	    onclick="speculative_parser_onclick">Speculative parser…</button><br><button title="Enable to control secure pages."   	    onclick="userjs_on_https_onclick">userjs on secure pages…</button><select_reload_method></select_reload_method><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="Useful for debugging."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div></td><td rowspan="2"><div id="" class="frame" oninit=check_disable_button_ui_settings><div class="frame_title">User Interface</div><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_button_display></select_button_display><select_ui_position></select_ui_position><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item></div></td><td><options_custom_style/></td></tr><tr><td><div id="" class="frame" ><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div id="" class="frame" ><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div id="" class="frame" ><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptweeder/wiki" onclick="link_loader">Home</a></div></td></tr></table></div></widget>' },
+      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div id="general_options" class="frame" ><div class="frame_title">General</div><button title="Turn it off to avoid fetching blocked scripts."   	    onclick="speculative_parser_onclick">Speculative parser…</button><br><button title="Enable to control secure pages."   	    onclick="userjs_on_https_onclick">userjs on secure pages…</button><select_reload_method></select_reload_method><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="Useful for debugging."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div id="" class="frame" ><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div id="" class="frame" oninit=check_disable_button_ui_settings><div class="frame_title">User Interface</div><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_button_display></select_button_display><select_ui_position></select_ui_position><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item></div></td><td><options_custom_style></options_custom_style><div id="" class="frame" ><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div id="" class="frame" ><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptweeder/wiki" onclick="link_loader">Home</a></div></td></tr></table></div></widget>' },
    'options_custom_style' : {
       init: options_custom_style_init,
-      layout: '<widget name="options_custom_style" init><div id="" class="frame" ><div class="frame_title">Custom Style</div><table class="button_table"><edit_style lazy></edit_style><tr><td><form id="load_custom_style" title="Load a .style or .css file (can stack .style files)"><input type="file" autocomplete="off" oninit="load_custom_style_init"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><br><a href="https://github.com/lemonsqueeze/scriptweeder/wiki/Custom-styles" onclick="link_loader">Find styles</a></div></widget>' },
+      layout: '<widget name="options_custom_style" init><div id="" class="frame" ><div class="frame_title">Custom Style</div><table class="button_table"><edit_style lazy></edit_style><tr><td><form id="load_custom_style" title="Load a .style or .css file (can stack .style files)"><input type="file" autocomplete="off" onchange="file_loader(load_custom_style)"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit=clear_saved_style_init>Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><br><a href="https://github.com/lemonsqueeze/scriptweeder/wiki/Custom-styles" onclick="link_loader">Find styles</a></div></widget>' },
    'edit_style' : {
       layout: '<widget name="edit_style"><tr><td><button onclick="style_editor" title="" >Edit style…</button></td></tr></widget>' },
    'select_ui_position' : {
@@ -3573,7 +3575,9 @@ li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
     // quiet: no page redirect
     function startup_checks(quiet)
     {
-	var start_page = "https://github.com/lemonsqueeze/scriptweeder/wiki/scriptweeder-userjs-installed-!";
+	var start_page = "https://github.com/lemonsqueeze/scriptweeder/wiki/scriptweeder-userjs-installed-!";	
+	if (window != window.top) // don't redirect to start page in iframes.
+	    return;
 	
         // first run setup
         if ((location.href == start_page || quiet) && global_setting('mode') == '')
