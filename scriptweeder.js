@@ -17,7 +17,7 @@
 // but when running as an extension they're 2 different things, beware !
 (function(document, location, opera, scriptStorage)
 {
-    var version_number = "1.5.1";
+    var version_number = "1.5.2";
     var version_type = "userjs";
     var version_date = "Mar 17 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
@@ -769,6 +769,18 @@
 
     
     /**************************** Extension messaging ***************************/
+
+    // prevent lockout if extension goes away and we were using its button.
+    function prevent_userjs_lockout()
+    {
+	if (extension_button || !disable_main_button || !something_to_display())
+	    return;
+	disable_main_button = false;	
+	set_global_bool_setting('disable_main_button', false);
+	set_global_setting('ui_position', 'bottom_right');
+	set_global_setting('menu_display_logic', 'auto');
+	init_ui();
+    }
     
     function get_icon_from_css(mode, fatal)
     {
@@ -802,14 +814,11 @@
     var extension_button;
     function update_extension_button(force)
     {
-	if (!force && !extension_button) // not talking to extension (yet)
+	if (window != window.top ||
+	    (!force && !extension_button)) // not talking to extension (yet)
 	    return;
 	
-	var tmp = disable_main_button;
-	disable_main_button = false; // just want to know if there's something to display
-	var needed = ui_needed();
-	disable_main_button = tmp;
-	
+	var needed = something_to_display();	
 	var status = (needed ? mode : 'off');
 	if (!force && extension_button == status) // already in the right state
 	    return;
@@ -860,7 +869,9 @@
 	opera.addEventListener('BeforeEvent.message',		before_message_handler,		false);
 	window.setTimeout(check_document_ready, 50);
 
-	message_handlers["scriptweeder background process:"] = extension_message_handler;	
+	// userjs only stuff
+	message_handlers["scriptweeder background process:"] = extension_message_handler;
+	window.setTimeout(prevent_userjs_lockout, 500);
     }
 
 
@@ -906,7 +917,7 @@
 					// page, site, domain, or global.
 					//  (0,     1,     2,      3)
     
-    var scoped_prefixes;		// prefixes
+    var scoped_prefixes = ['', '', '', ''];
     
     function init_scope(url)
     {
@@ -1526,7 +1537,7 @@
     {
 	debug_log("create_iframe()");
 	assert(!document.querySelector('#scriptweeder_iframe'),
-	       "There are 2 scriptweeder instances running ! Both extension and userjs version installed maybe ?");
+	       "There are 2 scriptweeder instances running ! Something went wrong in the extension-userjs handshake.");
 	
 	iframe = document.createElement('iframe');
 	iframe.id = 'scriptweeder_iframe';
@@ -2076,7 +2087,16 @@
     function ui_needed()
     {
 	return (iframe || init_ui_needed());
-    }    
+    }
+
+    function something_to_display()
+    {
+	var tmp = disable_main_button;
+	disable_main_button = false;
+	var needed = ui_needed();
+	disable_main_button = tmp;
+	return needed;
+    }
     
     // called only once when the injected iframe is ready to display stuff.
     function start_ui()
@@ -3318,9 +3338,8 @@ input[type=radio]			{ display:none; }   \n\
 input[type=radio] + label:hover		{ background-color: #ddd; }   \n\
 input[type=radio] + label		{ box-shadow:inset 0px 1px 0px 0px #ffffff; border-radius:6px;   \n\
 					  border:1px solid #dcdcdc; background-color: #c7c7c7;    \n\
-					  display:inline-block; padding:1px 5px; text-decoration:none;   \n\
-					}   \n\
-input[type=radio]:checked + label	{ background-color: #fa4; }   \n\
+					  display:inline-block; padding:2px 5px 1px 5px; text-decoration:none;   \n\
+					}  \n\
   \n\
 textarea				{ width:400px; height:300px; }  \n\
   \n\
@@ -3386,7 +3405,11 @@ li.inactive:hover	{ background:inherit }  \n\
   \n\
 /* mode menu items */  \n\
 li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }  \n\
-.menu .selected, .menu .selected:hover { background-color: #fa4; }  \n\
+  \n\
+/* selected stuff */  \n\
+.menu .selected, .menu .selected:hover,  \n\
+input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8f8; font-weight: bold;  \n\
+                                         text-shadow: 0 1px 0 rgba(0,0,0,.2); }  \n\
   \n\
   \n\
 /*************************************************************************************************************/  \n\

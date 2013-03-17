@@ -92,7 +92,16 @@ function(){   // fake line, keep_editor_happy
     function ui_needed()
     {
 	return (iframe || init_ui_needed());
-    }    
+    }
+
+    function something_to_display()
+    {
+	var tmp = disable_main_button;
+	disable_main_button = false;
+	var needed = ui_needed();
+	disable_main_button = tmp;
+	return needed;
+    }
     
     // called only once when the injected iframe is ready to display stuff.
     function start_ui()

@@ -78,9 +78,8 @@ input[type=radio]			{ display:none; }
 input[type=radio] + label:hover		{ background-color: #ddd; } 
 input[type=radio] + label		{ box-shadow:inset 0px 1px 0px 0px #ffffff; border-radius:6px; 
 					  border:1px solid #dcdcdc; background-color: #c7c7c7;  
-					  display:inline-block; padding:1px 5px; text-decoration:none; 
-					} 
-input[type=radio]:checked + label	{ background-color: #fa4; } 
+					  display:inline-block; padding:2px 5px 1px 5px; text-decoration:none; 
+					}
 
 textarea				{ width:400px; height:300px; }
 
@@ -146,7 +145,11 @@ li.inactive:hover	{ background:inherit }
 
 /* mode menu items */
 li.block_all, li.filtered, li.relaxed, li.allow_all	{ padding:2px }
-.menu .selected, .menu .selected:hover { background-color: #fa4; }
+
+/* selected stuff */
+.menu .selected, .menu .selected:hover,
+input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8f8; font-weight: bold;
+                                         text-shadow: 0 1px 0 rgba(0,0,0,.2); }
 
 
 /*************************************************************************************************************/

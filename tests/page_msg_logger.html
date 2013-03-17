@@ -1,0 +1,23 @@
+<!DOCTYPE HTML>
+<html>
+<head></head>
+<body>
+<script>
+  function msg_handler(e)
+  {
+      var m = e.data;
+      var d = document.createElement('div');
+      d.innerText = "msg: " + m;
+      document.body.appendChild(d);    
+  }
+
+  window.addEventListener('Message', msg_handler, false);
+</script>
+
+<h1>Page message logger</h1>
+If any scriptweeder message leaks here, that's a bug !
+<br>
+<br>
+
+
+</body></html>

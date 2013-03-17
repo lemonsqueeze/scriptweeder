@@ -41,7 +41,7 @@ function(){   // fake line, keep_editor_happy
 					// page, site, domain, or global.
 					//  (0,     1,     2,      3)
     
-    var scoped_prefixes;		// prefixes
+    var scoped_prefixes = ['', '', '', ''];
     
     function init_scope(url)
     {
