@@ -376,7 +376,7 @@ function(){   // fake line, keep_editor_happy
     
     function my_alert(msg)
     {
-	var title = "scriptweeder";
+	var title = "ScriptWeeder";
 	if (window != window.top)
 	    title += " (in iframe)"
 	alert(title + "\n\n" + msg);

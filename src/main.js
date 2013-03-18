@@ -85,7 +85,18 @@
 
 	// upgrade from previous version
 	if (global_setting('version_number') != version_number)
+	{
+	    var from = global_setting('version_number');
 	    set_global_setting('version_number', version_number);
+
+	    // 1.5.2 style upgrade
+	    if (cmp_versions(from, "1.5.2") && global_setting('style') != '')
+	    {
+		set_global_setting('style', '');
+		alert("ScriptWeeder 1.5.2 upgrade notice:\n\n" +
+		      "The interface changed a bit, updated custom styles are available on the wiki page.");
+	    }
+	}
 
 	// convert pre 1.5.1 list settings format
 	if (global_setting('whitelist')[0] == '.')
