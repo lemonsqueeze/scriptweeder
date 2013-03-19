@@ -16,7 +16,17 @@ There are two kinds of custom styles:
 
 The **style editor** makes it easy to try changes without having to clear and reload style each time. `#swdev` url hash makes it show up in `options`.
 
-It's possible to edit files by hand, but a copy of the repository makes it easy to generate the data: urls:
+For toolbar button styling it'll look for a data: url on these selectors (highest priority first)
+```
+#toolbar_button.block_all img  { background-image:url('data:...') }
+#main_button.block_all img     { background-image:url('data:...') }
+.block_all img                 { background-image:url('data:...') }
+```
+same for `.filtered`, `.relaxed` and `.allow_all`, plus a special `.disabled` for the disabled icon. it doesn't do multi-line matching so it must all be on the same line, and the image should be 18x18 or strange things will happen.
+
+With 1.5.2 autoscrolling is available: if the menu doesn't fit on the screen js can set `max-height` automatically for the host table and the details menu content to make use of the space available. It only kicks in if it finds `overflow-y` is set but not `max-height`.
+
+With a copy of the repo it's possible to work with image files directly, it handles generating data: urls behind the scene. Useful if you're dealing with images a lot.
 * Get a fresh copy of the repository (see Hacking below)
 * Add your style patch rules at the end of `src/scriptweeder.css` (don't change anything else ! If you want to change a rule, copy it first).
 * Add extra images to `img` directory and reference them with `url('../img/whacky_image.png')`.
@@ -30,7 +40,7 @@ It's possible to edit files by hand, but a copy of the repository makes it easy 
 
 Creating a completely new stylesheet is just as easy: just replace the whole .css and type `make`. The generated stylesheet is in `src/scriptweeder.inlined.css`.
 
-For example, this is the source for glowballs:
+For example the source for glowballs looks like this using the repo method:
 ```
 /* mode icons (small) */
 .block_all img         { /*img_size*/ background-image:url('../img/block_all_16.png'); }
@@ -48,14 +58,6 @@ For example, this is the source for glowballs:
 .fat_icons .menu .block_all img,  .fat_icons .menu .filtered  img, 
 .fat_icons .menu .relaxed   img,  .fat_icons .menu .allow_all img      { margin: 4px }
 ```
-
-For toolbar button styling it'll look for a data: url on these selectors (highest priority first)
-```
-#toolbar_button.block_all img  { background-image:url('data:...') }
-#main_button.block_all img     { background-image:url('data:...') }
-.block_all img                 { background-image:url('data:...') }
-```
-same for `.filtered`, `.relaxed` and `.allow_all`, plus a special `.disabled` for the disabled icon. it doesn't do multi-line matching so it must all be on the same line, and the image should be 18x18 or strange things will happen.
 
 
 Hacking

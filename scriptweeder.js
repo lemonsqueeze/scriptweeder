@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Mar 18 2013
+// @published Mar 19 2013
 // ==/UserScript==
 
 
@@ -17,9 +17,9 @@
 // but when running as an extension they're 2 different things, beware !
 (function(document, location, opera, scriptStorage)
 {
-    var version_number = "1.5.2";
+    var version_number = "1.5.3";
     var version_type = "userjs";
-    var version_date = "Mar 18 2013";
+    var version_date = "Mar 19 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -1304,8 +1304,8 @@
     function new_wrapped_widget(name, init_proxy)
     {
 	name = name.toLowerCase();
+	assert(widgets[name], "new_widget(" + name + "): the layout for this widget is missing!");	
 	var layout = widgets[name].layout;
-	assert(layout, "new_widget(" + name + "): the layout for this widget is missing!");
 	
 	// otherwise create a new one...
 	var d = idoc.createElement('foo');
@@ -1795,7 +1795,7 @@
     
     function unset_class(n, klass)
     {
-	n.className = n.className.replace(' ' + klass, '');
+	n.className = n.className.replace(RegExp(' ' + klass, 'g'), '');
     }
 
     function set_unset_class(n, klass, set)
@@ -1803,6 +1803,21 @@
 	(set ? set_class(n, klass) : unset_class(n, klass));
     }
 
+    function has_class(n, klass)
+    {
+	return (n.className.match(RegExp('(^| )' + klass + '($| )')) != null);
+    }
+    
+    function toggle_class(n, klass)
+    {
+	set_unset_class(n, klass, !has_class(n, klass));
+    }
+
+    function comp_style(n)
+    {
+	return iwin.getComputedStyle(n)
+    }
+    
     
     /**************************** List utils *******************************/
 
@@ -1828,7 +1843,8 @@
 	var h = new Object();	
 	foreach(s.split(' '), function(key)
 	{
-	    h[key] = 1;
+	    if (key != '')  // "".split(' ') = [""] ...	    
+		h[key] = 1;
 	});
 	return h;
     }
@@ -3096,7 +3112,7 @@
     {
 	var cs = iwin.getComputedStyle(t);	// can cs.getPropertyValue('overflow-y') also
 	if (cs.overflowY != 'auto' ||
-	    (cs.maxHeight[0] != '-' && cs.maxHeight != ''))
+	    (cs.maxHeight != '' && cs.maxHeight != 'none' && cs.maxHeight[0] != '-'))
 	    return;	// current style doesn't want us to autoscroll
 	t.style = 'max-height:inherit;';
 	

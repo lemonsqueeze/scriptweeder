@@ -59,8 +59,8 @@ function(){   // fake line, keep_editor_happy
     function new_wrapped_widget(name, init_proxy)
     {
 	name = name.toLowerCase();
+	assert(widgets[name], "new_widget(" + name + "): the layout for this widget is missing!");	
 	var layout = widgets[name].layout;
-	assert(layout, "new_widget(" + name + "): the layout for this widget is missing!");
 	
 	// otherwise create a new one...
 	var d = idoc.createElement('foo');

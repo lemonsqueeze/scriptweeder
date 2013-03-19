@@ -1101,7 +1101,7 @@ function(){   // fake line, keep_editor_happy
     {
 	var cs = iwin.getComputedStyle(t);	// can cs.getPropertyValue('overflow-y') also
 	if (cs.overflowY != 'auto' ||
-	    (cs.maxHeight[0] != '-' && cs.maxHeight != ''))
+	    (cs.maxHeight != '' && cs.maxHeight != 'none' && cs.maxHeight[0] != '-'))
 	    return;	// current style doesn't want us to autoscroll
 	t.style = 'max-height:inherit;';
 	

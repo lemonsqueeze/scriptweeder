@@ -228,7 +228,7 @@ function(){   // fake line, keep_editor_happy
     
     function unset_class(n, klass)
     {
-	n.className = n.className.replace(' ' + klass, '');
+	n.className = n.className.replace(RegExp(' ' + klass, 'g'), '');
     }
 
     function set_unset_class(n, klass, set)
@@ -236,6 +236,21 @@ function(){   // fake line, keep_editor_happy
 	(set ? set_class(n, klass) : unset_class(n, klass));
     }
 
+    function has_class(n, klass)
+    {
+	return (n.className.match(RegExp('(^| )' + klass + '($| )')) != null);
+    }
+    
+    function toggle_class(n, klass)
+    {
+	set_unset_class(n, klass, !has_class(n, klass));
+    }
+
+    function comp_style(n)
+    {
+	return iwin.getComputedStyle(n)
+    }
+    
     
     /**************************** List utils *******************************/
 
@@ -261,7 +276,8 @@ function(){   // fake line, keep_editor_happy
 	var h = new Object();	
 	foreach(s.split(' '), function(key)
 	{
-	    h[key] = 1;
+	    if (key != '')  // "".split(' ') = [""] ...	    
+		h[key] = 1;
 	});
 	return h;
     }
