@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Mar 19 2013
+// @published Mar 29 2013
 // ==/UserScript==
 
 
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.3";
     var version_type = "userjs";
-    var version_date = "Mar 19 2013";
+    var version_date = "Mar 29 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -52,6 +52,7 @@
     var current_domain;
     var whitelist;
     var helper_blacklist;
+    var local_hosts;			// hosts allowed for this site/url/domain
     var block_inline_scripts = false;
     var handle_noscript_tags = false;
     var reload_method;
@@ -122,6 +123,7 @@
 	
 	whitelist = deserialize_name_hash(global_setting('whitelist'));
 	helper_blacklist = deserialize_name_hash(global_setting('helper_blacklist'));
+	local_hosts = hosts_setting();
     }
 
     
@@ -216,6 +218,7 @@
 
     var show_ui_in_iframes;    
     var iframe_message_header = "scriptweeder lost iframe rescue channel:";
+    var iframe_message_script = "scriptweeder iframe script:";
     var message_topwin_cant_display = "can't help you, i'm a frameset my dear";
     
     function init_iframe_logic()
@@ -225,7 +228,9 @@
 	    set_global_setting('top_window_url', location.href);
 	
 	show_ui_in_iframes = global_bool_setting('show_ui_in_iframes', default_show_ui_in_iframes);
+	// TODO clean this up
 	message_handlers[iframe_message_header] = iframe_message_handler;
+	message_handlers[iframe_message_script] = iframe_message_add_script;
 	
 	iframe_logic = global_setting('iframe_logic');
 	if (iframe_logic != 'block_all' && iframe_logic != 'filter' && iframe_logic != 'allow')
@@ -255,21 +260,25 @@
     }
 
     // set mode based on parent settings
+    var parent_domain;
     function use_iframe_parent_mode(check_allowed)
     {
 	// 'filter' logic uses parent window's settings to decide what to do with page scripts.
 	var parent_url = get_parent_url();
-	var allowed, parent_mode;
+	parent_domain = get_domain(url_hostname(parent_url));
+	var allowed, parent_mode, parent_hosts;
 	assert(parent_url != '', "parent_url is empty !");
 	
 	load_global_context(parent_url);		// get parent settings
-	parent_mode = mode;	
+	parent_mode = mode;
+	parent_hosts = local_hosts;
 	if (check_allowed)
 	{
 	    allowed = allowed_host(location.hostname);	// does parent allow us ?
 	    clear_domain_nodes();			// wipe out hosts nodes this will have created
 	}
 	load_global_context();
+	local_hosts = parent_hosts;			// use parent settings, it knows about our scripts
 	
 	// alert("iframe " + location.hostname + " allowed: " + allowed);
 	if (parent_mode == 'block_all' ||
@@ -302,6 +311,13 @@
 	//    and replay/refire all events in order, hoping things like domcontentloaded can be fired
 	//    twice without side effects...
     	return global_setting('top_window_url');
+    }
+
+    // add scripts from iframes to menu
+    function iframe_message_add_script(e, url)
+    {
+	add_script(url, url_hostname(url));
+	repaint_ui();	
     }
     
     function iframe_message_handler(e, content)
@@ -382,10 +398,10 @@
     
     function allow_host(host)
     {
-	var l = hosts_setting();
-	if (list_contains(l, host))
+	if (list_contains(local_hosts, host))
 	    return;
-	set_hosts_setting(l + ' ' + host);
+	local_hosts = local_hosts + ' ' + host
+	set_hosts_setting(local_hosts);
     }
 
     function global_allow_host(host)
@@ -396,9 +412,8 @@
     
     function remove_host(host)
     {
-	var l = hosts_setting();
-	l = l.replace(' ' + host, '');
-	set_hosts_setting(l);
+	local_hosts = local_hosts.replace(' ' + host, '');
+	set_hosts_setting(local_hosts);
     }
 
     function global_remove_host(host)
@@ -427,8 +442,7 @@
     
     function host_allowed_locally(host)
     {
-	var l = hosts_setting();
-	return list_contains(l, host);
+	return list_contains(local_hosts, host);
     }
     
     function filtered_mode_allowed_host(host)
@@ -518,13 +532,19 @@
 	    return null;
 	var n = new Object();
 	n.name = domain;
-	n.related = related_domains(domain, current_domain);
+	n.related = is_related_domain(domain);
 	n.helper = helper_domain(domain);
 	n.hosts = [];
 	domain_nodes.push(n);
 	return n;
     }
 
+    function is_related_domain(d)
+    {
+	return (related_domains(d, current_domain) ||
+	        (parent_domain && related_domains(d, parent_domain))); // for iframes, make parent related
+    }
+    
     function get_host_node(host, domain_node, create)
     {
 	var hosts = domain_node.hosts;
@@ -557,6 +577,10 @@
 	var domain_node = get_domain_node(domain, true);
 	var host_node = get_host_node(host, domain_node, true);
 	host_node.scripts.push(s);
+
+	if (window != window.top) 	// tell parent so it can display script in the menu.
+	    window.top.postMessage(iframe_message_script + url, '*');	    
+	
 	return s;
     }
 
@@ -1026,6 +1050,7 @@
     
     function set_hosts_setting(hosts)
     {
+	assert(window == window.top || topwin_cant_display, "Use main menu to change hosts in iframes");
 	hosts = hosts.replace(/^ */, '');
 	if (hosts == '')
 	    hosts = ' '; // can't store empty string, would mean current_host.
