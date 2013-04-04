@@ -78,14 +78,14 @@ function(){   // fake line, keep_editor_happy
 	    !rescue_mode())				// rescue mode, always show ui
             return false;				// don't show ui.
 	
- 	var force_page_ui = (window != window.top && topwin_cant_display);
+ 	var force_page_ui = (in_iframe() && topwin_cant_display);
 	
 	// don't display ui in iframes unless needed
-	if (window != window.top)
+	if (in_iframe())
 	    return (show_ui_in_iframes || force_page_ui);
 	
 	var not_needed = disable_main_button && !menu_request;		
-	return (rescue_mode() || force_page_ui || !not_needed);
+	return (rescue_mode() || !not_needed);
     }
 
     // not 100% foolproof, but for what it's used it'll be ok
@@ -136,7 +136,7 @@ function(){   // fake line, keep_editor_happy
 	unset_class(idoc.body, 'large_font');
 	if (font_size != 'normal')
 	    set_class(idoc.body, font_size + '_font');
-	if (!disable_main_button || window != window.top)	    
+	if (!disable_main_button || in_iframe())  // main button needed
 	    wakeup_lazy_widgets(main_ui);
     }
 

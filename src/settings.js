@@ -150,7 +150,7 @@ function(){   // fake line, keep_editor_happy
     
     function set_hosts_setting(hosts)
     {
-	assert(window == window.top || topwin_cant_display, "Use main menu to change hosts in iframes");
+	assert(!in_iframe() || topwin_cant_display, "Use main menu to change hosts in iframes");
 	hosts = hosts.replace(/^ */, '');
 	if (hosts == '')
 	    hosts = ' '; // can't store empty string, would mean current_host.

@@ -39,7 +39,7 @@ function(){   // fake line, keep_editor_happy
 	//        http://www.joezimjs.com/javascript/the-lazy-mans-url-parsing/
 	u = strip_http(u);
 	var a = u.match(/^([^/]*)(\/|\/.*\/)([\w-.]*)([^/]*)$/);
-	assert(a, "split_url(): shouldn't happen");
+	assert(a, "split_url(): couldn't parse url:\n" + u);
 	return a.slice(1);
     }
     
@@ -354,6 +354,15 @@ function(){   // fake line, keep_editor_happy
 	return (xform(v1) < xform(v2));
     }
 
+    function in_iframe()
+    {
+	return (window != window.parent &&
+		window != window.top);
+	// was return (window != window.top);
+	// but framesets can override top (!)
+	// ex http://cybertech.net.pl/online/astro/khc/@inetBook/gui/index.htm
+    }
+    
     function delayed(f, time, main_window)
     {
 	var win = (main_window ? window : iwin);
@@ -368,7 +377,7 @@ function(){   // fake line, keep_editor_happy
     function log(msg)
     {
 	var h = "scriptweeder userjs (main)  : ";
-	if (window != window.top)
+	if (in_iframe())
 	    h = "scriptweeder userjs (iframe): ";
 	console.log(h + msg);
     }
@@ -393,7 +402,7 @@ function(){   // fake line, keep_editor_happy
     function my_alert(msg)
     {
 	var title = "ScriptWeeder";
-	if (window != window.top)
+	if (in_iframe())
 	    title += " (in iframe)"
 	alert(title + "\n\n" + msg);
     }

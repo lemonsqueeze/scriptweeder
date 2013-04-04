@@ -57,7 +57,7 @@
     function startup_checks(quiet)
     {
 	var start_page = "https://github.com/lemonsqueeze/scriptweeder/wiki/scriptweeder-userjs-installed-!";	
-	if (window != window.top) // don't redirect to start page in iframes.
+	if (in_iframe()) // don't redirect to start page in iframes.
 	    return;
 	
         // first run, send to start page
@@ -109,7 +109,7 @@
     function boot()
     {
 	// scriptweeder ui's iframe, don't run in there !
-	if (window != window.top && window.name == 'scriptweeder_iframe')	// TODO better way of id ?
+	if (in_iframe() && window.name == 'scriptweeder_iframe')	// TODO better way of id ?
 	    return;
 	if (location.hostname == "")	// bad url, opera's error page. 
 	    return;
@@ -120,7 +120,7 @@
 	window.opera.scriptweeder.version = version_number;
 	debug_log("start");	
     }
-    
+
     boot();
 
 })(window.document, window.location, window.opera, window.opera.scriptStorage);

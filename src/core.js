@@ -115,7 +115,7 @@ function(){   // fake line, keep_editor_happy
     // reload top window really: with 'filtered' iframe logic, iframes need parent to reload.
     function reload_page()
     {
-	if (window != window.top)		// in iframe, no choice there.
+	if (in_iframe())		// in iframe, no choice there.
 	    window.top.location.reload(false);
 	
 	// All of these reload from server ...
@@ -193,31 +193,33 @@ function(){   // fake line, keep_editor_happy
     
     /***************************** filtering js in iframes **************************/
 
-    var show_ui_in_iframes;    
-    var iframe_message_header = "scriptweeder lost iframe rescue channel:";
-    var iframe_message_script = "scriptweeder iframe script:";
-    var message_topwin_cant_display = "can't help you, i'm a frameset my dear";
+    var show_ui_in_iframes;
+    var msg_header_iframe = "scriptweeder iframe rescue channel:";
+    var msg_header_iframe_script = "scriptweeder iframe script:";
+    var msg_header_parent = "scriptweeder iframe parent:";
+    var message_topwin_cant_display = "can't help you dear, i'm a frameset";
     
     function init_iframe_logic()
     {
 	// let contained iframes know their parent host.
-	if (window == window.top)
+	if (!in_iframe())
 	    set_global_setting('top_window_url', location.href);
 	
 	show_ui_in_iframes = global_bool_setting('show_ui_in_iframes', default_show_ui_in_iframes);
 	// TODO clean this up
-	message_handlers[iframe_message_header] = iframe_message_handler;
-	message_handlers[iframe_message_script] = iframe_message_add_script;
+	message_handlers[msg_header_iframe] = message_from_iframe;
+	message_handlers[msg_header_iframe_script] = message_add_iframe_script;
+	message_handlers[msg_header_parent] = message_from_parent;
 	
 	iframe_logic = global_setting('iframe_logic');
 	if (iframe_logic != 'block_all' && iframe_logic != 'filter' && iframe_logic != 'allow')
 	    iframe_logic = default_iframe_logic;
 
-	if (window == window.top) // not running in iframe ?
+	if (!in_iframe())
 	    return;
 	
 	// tell parent about us so it can display our host in the menu.
-	window.top.postMessage(iframe_message_header + location.href, '*');
+	window.top.postMessage(msg_header_iframe + location.href, '*');
 	
 	// switch mode depending on iframe_logic
 	// TODO: add way to override with page setting *only* ? should be safe enough
@@ -237,11 +239,12 @@ function(){   // fake line, keep_editor_happy
     }
 
     // set mode based on parent settings
+    var parent_url;
     var parent_domain;
     function use_iframe_parent_mode(check_allowed)
     {
 	// 'filter' logic uses parent window's settings to decide what to do with page scripts.
-	var parent_url = get_parent_url();
+	parent_url = get_parent_url();
 	parent_domain = get_domain(url_hostname(parent_url));
 	var allowed, parent_mode, parent_hosts;
 	assert(parent_url != '', "parent_url is empty !");
@@ -291,22 +294,12 @@ function(){   // fake line, keep_editor_happy
     }
 
     // add scripts from iframes to menu
-    function iframe_message_add_script(e, url)
+    function message_add_iframe_script(e, url)
     {
 	add_script(url, url_hostname(url));
 	repaint_ui();	
     }
     
-    function iframe_message_handler(e, content)
-    {
-	var source = e.source;	// WindowProxy of sender
-	// e.origin contains 'http://hostname' of the sender
-	if (source === window.top)
-	    message_from_parent(e, content);
-	else
-	    message_from_iframe(e, content);
-    }
-
     // iframe instance making itself known to us. (works for nested iframes unlike DOM harvesting)
     function message_from_iframe(e, url)
     {
@@ -315,7 +308,7 @@ function(){   // fake line, keep_editor_happy
 	// fortunately this works even before domcontentloaded
 	if (element_tag_is(document.body, 'frameset')) // sorry, can't help you dear
 	{
-	    e.source.postMessage(iframe_message_header + message_topwin_cant_display, '*');
+	    e.source.postMessage(msg_header_parent + message_topwin_cant_display, '*');
 	    return;
 	}	
 	add_iframe(url);			// add to menu so we can block/allow it.
@@ -326,7 +319,8 @@ function(){   // fake line, keep_editor_happy
     function message_from_parent(e, answer)
     {
 	debug_log("[msg] from parent: " + answer);
-	assert(!topwin_cant_display, "topwin_cant_display logic shouldn't get called twice !");
+	assert(!topwin_cant_display, "topwin_cant_display logic shouldn't get called twice !\n" +
+	       location.href + "\n" + parent_url);
 	
 	// crap, parent uses frameset, we're not in an iframe actually.
 	// -> fall back to normal logic and show ui everywhere.
@@ -555,8 +549,8 @@ function(){   // fake line, keep_editor_happy
 	var host_node = get_host_node(host, domain_node, true);
 	host_node.scripts.push(s);
 
-	if (window != window.top) 	// tell parent so it can display script in the menu.
-	    window.top.postMessage(iframe_message_script + url, '*');	    
+	if (in_iframe()) 	// tell parent so it can display script in the menu.
+	    window.top.postMessage(msg_header_iframe_script + url, '*');
 	
 	return s;
     }
@@ -747,9 +741,9 @@ function(){   // fake line, keep_editor_happy
 	init_ui();
     }
 
-    function before_message_handler(ujs_event)
+    function before_message_handler(ue)
     {
-	var e = ujs_event.event;
+	var e = ue.event;
 	var m = e.data;
 	if (typeof(m) != "string")
 	    return;
@@ -757,9 +751,15 @@ function(){   // fake line, keep_editor_happy
 	for (var h in message_handlers)
 	{
 	    if (is_prefix(h, m))
-	    {		
+	    {
+		if (e.source == window)
+		{
+		    error("Looks like a script on this page is trying to forge ScriptWeeder messages, " +
+			  "something funny is going on !");
+		    return;
+		}
 		//debug_log("[msg] " + m);
-		ujs_event.preventDefault();	// keep this conversation private.
+		ue.preventDefault();	// keep this conversation private.
 		var content = m.slice(h.length);		
 		(message_handlers[h])(e, content);
 		return;
@@ -815,7 +815,7 @@ function(){   // fake line, keep_editor_happy
     var extension_button;
     function update_extension_button(force)
     {
-	if (window != window.top ||
+	if (in_iframe() ||
 	    (!force && !extension_button)) // not talking to extension (yet) - userjs_only
 	    return;
 	
