@@ -562,6 +562,7 @@ function(){   // fake line, keep_editor_happy
 	}
 	select.onchange = function(n)
 	{
+	   disable_main_button = (this.value == 'y');	
 	   if (this.value == 'y') // toolbar button
 	   {
 	      set_global_bool_setting('disable_main_button', true);
@@ -574,7 +575,8 @@ function(){   // fake line, keep_editor_happy
 	      set_global_setting('ui_position', 'bottom_right');
 	      set_global_setting('menu_display_logic', 'auto');
 	   }
-	   
+
+	   options_menu();  // update enabled/disabled checkboxes	   
 	   need_reload = true;
 	};	
     }

@@ -78,6 +78,8 @@ function(){   // fake line, keep_editor_happy
     function load_global_settings()
     {
 	load_global_context(location.href, true);
+	if (location.hash == '#swblockall' && !in_iframe())
+	    force_block_all_mode();
 	
 	init_iframe_logic();	
 	reload_method = global_setting('reload_method', default_reload_method);
@@ -94,7 +96,7 @@ function(){   // fake line, keep_editor_happy
 	
 	init_scope(url);
 	init_mode();
-
+	
 	if (do_startup_checks)
 	    startup_checks();
 	
@@ -178,6 +180,13 @@ function(){   // fake line, keep_editor_happy
 	set_mode_no_update(new_mode);
 	need_reload = true;
 	repaint_ui_now();
+    }
+
+    function force_block_all_mode()
+    {
+	mode = 'block_all';
+	block_inline_scripts = true;
+	handle_noscript_tags = true;
     }    
 
     var mode;				// current_mode
@@ -228,8 +237,8 @@ function(){   // fake line, keep_editor_happy
     
     function decide_iframe_mode()
     {	
-	if (iframe_logic == 'block_all')
-	    iframe_block_all_mode();
+	if (iframe_logic == 'block_all')	        
+	    force_block_all_mode();  // can't use set_mode_no_update('block_all'), it would save the setting.
 	else if (iframe_logic == 'filter')
 	    use_iframe_parent_mode(true);
 	else if (iframe_logic == 'allow')
@@ -263,19 +272,11 @@ function(){   // fake line, keep_editor_happy
 	// alert("iframe " + location.hostname + " allowed: " + allowed);
 	if (parent_mode == 'block_all' ||
 	    (check_allowed && !allowed))
-	    iframe_block_all_mode();
+	    force_block_all_mode();        // can't use set_mode_no_update('block_all'), it would save the setting.
 	else
 	    mode = parent_mode;
     }
-    
-    // can't use set_mode_no_update('block_all'), it would save the setting.
-    function iframe_block_all_mode()
-    {
-	mode = 'block_all';
-	block_inline_scripts = true;
-	handle_noscript_tags = true;
-    }
-    
+        
     function get_parent_url()
     {
 	// 1) try getting it directly. that won't work cross domain

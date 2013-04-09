@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name scriptweeder
+// @name ScriptWeeder
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
@@ -113,11 +113,18 @@
 	    return;
 	if (location.hostname == "")	// bad url, opera's error page. 
 	    return;
+	assert(typeof GM_getValue == 'undefined',  // userjs_only
+	       "needs to run as native opera UserJS, won't work as GreaseMonkey script.");
+	if (window.opera.scriptweeder && window.opera.scriptweeder.version_type == 'extension')		// userjs_only
+	{
+	    my_alert("ScriptWeeder extension detected. Currently it has precedence, so UserJS version is not needed.");
+	    return;
+	}
 	
 	setup_event_handlers();
-	// userjs_only: register right away so extension can detect it
 	window.opera.scriptweeder = new Object();	// external api
 	window.opera.scriptweeder.version = version_number;
+	window.opera.scriptweeder.version_type = version_type;	
 	debug_log("start");	
     }
 

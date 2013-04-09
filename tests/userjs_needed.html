@@ -1,0 +1,33 @@
+<!DOCTYPE HTML>
+<html>
+<head></head>
+
+<body>
+
+
+<script>
+  window.addEventListener('DOMContentLoaded', function()
+  {
+    var d = document.querySelector('#msg');
+    if (location.hash != '#swblockall')
+    {
+	location.href += "#swblockall"; // force 'block all' mode
+	location.reload(false);
+	return;
+    }
+    d.innerText = "Can't block first inline script, install UserJS version for full blocking.";
+  }, false);
+</script>
+
+
+<center><h1>Inline Script Blocking Test</h1></center>
+<div style="color:#888;">
+Use after installing ScriptWeeder extension to check if UserJS version is needed.<br>
+It should be in 'block all' mode for this test.<br><br>
+</div>
+<div id="msg">
+Everything's blocked, no need for the UserJS version.
+</div>
+
+</body>
+</html>

@@ -369,9 +369,9 @@ function(){   // fake line, keep_editor_happy
 	return (function(){ win.setTimeout(f, time); });
     }
     
-    function function_exists(name)
-    {
-	return eval("typeof " + name) == "function";
+    function function_defined(name)
+    {	
+	return (eval("typeof " + name) == 'function');
     }
 
     function log(msg)

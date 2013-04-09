@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name scriptweeder
+// @name ScriptWeeder
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Apr 05 2013
+// @published Apr 11 2013
 // ==/UserScript==
 
 
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.3";
     var version_type = "userjs";
-    var version_date = "Apr 05 2013";
+    var version_date = "Apr 11 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -101,6 +101,8 @@
     function load_global_settings()
     {
 	load_global_context(location.href, true);
+	if (location.hash == '#swblockall' && !in_iframe())
+	    force_block_all_mode();
 	
 	init_iframe_logic();	
 	reload_method = global_setting('reload_method', default_reload_method);
@@ -117,7 +119,7 @@
 	
 	init_scope(url);
 	init_mode();
-
+	
 	if (do_startup_checks)
 	    startup_checks();
 	
@@ -201,6 +203,13 @@
 	set_mode_no_update(new_mode);
 	need_reload = true;
 	repaint_ui_now();
+    }
+
+    function force_block_all_mode()
+    {
+	mode = 'block_all';
+	block_inline_scripts = true;
+	handle_noscript_tags = true;
     }    
 
     var mode;				// current_mode
@@ -251,8 +260,8 @@
     
     function decide_iframe_mode()
     {	
-	if (iframe_logic == 'block_all')
-	    iframe_block_all_mode();
+	if (iframe_logic == 'block_all')	        
+	    force_block_all_mode();  // can't use set_mode_no_update('block_all'), it would save the setting.
 	else if (iframe_logic == 'filter')
 	    use_iframe_parent_mode(true);
 	else if (iframe_logic == 'allow')
@@ -286,19 +295,11 @@
 	// alert("iframe " + location.hostname + " allowed: " + allowed);
 	if (parent_mode == 'block_all' ||
 	    (check_allowed && !allowed))
-	    iframe_block_all_mode();
+	    force_block_all_mode();        // can't use set_mode_no_update('block_all'), it would save the setting.
 	else
 	    mode = parent_mode;
     }
-    
-    // can't use set_mode_no_update('block_all'), it would save the setting.
-    function iframe_block_all_mode()
-    {
-	mode = 'block_all';
-	block_inline_scripts = true;
-	handle_noscript_tags = true;
-    }
-    
+        
     function get_parent_url()
     {
 	// 1) try getting it directly. that won't work cross domain
@@ -1961,9 +1962,9 @@
 	return (function(){ win.setTimeout(f, time); });
     }
     
-    function function_exists(name)
-    {
-	return eval("typeof " + name) == "function";
+    function function_defined(name)
+    {	
+	return (eval("typeof " + name) == 'function');
     }
 
     function log(msg)
@@ -2181,6 +2182,8 @@
 	unset_class(idoc.body, 'large_font');
 	if (font_size != 'normal')
 	    set_class(idoc.body, font_size + '_font');
+	if (!disable_main_button || in_iframe())  // main button needed
+	    wakeup_lazy_widgets(main_ui);
     }
 
     function parent_main_ui()
@@ -2605,6 +2608,7 @@
 	}
 	select.onchange = function(n)
 	{
+	   disable_main_button = (this.value == 'y');	
 	   if (this.value == 'y') // toolbar button
 	   {
 	      set_global_bool_setting('disable_main_button', true);
@@ -2617,7 +2621,8 @@
 	      set_global_setting('ui_position', 'bottom_right');
 	      set_global_setting('menu_display_logic', 'auto');
 	   }
-	   
+
+	   options_menu();  // update enabled/disabled checkboxes	   
 	   need_reload = true;
 	};	
     }
@@ -3525,7 +3530,7 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
     /* widgets (generated from scriptweeder.xml). */
     var widgets = {
    'main_ui' : {
-      layout: '<widget name="main_ui"><div id="main"><main_button/></div></widget>' },
+      layout: '<widget name="main_ui"><div id="main"><main_button lazy/></div></widget>' },
    'main_button' : {
       init: main_button_init,
       layout: '<widget name="main_button" init><div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>' },
@@ -3709,11 +3714,18 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
 	    return;
 	if (location.hostname == "")	// bad url, opera's error page. 
 	    return;
+	assert(typeof GM_getValue == 'undefined',  // userjs_only
+	       "needs to run as native opera UserJS, won't work as GreaseMonkey script.");
+	if (window.opera.scriptweeder && window.opera.scriptweeder.version_type == 'extension')		// userjs_only
+	{
+	    my_alert("ScriptWeeder extension detected. Currently it has precedence, so UserJS version is not needed.");
+	    return;
+	}
 	
 	setup_event_handlers();
-	// userjs_only: register right away so extension can detect it
 	window.opera.scriptweeder = new Object();	// external api
 	window.opera.scriptweeder.version = version_number;
+	window.opera.scriptweeder.version_type = version_type;	
 	debug_log("start");	
     }
 
