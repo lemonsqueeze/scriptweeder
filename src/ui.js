@@ -987,7 +987,7 @@ function(){   // fake line, keep_editor_happy
 	    relaxed_mode_to_filtered_mode(h);
 	  
 	need_reload = true;
-	repaint_ui_now();
+	update_host_table(main_ui); // preserves current scroll position
     };
 
     function iframes_info(hn, allowed)
@@ -1033,17 +1033,15 @@ function(){   // fake line, keep_editor_happy
 	return (total ? get_size_kb(total) + 'k' : '');
     }
     
-    function add_host_table_after(item)
+    function update_host_table(w)
     {
-	var w = new_widget("host_table");	
-	item.parentNode.insertBefore(w, item.nextSibling);
-	var t = w.querySelector('table');
-	sort_domains();
-
-	var found_not_loaded = false;
-	var tr = null;	
-	foreach_host_node(function(hn, dn)
+	w = (w ? w : main_ui);
+	var t = w.querySelector('#host_table table');
+	
+	foreach_child(t, function(prev_tr)
 	{
+	    var hn = prev_tr.host_node;
+	    var dn = prev_tr.domain_node;
 	    var d = dn.name;
 	    var h = hn.name;
 	    var allowed = allowed_host(h);
@@ -1053,12 +1051,11 @@ function(){   // fake line, keep_editor_happy
 	    var helper = hn.helper_host;
 	    var iframes = iframes_info(hn, allowed);
 
-	    tr = new_widget("host_table_row");
+	    var tr = new_widget("host_table_row");
 	    tr = tr.firstChild.firstChild; // skip dummy <table> and <tbody> tags
 	    tr.host = h;
 	    tr.domain_node = dn;
 	    tr.host_node = hn;
-	    t.appendChild(tr);	    
 	    
 	    if (not_loaded)
 	    {
@@ -1085,13 +1082,27 @@ function(){   // fake line, keep_editor_happy
 	    tr.childNodes[7].innerText = '[' + count + ']';		// scripts + iframes
 	    tr.childNodes[7].title = ext_scripts_size_tooltip(hn.scripts);
 
-	    if (not_loaded)
-		found_not_loaded = true;	    
+	    t.replaceChild(tr, prev_tr);
 	});
-	
-//	if (tr && !found_not_loaded) // indent
-//	    tr.childNodes[0].innerHTML = "&nbsp;&nbsp;";	
     }
+
+    function add_host_table_after(item)
+    {
+	var w = new_widget("host_table");	
+	item.parentNode.insertBefore(w, item.nextSibling);
+	var t = w.querySelector('table');
+	sort_domains();
+
+	foreach_host_node(function(hn, dn)
+	{
+	    var tr = new_widget("host_table_row");
+	    tr = tr.firstChild.firstChild; // skip dummy <table> and <tbody> tags	    
+	    tr.domain_node = dn;
+	    tr.host_node = hn;
+	    t.appendChild(tr);
+	});
+	update_host_table(w);
+    }    
 
     function browser_resized()
     {

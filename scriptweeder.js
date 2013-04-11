@@ -17,7 +17,7 @@
 // but when running as an extension they're 2 different things, beware !
 (function(document, location, opera, scriptStorage)
 {
-    var version_number = "1.5.3";
+    var version_number = "1.5.4";
     var version_type = "userjs";
     var version_date = "Apr 11 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
@@ -45,7 +45,6 @@
 
     // FIXME this doesn't work for iframes ...
     var debug_mode = (location.hash == '#swdebug');
-    var paranoid = false;
     
     /* stuff load_global_settings() takes care of */
     var current_host;
@@ -228,6 +227,7 @@
     var show_ui_in_iframes;
     var msg_header_iframe = "scriptweeder iframe rescue channel:";
     var msg_header_iframe_script = "scriptweeder iframe script:";
+    var msg_header_iframe_script_loaded = "scriptweeder iframe script loaded:";
     var msg_header_parent = "scriptweeder iframe parent:";
     var message_topwin_cant_display = "can't help you dear, i'm a frameset";
     
@@ -241,6 +241,7 @@
 	// TODO clean this up
 	message_handlers[msg_header_iframe] = message_from_iframe;
 	message_handlers[msg_header_iframe_script] = message_add_iframe_script;
+	message_handlers[msg_header_iframe_script_loaded] = message_iframe_script_loaded;	
 	message_handlers[msg_header_parent] = message_from_parent;
 	
 	iframe_logic = global_setting('iframe_logic');
@@ -322,6 +323,13 @@
     {
 	add_script(url, url_hostname(url));
 	repaint_ui();	
+    }
+
+    // script loaded event from iframe, update menu
+    function message_iframe_script_loaded(e, url)
+    {
+	var ev = { event:{ target:{ tagName:'script', src:url } } };
+	beforeload_handler(ev);
     }
     
     // iframe instance making itself known to us. (works for nested iframes unlike DOM harvesting)
@@ -728,12 +736,10 @@
 	check_init();
 	
 	var host = url_hostname(e.src);
-	var script = find_script(e.src, host);
+	var script = find_script(e.src, host);	
 	debug_log("loaded: " + host);
-
-	if (paranoid)	// sanity check ...
-	    assert(allowed_host(host),
-		   "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
+	assert(allowed_host(host),	// sanity check ...
+	       "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
 	
 	if (host == current_host)
 	    loaded_current_host++; 
@@ -743,6 +749,8 @@
 
 	if (nsmenu)
 	    repaint_ui();
+	if (in_iframe()) 	// tell parent so it can update menu
+	    window.top.postMessage(msg_header_iframe_script_loaded + e.src, '*');
     }
 
     function domcontentloaded_handler(e)
@@ -3033,7 +3041,7 @@
 	    relaxed_mode_to_filtered_mode(h);
 	  
 	need_reload = true;
-	repaint_ui_now();
+	update_host_table(main_ui); // preserves current scroll position
     };
 
     function iframes_info(hn, allowed)
@@ -3079,17 +3087,15 @@
 	return (total ? get_size_kb(total) + 'k' : '');
     }
     
-    function add_host_table_after(item)
+    function update_host_table(w)
     {
-	var w = new_widget("host_table");	
-	item.parentNode.insertBefore(w, item.nextSibling);
-	var t = w.querySelector('table');
-	sort_domains();
-
-	var found_not_loaded = false;
-	var tr = null;	
-	foreach_host_node(function(hn, dn)
+	w = (w ? w : main_ui);
+	var t = w.querySelector('#host_table table');
+	
+	foreach_child(t, function(prev_tr)
 	{
+	    var hn = prev_tr.host_node;
+	    var dn = prev_tr.domain_node;
 	    var d = dn.name;
 	    var h = hn.name;
 	    var allowed = allowed_host(h);
@@ -3099,12 +3105,11 @@
 	    var helper = hn.helper_host;
 	    var iframes = iframes_info(hn, allowed);
 
-	    tr = new_widget("host_table_row");
+	    var tr = new_widget("host_table_row");
 	    tr = tr.firstChild.firstChild; // skip dummy <table> and <tbody> tags
 	    tr.host = h;
 	    tr.domain_node = dn;
 	    tr.host_node = hn;
-	    t.appendChild(tr);	    
 	    
 	    if (not_loaded)
 	    {
@@ -3131,13 +3136,27 @@
 	    tr.childNodes[7].innerText = '[' + count + ']';		// scripts + iframes
 	    tr.childNodes[7].title = ext_scripts_size_tooltip(hn.scripts);
 
-	    if (not_loaded)
-		found_not_loaded = true;	    
+	    t.replaceChild(tr, prev_tr);
 	});
-	
-//	if (tr && !found_not_loaded) // indent
-//	    tr.childNodes[0].innerHTML = "&nbsp;&nbsp;";	
     }
+
+    function add_host_table_after(item)
+    {
+	var w = new_widget("host_table");	
+	item.parentNode.insertBefore(w, item.nextSibling);
+	var t = w.querySelector('table');
+	sort_domains();
+
+	foreach_host_node(function(hn, dn)
+	{
+	    var tr = new_widget("host_table_row");
+	    tr = tr.firstChild.firstChild; // skip dummy <table> and <tbody> tags	    
+	    tr.domain_node = dn;
+	    tr.host_node = hn;
+	    t.appendChild(tr);
+	});
+	update_host_table(w);
+    }    
 
     function browser_resized()
     {

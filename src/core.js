@@ -22,7 +22,6 @@ function(){   // fake line, keep_editor_happy
 
     // FIXME this doesn't work for iframes ...
     var debug_mode = (location.hash == '#swdebug');
-    var paranoid = false;
     
     /* stuff load_global_settings() takes care of */
     var current_host;
@@ -205,6 +204,7 @@ function(){   // fake line, keep_editor_happy
     var show_ui_in_iframes;
     var msg_header_iframe = "scriptweeder iframe rescue channel:";
     var msg_header_iframe_script = "scriptweeder iframe script:";
+    var msg_header_iframe_script_loaded = "scriptweeder iframe script loaded:";
     var msg_header_parent = "scriptweeder iframe parent:";
     var message_topwin_cant_display = "can't help you dear, i'm a frameset";
     
@@ -218,6 +218,7 @@ function(){   // fake line, keep_editor_happy
 	// TODO clean this up
 	message_handlers[msg_header_iframe] = message_from_iframe;
 	message_handlers[msg_header_iframe_script] = message_add_iframe_script;
+	message_handlers[msg_header_iframe_script_loaded] = message_iframe_script_loaded;	
 	message_handlers[msg_header_parent] = message_from_parent;
 	
 	iframe_logic = global_setting('iframe_logic');
@@ -299,6 +300,13 @@ function(){   // fake line, keep_editor_happy
     {
 	add_script(url, url_hostname(url));
 	repaint_ui();	
+    }
+
+    // script loaded event from iframe, update menu
+    function message_iframe_script_loaded(e, url)
+    {
+	var ev = { event:{ target:{ tagName:'script', src:url } } };
+	beforeload_handler(ev);
     }
     
     // iframe instance making itself known to us. (works for nested iframes unlike DOM harvesting)
@@ -705,12 +713,10 @@ function(){   // fake line, keep_editor_happy
 	check_init();
 	
 	var host = url_hostname(e.src);
-	var script = find_script(e.src, host);
+	var script = find_script(e.src, host);	
 	debug_log("loaded: " + host);
-
-	if (paranoid)	// sanity check ...
-	    assert(allowed_host(host),
-		   "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
+	assert(allowed_host(host),	// sanity check ...
+	       "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
 	
 	if (host == current_host)
 	    loaded_current_host++; 
@@ -720,6 +726,8 @@ function(){   // fake line, keep_editor_happy
 
 	if (nsmenu)
 	    repaint_ui();
+	if (in_iframe()) 	// tell parent so it can update menu
+	    window.top.postMessage(msg_header_iframe_script_loaded + e.src, '*');
     }
 
     function domcontentloaded_handler(e)
