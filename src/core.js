@@ -781,18 +781,6 @@ function(){   // fake line, keep_editor_happy
     
     /**************************** Extension messaging ***************************/
 
-    // userjs_only: prevent lockout if extension goes away and we were using its button.
-    function prevent_userjs_lockout()
-    {
-	if (extension_button || !disable_main_button || !something_to_display())
-	    return;
-	disable_main_button = false;	
-	set_global_bool_setting('disable_main_button', false);
-	set_global_setting('ui_position', 'bottom_right');
-	set_global_setting('menu_display_logic', 'auto');
-	init_ui();
-    }
-    
     function get_icon_from_css(mode, fatal)
     {
 	var data_re = new RegExp(".*'(data:image/png;base64,[^']*)'.*");
