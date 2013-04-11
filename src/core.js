@@ -305,7 +305,7 @@ function(){   // fake line, keep_editor_happy
     // script loaded event from iframe, update menu
     function message_iframe_script_loaded(e, url)
     {
-	var ev = { event:{ target:{ tagName:'script', src:url } } };
+	var ev = { from_iframe:true, event:{ target:{ tagName:'script', src:url } } };
 	beforeload_handler(ev);
     }
     
@@ -715,8 +715,9 @@ function(){   // fake line, keep_editor_happy
 	var host = url_hostname(e.src);
 	var script = find_script(e.src, host);	
 	debug_log("loaded: " + host);
-	assert(allowed_host(host),	// sanity check ...
-	       "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
+	if (!ev.from_iframe)  // sanity check ...
+	    assert(allowed_host(host),
+		   "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
 	
 	if (host == current_host)
 	    loaded_current_host++; 

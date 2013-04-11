@@ -459,7 +459,7 @@ function(){   // fake line, keep_editor_happy
     function select_ui_position_init(widget)
     {
 	var select = widget.querySelector('select');
-	select.options.value = ui_position;
+	select.options.value = get_ui_position();
 	select.onchange = function(n)
 	{
 	    set_global_setting('ui_position', this.value);
@@ -482,7 +482,7 @@ function(){   // fake line, keep_editor_happy
     function select_menu_display_logic_init(widget)
     {
 	var select = widget.querySelector('select');
-	select.options.value = menu_display_logic;
+	select.options.value = get_menu_display_logic();
 	select.onchange = function(n)
 	{
 	    set_global_setting('menu_display_logic', this.value);
@@ -550,11 +550,26 @@ function(){   // fake line, keep_editor_happy
 	fat_icons = toggle_global_setting(this, fat_icons, 'fat_icons');
 	need_repaint = true;
     }
+
+    function get_disable_main_button()
+    {
+	return global_bool_setting('disable_main_button', disable_main_button);
+    }
+
+    function get_ui_position()
+    {
+	return global_setting('ui_position', ui_position);
+    }
+
+    function get_menu_display_logic()
+    {
+	return global_setting('menu_display_logic', menu_display_logic);
+    }
     
     function select_button_display_init(w)
     {
 	var select = w.querySelector('select');
-	select.options.value = (disable_main_button ? 'y' : 'n');
+	select.options.value = (get_disable_main_button() ? 'y' : 'n');
 	if (!extension_button)  // userjs_only: can't throw away main button if extension's not there !
 	{
 	    select.disabled = true;
@@ -562,7 +577,6 @@ function(){   // fake line, keep_editor_happy
 	}
 	select.onchange = function(n)
 	{
-	   disable_main_button = (this.value == 'y');	
 	   if (this.value == 'y') // toolbar button
 	   {
 	      set_global_bool_setting('disable_main_button', true);
@@ -583,7 +597,7 @@ function(){   // fake line, keep_editor_happy
     
     function check_disable_button_ui_settings()
     {
-	if (!disable_main_button)
+	if (!get_disable_main_button())
 	    return;
 	// disable ui button settings then
 	foreach(getElementsByClassName(this, 'button_ui_setting'), function(n)

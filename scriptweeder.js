@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Apr 11 2013
+// @published Apr 12 2013
 // ==/UserScript==
 
 
@@ -17,9 +17,9 @@
 // but when running as an extension they're 2 different things, beware !
 (function(document, location, opera, scriptStorage)
 {
-    var version_number = "1.5.4";
+    var version_number = "1.5.5";
     var version_type = "userjs";
-    var version_date = "Apr 11 2013";
+    var version_date = "Apr 12 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -328,7 +328,7 @@
     // script loaded event from iframe, update menu
     function message_iframe_script_loaded(e, url)
     {
-	var ev = { event:{ target:{ tagName:'script', src:url } } };
+	var ev = { from_iframe:true, event:{ target:{ tagName:'script', src:url } } };
 	beforeload_handler(ev);
     }
     
@@ -738,8 +738,9 @@
 	var host = url_hostname(e.src);
 	var script = find_script(e.src, host);	
 	debug_log("loaded: " + host);
-	assert(allowed_host(host),	// sanity check ...
-	       "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
+	if (!ev.from_iframe)  // sanity check ...
+	    assert(allowed_host(host),
+		   "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
 	
 	if (host == current_host)
 	    loaded_current_host++; 
@@ -2513,7 +2514,7 @@
     function select_ui_position_init(widget)
     {
 	var select = widget.querySelector('select');
-	select.options.value = ui_position;
+	select.options.value = get_ui_position();
 	select.onchange = function(n)
 	{
 	    set_global_setting('ui_position', this.value);
@@ -2536,7 +2537,7 @@
     function select_menu_display_logic_init(widget)
     {
 	var select = widget.querySelector('select');
-	select.options.value = menu_display_logic;
+	select.options.value = get_menu_display_logic();
 	select.onchange = function(n)
 	{
 	    set_global_setting('menu_display_logic', this.value);
@@ -2604,11 +2605,26 @@
 	fat_icons = toggle_global_setting(this, fat_icons, 'fat_icons');
 	need_repaint = true;
     }
+
+    function get_disable_main_button()
+    {
+	return global_bool_setting('disable_main_button', disable_main_button);
+    }
+
+    function get_ui_position()
+    {
+	return global_setting('ui_position', ui_position);
+    }
+
+    function get_menu_display_logic()
+    {
+	return global_setting('menu_display_logic', menu_display_logic);
+    }
     
     function select_button_display_init(w)
     {
 	var select = w.querySelector('select');
-	select.options.value = (disable_main_button ? 'y' : 'n');
+	select.options.value = (get_disable_main_button() ? 'y' : 'n');
 	if (!extension_button)  // userjs_only: can't throw away main button if extension's not there !
 	{
 	    select.disabled = true;
@@ -2616,7 +2632,6 @@
 	}
 	select.onchange = function(n)
 	{
-	   disable_main_button = (this.value == 'y');	
 	   if (this.value == 'y') // toolbar button
 	   {
 	      set_global_bool_setting('disable_main_button', true);
@@ -2637,7 +2652,7 @@
     
     function check_disable_button_ui_settings()
     {
-	if (!disable_main_button)
+	if (!get_disable_main_button())
 	    return;
 	// disable ui button settings then
 	foreach(getElementsByClassName(this, 'button_ui_setting'), function(n)
