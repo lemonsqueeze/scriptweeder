@@ -91,13 +91,6 @@
 	    return;
 	if (location.hostname == "")	// bad url, opera's error page. 
 	    return;
-	assert(typeof GM_getValue == 'undefined',  // userjs_only
-	       "needs to run as native opera UserJS, won't work as GreaseMonkey script.");
-	if (window.opera.scriptweeder && window.opera.scriptweeder.version_type == 'extension')		// userjs_only
-	{
-	    my_alert("ScriptWeeder extension detected. Currently it has precedence, so UserJS version is not needed.");
-	    return;
-	}
 	
 	setup_event_handlers();
 	window.opera.scriptweeder = new Object();	// external api

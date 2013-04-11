@@ -35,10 +35,7 @@ function(){   // fake line, keep_editor_happy
     function register_ui()
     {
 	disable_main_button = global_bool_setting('disable_main_button', false);
-	
-	// window.opera.scriptweeder.toggle_menu() api for opera buttons etc...
 	message_handlers['scriptweeder_toggle_menu'] = api_toggle_menu;
-	window.opera.scriptweeder.toggle_menu = function() { window.postMessage('scriptweeder_toggle_menu', '*'); };
     }
 
     function reset_ui()
@@ -193,7 +190,7 @@ function(){   // fake line, keep_editor_happy
     {	
 	setup_radio_buttons(widget, "scope", scope, change_scope);
     }
-
+    
     function setup_radio_buttons(widget, name, current, f)
     {
 	var l = widget.getElementsByTagName('input');
