@@ -3,7 +3,7 @@ DIR=scriptweeder
 EXT=scriptweeder-$(VERSION).oex
 
 #VERS_MAG=$(shell cat ../scriptweeder.js | grep 'var version' | sed -e "s|.*v\([0-9.]\+\)'.*|\1|")
-VERSION=1.5.4
+VERSION=1.5.6
 
 all: $(EXT)
 
