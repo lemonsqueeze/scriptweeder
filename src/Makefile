@@ -1,11 +1,9 @@
 
 NAME	= scriptweeder.js
-SRC	= main.js core.js settings.js utils.js userjs_ui.js ui.js
+SRC	= main.js core.js filter.js settings.js extension.js utils.js userjs_ui.js ui.js
 GEN_SRC	= scriptweeder_style.js scriptweeder_widgets.js
 TMPFILES= scriptweeder.xml scriptweeder.inlined.css custom.style
 ALLSRC	= $(SRC) $(GEN_SRC)
-# where we save output from generate_layout.html
-GEN_LAYOUT=/home/opera/downloads/default
 TOOLS	= ../tools
 
 all: $(NAME)

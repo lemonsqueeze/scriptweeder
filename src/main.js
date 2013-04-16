@@ -23,34 +23,13 @@
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 @include "core.js"
-@include "settings.js"    
+@include "filter.js"
+@include "settings.js"
+@include "extension.js"    
 @include "userjs_ui.js"
 @include "utils.js"
 @include "ui.js"
 
-    /********************************* Defaults ************************************/
-
-    var default_global_whitelist =
-    { 'localhost':1,
-      'maps.google.com':1,
-      'maps.gstatic.com':1,
-//    'ajax.googleapis.com':1,   // no need, relaxed mode will enable it
-      's.ytimg.com':1,
-      'code.jquery.com':1,
-      'z-ecx.images-amazon.com':1,
-      'st.deviantart.net':1,
-      'static.tumblr.com':1,
-      'codysherman.com':1
-    };
-
-    // Stuff we don't want to allow in relaxed mode which would otherwise be.
-    var default_helper_blacklist =     // FIXME add ui to edit ?
-    { 'apis.google.com':1,	// only used for google plus one
-      'widgets.twimg.com':1,	// twitter
-      'static.ak.fbcdn.net':1	// facebook
-    };
-
-    
     /********************************* Startup ************************************/    
 
     // quiet: no page redirect
@@ -65,10 +44,9 @@
         {
 	    // userjs_only: can't wait until we get there, userjs on https may not be enabled ...	    
             set_global_setting('version_number', version_number);
-            set_global_setting('version_type', version_type);               
-            set_global_setting('whitelist',             serialize_name_hash(default_global_whitelist) );
-            set_global_setting('helper_blacklist',      serialize_name_hash(default_helper_blacklist) );
-            set_global_setting('mode', default_mode);	    
+            set_global_setting('version_type', version_type);
+            set_global_setting('mode', default_mode);
+	    default_filter_settings();	    
 
 	    if (!quiet)
 		location.href = start_page;	    
