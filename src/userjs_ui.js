@@ -275,9 +275,9 @@ function(){   // fake line, keep_editor_happy
 		height += e.offsetTop + e.realheight - (main_ui.offsetTop + main_ui.scrollHeight);
 	}
 
+	width += 40;
 	if (menu_shown())	// extra space for menu shadows
 	{
-	    width += 20;
 	    height += 20;
 	}
 	
@@ -301,7 +301,7 @@ function(){   // fake line, keep_editor_happy
 	"margin-top: 0px !important; margin-right: 0px !important; margin-bottom: 0px !important; margin-left: 0px !important; padding-top: 0px !important; padding-right: 0px !important; padding-bottom: 0px !important; padding-left: 0px !important; border-top-width: 0px !important; border-right-width: 0px !important; border-bottom-width: 0px !important; border-left-width: 0px !important; border-top-style: none !important; border-right-style: none !important; border-bottom-style: none !important; border-left-style: none !important; background-color: transparent !important; visibility: visible !important; content: normal !important; outline-width: medium !important; outline-style: none !important; background-image: none !important; min-width: 0px !important; min-height: 0px !important; " +
         // useful for layout debugging
 	(debug_mode ? "border: 1px solid #CCC !important; " : "") +
-	ui_vpos + ':1px !important;' + ui_hpos + ':1px !important;';
+	ui_vpos + ':1px !important;' + ui_hpos + ':20px !important;';
 	iframe.scrolling="no";
 	iframe.allowtransparency="true";
 	

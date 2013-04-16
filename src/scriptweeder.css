@@ -24,7 +24,7 @@ button,select,textarea	{ font-family:inherit; font-size:inherit;} /* why does op
 /* left/right/top/bottom layouts */
 
 body.right		{ direction:rtl; }
-body.right #main	{ direction:ltr; right:0; z-index:1; }
+body.right #main	{ direction:ltr; right:20px; z-index:1; }
 body.right .submenu	{ z-index:0 }
 body.right #main_button	{ direction:rtl; }
 
