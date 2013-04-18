@@ -1,12 +1,16 @@
 function(){   // fake line, keep_editor_happy
 
     /***************************** Domain, url utils **************************/    
-    
+
     function url_hostname(url)
     {
-        var t = document.createElement('a');
-        t.href = url;
-        return t.hostname;
+	if (is_prefix("file:", url))
+	    return "localhost";
+	if (is_prefix("data:", url))  // following can't handle data: urls
+	    return current_host;
+	
+	var p = split_url(url);
+	return p[0];
     }
 
     // strip http(s):// from url
@@ -225,10 +229,17 @@ function(){   // fake line, keep_editor_happy
     {
 	n.className += ' ' + klass;
     }
-    
+
     function unset_class(n, klass)
     {
-	n.className = n.className.replace(RegExp(' ' + klass, 'g'), '');
+       var re = RegExp(' ' + klass + '( |$)', 'g'); // crap, 'g' doesn't work here
+       var old;
+       do
+       {
+           old = n.className;      
+           n.className = n.className.replace(re, '$1');
+       }
+       while(old != n.className);
     }
 
     function set_unset_class(n, klass, set)

@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Apr 16 2013
+// @published Apr 18 2013
 // ==/UserScript==
 
 
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.5";
     var version_type = "userjs";
-    var version_date = "Apr 16 2013";
+    var version_date = "Apr 18 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -1655,12 +1655,16 @@
 
 
     /***************************** Domain, url utils **************************/    
-    
+
     function url_hostname(url)
     {
-        var t = document.createElement('a');
-        t.href = url;
-        return t.hostname;
+	if (is_prefix("file:", url))
+	    return "localhost";
+	if (is_prefix("data:", url))  // following can't handle data: urls
+	    return current_host;
+	
+	var p = split_url(url);
+	return p[0];
     }
 
     // strip http(s):// from url
@@ -1879,10 +1883,17 @@
     {
 	n.className += ' ' + klass;
     }
-    
+
     function unset_class(n, klass)
     {
-	n.className = n.className.replace(RegExp(' ' + klass, 'g'), '');
+       var re = RegExp(' ' + klass + '( |$)', 'g'); // crap, 'g' doesn't work here
+       var old;
+       do
+       {
+           old = n.className;      
+           n.className = n.className.replace(re, '$1');
+       }
+       while(old != n.className);
     }
 
     function set_unset_class(n, klass, set)
