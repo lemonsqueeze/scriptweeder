@@ -1,0 +1,95 @@
+#!/usr/bin/perl
+
+# common stuff we deal with programmatically
+my @common_slds = (
+    "co",    "ac",    "or",    "tm",
+    "com", "net", "org", "edu", "gov", "mil", "sch",
+    "int", "nom", "biz", "gob", "info", "asso"
+    );
+
+my %common_slds;
+foreach my $s (@common_slds)
+{     $common_slds{$s} = 1;    }
+
+
+my %top;
+
+sub get_tld
+{
+    my ($tld) = @_;
+    if (!$top{$tld})
+    {   $top{$tld} = {}; }    
+    return $top{$tld};
+}
+
+sub add_second_level_domain
+{
+    my ($sld, $tld) = @_;
+    my $subdomains = get_tld($tld);
+    $subdomains->{$sld} = 1;    
+}
+
+foreach my $s (<STDIN>)
+{
+    chomp($s);
+    $s =~ s|[ \t]*$||;		# remove trailing whitespace
+    if ($s =~ m|^//|  ||	# skip comments
+	$s =~ m|^$| )		# skip empty lines
+    {   next;  }
+    
+    if ($s =~ m|!|)
+    {   next;  }
+
+    if ($s =~ m|^\*\.([^.]+)$|   ||
+	$s =~ m|^([^.]+)$| )
+    {
+	my ($tld) = ($1);
+	get_tld($tld);
+	next;
+    }
+
+    if ($s =~ m|^([^.]+)\.([^.]+)$|)
+    {
+	my ($sld, $tld) = ($1, $2);
+	if (!$common_slds{$sld} &&
+	    length($sld) <= 4)
+	{   add_second_level_domain($sld, $tld);  }
+#	else
+#	{   print "skipped: $s\n"; }
+	next;
+    }
+
+
+    print "ignored: $s\n";
+}
+
+
+print "------------------------------------------------------------------\n";
+print "\n\n";
+print "{\n";
+foreach my $tld (sort(keys(%top)))
+{
+    my $r = $top{$tld};
+    my $n = keys(%$r);
+    if ($n == 0)		# skip empty ones
+    {   next; }
+
+    printf("%-7s [ ", "\"$tld\":");
+    my $first = 1;
+    foreach my $sld (sort(keys(%$r)))
+    {
+	if (!$first)
+	{   print(", ");  }
+	print "\"$sld\"";
+	$first = 0;
+    }
+    print " ],\n";
+
+#    print "$tld\n";
+#    foreach my $sld (sort(keys(%$r)))
+#    {
+#	print "  $sld\n";      
+#    }
+}
+print "}\n";
+

@@ -1,6 +1,6 @@
 
 NAME	= scriptweeder.js
-SRC	= main.js core.js filter.js settings.js extension.js utils.js userjs_ui.js ui.js
+SRC	= main.js core.js filter.js settings.js extension.js utils.js tld.js userjs_ui.js ui.js
 GEN_SRC	= scriptweeder_style.js scriptweeder_widgets.js
 TMPFILES= scriptweeder.xml scriptweeder.inlined.css custom.style
 ALLSRC	= $(SRC) $(GEN_SRC)

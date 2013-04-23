@@ -52,18 +52,7 @@ function(){   // fake line, keep_editor_happy
 	var a = split_url(u);
 	return a[0] + a[1] + a[2]; // host + dir + file
     }
-    
-    function get_domain(h)
-    {
-      var i = h.lastIndexOf(".");
-      var j = h.lastIndexOf(".", i-1);
-      if (i - j == 3 && h.length - i == 3) // .co.uk style domain
-	  j = h.lastIndexOf(".", j-1); 
-      if (j != -1)
-	  return h.slice(j+1);     
-      return h;
-    }
-    
+            
     // return true if d1 and d2 are "related domains"
     // Ex: media-imdb.com is related to imdb.com
     function related_domains(d1, d2)
@@ -100,6 +89,16 @@ function(){   // fake line, keep_editor_happy
 //		is_prefix("cdn.", h) ||
 		is_prefix("code.", h));
     }
+
+    function get_domain(host)
+    {
+	var p = host.split('.');
+	var sl = public_suffix_len(p);
+	var i = p.length - sl;  // public suffix index
+	return p.slice(i - 1).join('.');
+    }
+    
+@include "tld.js"
     
     /**************************** Node functions *******************************/
 

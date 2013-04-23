@@ -1,5 +1,20 @@
 [ TODO ]
 
+  - hide blocked iframe scripts
+  - way to distinguish iframe scripts ?
+
+  - whitelist -> suffix matching instead of domain
+
+  - control individual scripts ?
+  - detect + settings redirect for userjs on https ?
+  - way to show menu where toolbar button is ?
+  - page script can manipulate ui ! block syn events ?
+  - bold option for small fonts ?
+  - check wiki -> gollum [[_]]
+
+
+--------------------------------------------------------------------------
+
   - other language support
 
   - set scrollbar on htable: calc max-height
