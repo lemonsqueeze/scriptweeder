@@ -90,6 +90,19 @@ function(){   // fake line, keep_editor_happy
 		is_prefix("code.", h));
     }
 
+    // for 'www.a.b.com' returns
+    //    ['www.a.b.com', 'a.b.com', 'b.com', 'com' ]
+    function host_suffixes(h)
+    {
+	var a = [ h ];
+	for (var i = h.indexOf('.'); i != -1; i = h.indexOf('.'))
+	{
+	    h = h.slice(i + 1);
+	    a.push(h);
+	}
+	return a;
+    }
+    
     function get_domain(host)
     {
 	var p = host.split('.');

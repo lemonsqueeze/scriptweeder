@@ -3,8 +3,6 @@
   - hide blocked iframe scripts
   - way to distinguish iframe scripts ?
 
-  - whitelist -> suffix matching instead of domain
-
   - control individual scripts ?
   - detect + settings redirect for userjs on https ?
   - way to show menu where toolbar button is ?

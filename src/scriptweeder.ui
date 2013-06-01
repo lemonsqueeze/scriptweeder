@@ -169,7 +169,8 @@
     <table class="button_table">	  
       <tabled_button onclick="edit_site_settings"  label="Site settings…"
 		     title="View/edit site specific settings."/>
-      <tabled_button onclick="edit_whitelist"  label="Global whitelist…"/>
+      <tabled_button onclick="edit_whitelist"  label="Global whitelist…"
+		     title="Hosts or domains always allowed"/>
       <tabled_button onclick="edit_blacklist"  label="Helper blacklist…"
 		     title="Stuff relaxed mode should never allow by default" />
     </table>

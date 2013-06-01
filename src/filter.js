@@ -64,26 +64,30 @@ function(){   // fake line, keep_editor_happy
 
     function global_remove_host(host)
     {
-	delete whitelist[host];
-	// remove domain also if it's there
-	delete whitelist[get_domain(host)];
-	set_global_setting('whitelist', serialize_name_hash(whitelist));
+	// remove host and all its suffixes if present
+	foreach(host_suffixes(host), function(s)
+	{
+	    delete whitelist[s];
+	});
+	set_global_setting('whitelist', serialize_name_hash(whitelist));	
     }
     
     function host_allowed_globally(host)
     {
-	if (whitelist[host])
-	    return true;	
-	// whole domain allowed ?
-	return (whitelist[get_domain(host)] ? true : false);
+	var s = host_suffixes(host);
+	for (var i = 0; i < s.length; i++)
+	    if (whitelist[s[i]])
+		return true;
+	return false;
     }
 
     function on_helper_blacklist(host)
     {
-	if (helper_blacklist[host])
-	    return true;	
-	// whole domain blacklisted ?
-	return (helper_blacklist[get_domain(host)] ? true : false);
+	var s = host_suffixes(host);
+	for (var i = 0; i < s.length; i++)
+	    if (helper_blacklist[s[i]])
+		return true;
+	return false;
     }
     
     function host_allowed_locally(host)
