@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Jun 01 2013
+// @published Jun 29 2013
 // ==/UserScript==
 
 
@@ -17,9 +17,9 @@
 // but when running as an extension they're 2 different things, beware !
 (function(document, location, opera, scriptStorage)
 {
-    var version_number = "1.5.6";
+    var version_number = "1.5.7";
     var version_type = "userjs";
-    var version_date = "Jun 01 2013";
+    var version_date = "Jun 29 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
