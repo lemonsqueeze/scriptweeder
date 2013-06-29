@@ -131,21 +131,20 @@
       }
   }
 
-  function loaded()
-  {
-      debug_log("loaded");
-      if (widget.preferences.getItem('extension_button') != 'n')
-	  create_button();
-      
-      // when an injected script loads, background process gets a connect event      
-      opera.extension.onconnect = connected;
-      opera.extension.onmessage = messaged;
-      opera.extension.tabs.onfocus = tab_switched;
-  }
-
   debug_log("start");
-  window.addEventListener("load", loaded, false);
 
+//  Doing away with the load handler, causing race conditions with onconnect on startup.
+//  http://my.opera.com/community/forums/topic.dml?id=1706742
+//  window.addEventListener("load", loaded, false);
+
+  // when an injected script loads, background process gets a connect event      
+  opera.extension.onconnect = connected;
+  opera.extension.onmessage = messaged;
+  opera.extension.tabs.onfocus = tab_switched;
+      
+  if (widget.preferences.getItem('extension_button') != 'n')
+      create_button();
+      
 </script>
 </head>
 <body>
