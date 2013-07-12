@@ -211,3 +211,29 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
 	box-shadow: 0 0 5px rgba(255,255,255,0.1) inset, 0 0 1px rgba(255,255,255,0.2), 0 0 4px rgba(0,0,0,0.4) inset, 0 10px 10px rgba(255,255,255,0.08) inset;
  }
 
+/********************************************************************************************************** 
+/* badge */
+
+#main_button button { position:relative; }
+
+/* outer border*/
+#badge { position:absolute; bottom:0px; right:0px; 
+	 border:1px solid rgba(0,0,0,0.2);
+	 border-radius:5px;
+         /* background-color set with classname */
+       }
+
+.badge_nloaded, .badge_nblocked		{ background-color:#d75f3a; }   /* red */
+.badge_ok,	.badge_loaded		{ background-color:#73ac07;  }  /* green */
+/* #fe911c, orange */
+
+/* inner border */
+#badge_inner { border:1px solid rgba(255,255,255,0.4);
+	       border-radius:3px;
+	       /*width:16px;*/ height:13px;
+	       font-size:10pt; font-weight:bold;
+	       text-align:center;
+	     }
+
+#badge_number { margin-top:-3px; }  /* why we need this ?? */
+

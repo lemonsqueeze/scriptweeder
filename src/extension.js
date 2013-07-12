@@ -13,18 +13,30 @@ function(){   // fake line, keep_editor_happy
 	set_global_setting('menu_display_logic', 'auto');
 	init_ui();
     }
+
+    // not super robust, and won't match if there's a \n in the css.
+    function get_css_prop(selector, prop, fatal)
+    {
+	var pat = selector + ".*" + prop + " *: *([^;]*) *;";
+	var re = new RegExp(pat, 'g');
+	var m = get_style().match(re);
+	assert(m || !fatal, "get_css_prop(" + selector + ", " + prop + ") failed");
+	if (!m)
+	    return null;
+	return m[m.length - 1].replace(re, '$1');
+    }
     
     function get_icon_from_css(mode, fatal)
     {
-	var data_re = new RegExp(".*'(data:image/png;base64,[^']*)'.*");
-	function findit(selector)
-	{
-	    var m = get_style().match(new RegExp(selector + ".*'data:image/png;base64,[^']*'", 'g'));
-	    if (!m)
-		return null;
-	    return m[m.length - 1].replace(data_re, '$1'); // get the last one.
-	}
-
+        function findit(selector)
+        {
+	    var re = new RegExp(selector + ".*'(data:image/png;base64,[^']*)'", 'g');
+            var m = get_style().match(re);
+            if (!m)
+                return null;
+            return m[m.length - 1].replace(re, '$1'); // get the last one.
+        }
+	
 	// look for toolbar specific rule first:   #toolbar_button.<mode> img
 	var data_url = findit("#toolbar_button." + mode + "[ \t]+img");
 	if (data_url)
@@ -43,27 +55,63 @@ function(){   // fake line, keep_editor_happy
 	return "";
     }
 
-    var extension_button;
+
     function update_extension_button(force)
     {
 	if (in_iframe() ||
 	    (!force && !extension_button)) // not talking to extension (yet) - userjs_only
 	    return;
-	
+	update_extension_button_icon(force);
+	update_extension_button_badge(force);
+    }
+
+    var extension_button;    
+    function update_extension_button_icon(force)
+    {	
 	var needed = something_to_display();	
 	var status = (needed ? mode : 'off');
 	if (!force && extension_button == status) // already in the right state
 	    return;
 
-	// when button is not disabled, extension still needs disabled icon for next tab switch
-	var disabled_icon = get_icon_from_css('disabled', false);	
-	var icon = (needed ? get_icon_from_css(mode, true) : disabled_icon);
-	window.postMessage({scriptweeder:true, debug:debug_mode,			// userjs_only
-		            mode:mode, icon:icon, button:disable_main_button,
-		            disabled:!needed, disabled_icon:disabled_icon}, '*');
+	var msg = { button:disable_main_button, debug:debug_mode, mode:mode, disabled:!needed };
+	if (disable_main_button) // using extension button, send icons
+	{
+	    // when button is not disabled, bgprocess still needs disabled icon for next tab switch
+	    msg.disabled_icon = get_icon_from_css('disabled', false);	
+	    msg.icon = (needed ? get_icon_from_css(mode, true) : msg.disabled_icon);
+	    msg.tooltip = main_button_tooltip();
+	}
+	msg.scriptweeder = true;
+	window.postMessage(msg, '*');	// userjs_only
 	extension_button = status;
     }
     
+    var extension_button_badge;
+    function update_extension_button_badge(force)
+    {
+	if (!disable_main_button) // not using extension button, don't bother
+	    return;
+	
+	var o = badge_object();
+	var needed = (badge_logic != 'off');
+	var status = (needed ? o.n : 'off');
+	if (!force && extension_button_badge == status) // already in the right state
+	    return;
+	
+	window.postMessage({				// userjs_only
+	      scriptweeder:true,
+	      tooltip: o.tooltip,
+	      badge:
+		{
+		  display: (needed ? 'block' : 'none'),
+		  color: '#ffffff',
+		  backgroundColor: get_css_prop('.badge_' + o.className, 'background-color', true),
+		  textContent: o.n
+		}
+	    }, '*');
+	extension_button_badge = status;
+    }    
+
     function extension_message_handler(e)
     {
 	var m = e.data;
@@ -75,7 +123,7 @@ function(){   // fake line, keep_editor_happy
     function init_extension_messaging()
     {
 	// userjs_only stuff
-	message_handlers["scriptweeder background process:"] = extension_message_handler;
+	message_handlers["scriptweeder bgproc mode request:"] = extension_message_handler;
 	window.setTimeout(prevent_userjs_lockout, 500);
     }
     

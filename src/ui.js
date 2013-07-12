@@ -9,6 +9,7 @@ function(){   // fake line, keep_editor_happy
     var default_font_size = 'normal';
     var default_menu_display_logic = 'auto';
     var default_show_scripts_in_main_menu = true;
+    var default_badge_logic = 'nloaded';
     
     // can be used to display stuff in scriptweeder menu from outside scripts.
     var enable_plugin_api = false;
@@ -21,6 +22,7 @@ function(){   // fake line, keep_editor_happy
     var fat_icons;
     var font_size;
     var disable_main_button;
+    var badge_logic;
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
     var show_scripts_in_main_menu;
@@ -35,6 +37,7 @@ function(){   // fake line, keep_editor_happy
     function register_ui()
     {
 	disable_main_button = global_bool_setting('disable_main_button', false);
+	badge_logic = global_setting('badge_logic', default_badge_logic);
 	
 	// window.opera.scriptweeder.toggle_menu() api for opera buttons etc...
 	message_handlers['scriptweeder_toggle_menu'] = api_toggle_menu;
@@ -115,7 +118,7 @@ function(){   // fake line, keep_editor_happy
 	show_scripts_in_main_menu = global_bool_setting('show_scripts_in_main_menu', default_show_scripts_in_main_menu);
 	
 	if (menu_display_logic == 'click')
-	    window.addEventListener('click',  function (e) { close_menu(); }, false);
+	    window.addEventListener('click',  function (e) { main_ui && close_menu(); }, false);
 	window.addEventListener('resize',  browser_resized, false);
 	
 	set_class(idoc.body, ui_hpos);
@@ -594,6 +597,18 @@ function(){   // fake line, keep_editor_happy
 	   need_reload = true;
 	};	
     }
+
+    function select_badge_logic_init(w)
+    {
+	var select = w.querySelector('select');
+	select.options.value = badge_logic;
+	select.onchange = function(n)
+	{
+	    badge_logic = this.value;
+	    set_global_setting('badge_logic', this.value);
+	    need_repaint = true;
+	};       
+    }    
     
     function check_disable_button_ui_settings()
     {
@@ -1165,8 +1180,26 @@ function(){   // fake line, keep_editor_happy
 
     function menu_onmousedown()	// make text non selectable
     {	return false;	}
-    
+
     function main_button_tooltip()
+    {
+	var total = total_current_host + total_external;
+	var loaded = total - scripts_not_loaded();
+	var tooltip = (loaded + "/" + total + " scripts loaded, " +
+		       inline_scripts_loaded_tooltip());
+	return tooltip;
+    }
+
+    function inline_scripts_loaded_tooltip()
+    {
+	if (block_inline_scripts)
+	    return "inline: 0";
+        return ("inline: " + total_inline +
+		" (" + get_size_kb(total_inline_size) + "k)");
+    }
+
+/*    
+    function old_main_button_tooltip()
     {
         var tooltip = "[Inline scripts] " + total_inline +
 	  (block_inline_scripts ? " blocked": "") +
@@ -1186,13 +1219,22 @@ function(){   // fake line, keep_editor_happy
 	    tooltip += " (" + loaded_external + " loaded)";
 	return tooltip;
     }
+ */
 
     function main_button_init(div)
     {
 	var tooltip = main_button_tooltip();
-	div.title = tooltip;
+	div.title = tooltip; // badge will override it
 	div.className += " " + mode;
 
+	if (badge_logic != 'off')		  // badge needed
+	{
+	    wakeup_lazy_widgets(div);
+	    var b = div.querySelector('#badge');
+	    if (b.tooltip)
+		div.title = b.tooltip;
+	}
+	
 	if (autohide_main_button && !rescue_mode())
 	    div.className += " autohide";
 
@@ -1243,26 +1285,90 @@ function(){   // fake line, keep_editor_happy
 	if (need_reload)
 	    reload_page();
     }
+
+    /***************************** Badge stuff *********************************/
+    
+    function badge_init(w)
+    {
+	var o = badge_object();	
+	d = w.querySelector('#badge_number');
+	d.innerText = o.n;
+	w.className = 'badge_' + o.className;
+	w.tooltip = o.tooltip; // for main_button
+    }
+
+    // internal use
+    function badge_object()
+    {
+	var n = 0, tooltip = null;
+	var total = total_current_host + total_external;
+	if (badge_logic == 'nloaded')
+	{
+	    n = scripts_not_loaded();
+	    tooltip = (n + " scripts not loaded" +
+		       (!block_inline_scripts ? "." : " + " + total_inline + " inline."));
+	    // tooltip = n + "/" + total + " scripts not loaded.";
+	}	  
+	if (badge_logic == 'nblocked')
+	{
+	    n = blocked_current_host + blocked_external;
+	    tooltip = (n + " scripts blocked" +
+		       (!block_inline_scripts ? "." : " + " + total_inline + " inline."));
+	    // tooltip = n + "/" + total + " scripts blocked.";	    
+	}
+	if (badge_logic == 'loaded')
+	{
+	    n = total - scripts_not_loaded();
+	    // keep main button tooltip
+	}
+	
+	var klass = badge_logic;
+	if ((badge_logic == 'nloaded' || badge_logic == 'nblocked') &&
+	    n == 0)
+	    klass = 'ok';
+	
+	return {
+	    className: klass,
+	    n: n,
+	    tooltip: tooltip
+	};
+    }
+    
+    // FIXME: we don't know about inline scripts that didn't load ...
+    function scripts_not_loaded(inline_also)
+    {
+	var n = 0;
+	foreach_script(function(s)
+	{
+	    if (!s.loaded)
+		n++;
+	});
+	if (inline_also && block_inline_scripts)  // inline scripts
+	    n += total_inline;
+	return n;
+    }	
     
     /***************************** Repaint logic ******************************/
 
     var repaint_ui_timer = null;
     function repaint_ui()
     {
-	if (!main_ui)
-	{
-	    init_ui();
-	    return;
-	}	
 	if (repaint_ui_timer)
 	    return;
-	repaint_ui_timer = iwin.setTimeout(repaint_ui_now, 500);
+	repaint_ui_timer = window.setTimeout(repaint_ui_now, 500);
     }
 
     function repaint_ui_now()
     {
-	update_extension_button();
 	repaint_ui_timer = null;
+	if (!idoc)
+	{
+	    init_ui();
+	    return;
+	}
+	
+	update_extension_button();
+
 	//   debug: (note: can't call plugins' add_item() here (recursion))
 	//   plugin_items.repaint_ui = "late events:" + repaint_ui_count;	
 

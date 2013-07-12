@@ -358,7 +358,7 @@ function(){   // fake line, keep_editor_happy
 	var k = new String(x / 1000);
 	var d = k.indexOf('.');
 	if (d)
-	    return k.slice(0, d + 2);
+	    return (x >= 1000 ? k.slice(0, d) : k.slice(0, d + 2));
 	return k;
     }
 

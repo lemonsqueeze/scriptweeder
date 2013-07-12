@@ -25,10 +25,20 @@
 
 <widget name="main_button" init>
   <div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout>
-    <button><img id="main_button_image"/></button>
+    <button>
+      <img id="main_button_image"/>
+      <badge lazy></badge>
+    </button>
   </div>
 </widget>
 
+<widget name="badge" init>
+  <div id="badge">
+    <div id="badge_inner">
+      <div id="badge_number">x</div>
+    </div>
+  </div>
+</widget>
 
 <!-- main menu -->
 <widget name="main_menu" init>
@@ -135,6 +145,7 @@
     <select_font_size></select_font_size>
     <select_button_display></select_button_display>
     <select_ui_position></select_ui_position>
+    <select_badge_logic></select_badge_logic>
     <checkbox_item label="Auto-hide main button" klass="button_ui_setting"
 		   state="`autohide_main_button"
 		   callback="`toggle_autohide_main_button"></checkbox_item>
@@ -236,6 +247,18 @@
   </tr></table>
 </widget>
 
+<widget name="select_badge_logic" init>
+  <table class="dropdown_setting"
+	 title="Number displayed in ScriptWeeder button."><tr>
+    <td>Badge</td>
+    <td><select>
+      <option value="off">None</option>
+      <option value="nloaded">Scripts not loaded</option>
+      <option value="loaded">Scripts loaded</option>
+      <option value="nblocked">Scripts we block</option>
+    </select></td>
+  </tr></table>
+</widget>
 
 <widget name="select_iframe_logic" init>
   <table id="iframe_logic" class="dropdown_setting" 

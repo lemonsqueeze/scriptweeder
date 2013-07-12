@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Jun 29 2013
+// @published Jul 15 2013
 // ==/UserScript==
 
 
@@ -17,9 +17,9 @@
 // but when running as an extension they're 2 different things, beware !
 (function(document, location, opera, scriptStorage)
 {
-    var version_number = "1.5.7";
+    var version_number = "1.5.8";
     var version_type = "userjs";
-    var version_date = "Jun 29 2013";
+    var version_date = "Jul 15 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -516,6 +516,18 @@
 	});
     }
 
+    // call f(script, hn, dn) for every script (arbitrary order)
+    function foreach_script(f)
+    {
+	_foreach_host_node(function(hn, dn)
+	{
+	    foreach(hn.scripts, function(s)
+	    {
+		f(s, hn, dn);
+	    });
+	});
+    }
+    
     function sort_domains()
     {
 	domain_nodes.sort(function(d1,d2)
@@ -1269,18 +1281,30 @@
 	set_global_setting('menu_display_logic', 'auto');
 	init_ui();
     }
+
+    // not super robust, and won't match if there's a \n in the css.
+    function get_css_prop(selector, prop, fatal)
+    {
+	var pat = selector + ".*" + prop + " *: *([^;]*) *;";
+	var re = new RegExp(pat, 'g');
+	var m = get_style().match(re);
+	assert(m || !fatal, "get_css_prop(" + selector + ", " + prop + ") failed");
+	if (!m)
+	    return null;
+	return m[m.length - 1].replace(re, '$1');
+    }
     
     function get_icon_from_css(mode, fatal)
     {
-	var data_re = new RegExp(".*'(data:image/png;base64,[^']*)'.*");
-	function findit(selector)
-	{
-	    var m = get_style().match(new RegExp(selector + ".*'data:image/png;base64,[^']*'", 'g'));
-	    if (!m)
-		return null;
-	    return m[m.length - 1].replace(data_re, '$1'); // get the last one.
-	}
-
+        function findit(selector)
+        {
+	    var re = new RegExp(selector + ".*'(data:image/png;base64,[^']*)'", 'g');
+            var m = get_style().match(re);
+            if (!m)
+                return null;
+            return m[m.length - 1].replace(re, '$1'); // get the last one.
+        }
+	
 	// look for toolbar specific rule first:   #toolbar_button.<mode> img
 	var data_url = findit("#toolbar_button." + mode + "[ \t]+img");
 	if (data_url)
@@ -1299,27 +1323,63 @@
 	return "";
     }
 
-    var extension_button;
+
     function update_extension_button(force)
     {
 	if (in_iframe() ||
 	    (!force && !extension_button)) // not talking to extension (yet) - userjs_only
 	    return;
-	
+	update_extension_button_icon(force);
+	update_extension_button_badge(force);
+    }
+
+    var extension_button;    
+    function update_extension_button_icon(force)
+    {	
 	var needed = something_to_display();	
 	var status = (needed ? mode : 'off');
 	if (!force && extension_button == status) // already in the right state
 	    return;
 
-	// when button is not disabled, extension still needs disabled icon for next tab switch
-	var disabled_icon = get_icon_from_css('disabled', false);	
-	var icon = (needed ? get_icon_from_css(mode, true) : disabled_icon);
-	window.postMessage({scriptweeder:true, debug:debug_mode,			// userjs_only
-		            mode:mode, icon:icon, button:disable_main_button,
-		            disabled:!needed, disabled_icon:disabled_icon}, '*');
+	var msg = { button:disable_main_button, debug:debug_mode, mode:mode, disabled:!needed };
+	if (disable_main_button) // using extension button, send icons
+	{
+	    // when button is not disabled, bgprocess still needs disabled icon for next tab switch
+	    msg.disabled_icon = get_icon_from_css('disabled', false);	
+	    msg.icon = (needed ? get_icon_from_css(mode, true) : msg.disabled_icon);
+	    msg.tooltip = main_button_tooltip();
+	}
+	msg.scriptweeder = true;
+	window.postMessage(msg, '*');	// userjs_only
 	extension_button = status;
     }
     
+    var extension_button_badge;
+    function update_extension_button_badge(force)
+    {
+	if (!disable_main_button) // not using extension button, don't bother
+	    return;
+	
+	var o = badge_object();
+	var needed = (badge_logic != 'off');
+	var status = (needed ? o.n : 'off');
+	if (!force && extension_button_badge == status) // already in the right state
+	    return;
+	
+	window.postMessage({				// userjs_only
+	      scriptweeder:true,
+	      tooltip: o.tooltip,
+	      badge:
+		{
+		  display: (needed ? 'block' : 'none'),
+		  color: '#ffffff',
+		  backgroundColor: get_css_prop('.badge_' + o.className, 'background-color', true),
+		  textContent: o.n
+		}
+	    }, '*');
+	extension_button_badge = status;
+    }    
+
     function extension_message_handler(e)
     {
 	var m = e.data;
@@ -1331,7 +1391,7 @@
     function init_extension_messaging()
     {
 	// userjs_only stuff
-	message_handlers["scriptweeder background process:"] = extension_message_handler;
+	message_handlers["scriptweeder bgproc mode request:"] = extension_message_handler;
 	window.setTimeout(prevent_userjs_lockout, 500);
     }
     
@@ -2143,7 +2203,7 @@
 	var k = new String(x / 1000);
 	var d = k.indexOf('.');
 	if (d)
-	    return k.slice(0, d + 2);
+	    return (x >= 1000 ? k.slice(0, d) : k.slice(0, d + 2));
 	return k;
     }
 
@@ -2270,6 +2330,7 @@
     var default_font_size = 'normal';
     var default_menu_display_logic = 'auto';
     var default_show_scripts_in_main_menu = true;
+    var default_badge_logic = 'nloaded';
     
     // can be used to display stuff in scriptweeder menu from outside scripts.
     var enable_plugin_api = false;
@@ -2282,6 +2343,7 @@
     var fat_icons;
     var font_size;
     var disable_main_button;
+    var badge_logic;
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
     var show_scripts_in_main_menu;
@@ -2296,6 +2358,7 @@
     function register_ui()
     {
 	disable_main_button = global_bool_setting('disable_main_button', false);
+	badge_logic = global_setting('badge_logic', default_badge_logic);
 	
 	// window.opera.scriptweeder.toggle_menu() api for opera buttons etc...
 	message_handlers['scriptweeder_toggle_menu'] = api_toggle_menu;
@@ -2376,7 +2439,7 @@
 	show_scripts_in_main_menu = global_bool_setting('show_scripts_in_main_menu', default_show_scripts_in_main_menu);
 	
 	if (menu_display_logic == 'click')
-	    window.addEventListener('click',  function (e) { close_menu(); }, false);
+	    window.addEventListener('click',  function (e) { main_ui && close_menu(); }, false);
 	window.addEventListener('resize',  browser_resized, false);
 	
 	set_class(idoc.body, ui_hpos);
@@ -2855,6 +2918,18 @@
 	   need_reload = true;
 	};	
     }
+
+    function select_badge_logic_init(w)
+    {
+	var select = w.querySelector('select');
+	select.options.value = badge_logic;
+	select.onchange = function(n)
+	{
+	    badge_logic = this.value;
+	    set_global_setting('badge_logic', this.value);
+	    need_repaint = true;
+	};       
+    }    
     
     function check_disable_button_ui_settings()
     {
@@ -3426,8 +3501,26 @@
 
     function menu_onmousedown()	// make text non selectable
     {	return false;	}
-    
+
     function main_button_tooltip()
+    {
+	var total = total_current_host + total_external;
+	var loaded = total - scripts_not_loaded();
+	var tooltip = (loaded + "/" + total + " scripts loaded, " +
+		       inline_scripts_loaded_tooltip());
+	return tooltip;
+    }
+
+    function inline_scripts_loaded_tooltip()
+    {
+	if (block_inline_scripts)
+	    return "inline: 0";
+        return ("inline: " + total_inline +
+		" (" + get_size_kb(total_inline_size) + "k)");
+    }
+
+/*    
+    function old_main_button_tooltip()
     {
         var tooltip = "[Inline scripts] " + total_inline +
 	  (block_inline_scripts ? " blocked": "") +
@@ -3447,13 +3540,22 @@
 	    tooltip += " (" + loaded_external + " loaded)";
 	return tooltip;
     }
+ */
 
     function main_button_init(div)
     {
 	var tooltip = main_button_tooltip();
-	div.title = tooltip;
+	div.title = tooltip; // badge will override it
 	div.className += " " + mode;
 
+	if (badge_logic != 'off')		  // badge needed
+	{
+	    wakeup_lazy_widgets(div);
+	    var b = div.querySelector('#badge');
+	    if (b.tooltip)
+		div.title = b.tooltip;
+	}
+	
 	if (autohide_main_button && !rescue_mode())
 	    div.className += " autohide";
 
@@ -3504,26 +3606,90 @@
 	if (need_reload)
 	    reload_page();
     }
+
+    /***************************** Badge stuff *********************************/
+    
+    function badge_init(w)
+    {
+	var o = badge_object();	
+	d = w.querySelector('#badge_number');
+	d.innerText = o.n;
+	w.className = 'badge_' + o.className;
+	w.tooltip = o.tooltip; // for main_button
+    }
+
+    // internal use
+    function badge_object()
+    {
+	var n = 0, tooltip = null;
+	var total = total_current_host + total_external;
+	if (badge_logic == 'nloaded')
+	{
+	    n = scripts_not_loaded();
+	    tooltip = (n + " scripts not loaded" +
+		       (!block_inline_scripts ? "." : " + " + total_inline + " inline."));
+	    // tooltip = n + "/" + total + " scripts not loaded.";
+	}	  
+	if (badge_logic == 'nblocked')
+	{
+	    n = blocked_current_host + blocked_external;
+	    tooltip = (n + " scripts blocked" +
+		       (!block_inline_scripts ? "." : " + " + total_inline + " inline."));
+	    // tooltip = n + "/" + total + " scripts blocked.";	    
+	}
+	if (badge_logic == 'loaded')
+	{
+	    n = total - scripts_not_loaded();
+	    // keep main button tooltip
+	}
+	
+	var klass = badge_logic;
+	if ((badge_logic == 'nloaded' || badge_logic == 'nblocked') &&
+	    n == 0)
+	    klass = 'ok';
+	
+	return {
+	    className: klass,
+	    n: n,
+	    tooltip: tooltip
+	};
+    }
+    
+    // FIXME: we don't know about inline scripts that didn't load ...
+    function scripts_not_loaded(inline_also)
+    {
+	var n = 0;
+	foreach_script(function(s)
+	{
+	    if (!s.loaded)
+		n++;
+	});
+	if (inline_also && block_inline_scripts)  // inline scripts
+	    n += total_inline;
+	return n;
+    }	
     
     /***************************** Repaint logic ******************************/
 
     var repaint_ui_timer = null;
     function repaint_ui()
     {
-	if (!main_ui)
-	{
-	    init_ui();
-	    return;
-	}	
 	if (repaint_ui_timer)
 	    return;
-	repaint_ui_timer = iwin.setTimeout(repaint_ui_now, 500);
+	repaint_ui_timer = window.setTimeout(repaint_ui_now, 500);
     }
 
     function repaint_ui_now()
     {
-	update_extension_button();
 	repaint_ui_timer = null;
+	if (!idoc)
+	{
+	    init_ui();
+	    return;
+	}
+	
+	update_extension_button();
+
 	//   debug: (note: can't call plugins' add_item() here (recursion))
 	//   plugin_items.repaint_ui = "late events:" + repaint_ui_count;	
 
@@ -3765,6 +3931,32 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
 	box-shadow: 0 0 5px rgba(255,255,255,0.1) inset, 0 0 1px rgba(255,255,255,0.2), 0 0 4px rgba(0,0,0,0.4) inset, 0 10px 10px rgba(255,255,255,0.08) inset;  \n\
  }  \n\
   \n\
+/**********************************************************************************************************   \n\
+/* badge */  \n\
+  \n\
+#main_button button { position:relative; }  \n\
+  \n\
+/* outer border*/  \n\
+#badge { position:absolute; bottom:0px; right:0px;   \n\
+	 border:1px solid rgba(0,0,0,0.2);  \n\
+	 border-radius:5px;  \n\
+         /* background-color set with classname */  \n\
+       }  \n\
+  \n\
+.badge_nloaded, .badge_nblocked		{ background-color:#d75f3a; }   /* red */  \n\
+.badge_ok,	.badge_loaded		{ background-color:#73ac07;  }  /* green */  \n\
+/* #fe911c, orange */  \n\
+  \n\
+/* inner border */  \n\
+#badge_inner { border:1px solid rgba(255,255,255,0.4);  \n\
+	       border-radius:3px;  \n\
+	       /*width:16px;*/ height:13px;  \n\
+	       font-size:10pt; font-weight:bold;  \n\
+	       text-align:center;  \n\
+	     }  \n\
+  \n\
+#badge_number { margin-top:-3px; }  /* why we need this ?? */  \n\
+  \n\
 ";
 
     /* widgets (generated from scriptweeder.xml). */
@@ -3773,7 +3965,10 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
       layout: '<widget name="main_ui"><div id="main"><main_button lazy/></div></widget>' },
    'main_button' : {
       init: main_button_init,
-      layout: '<widget name="main_button" init><div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout><button><img id="main_button_image"/></button></div></widget>' },
+      layout: '<widget name="main_button" init><div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout><button><img id="main_button_image"/><badge lazy></badge></button></div></widget>' },
+   'badge' : {
+      init: badge_init,
+      layout: '<widget name="badge" init><div id="badge"><div id="badge_inner"><div id="badge_number">x</div></div></div></widget>' },
    'main_menu' : {
       init: main_menu_init,
       layout: '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown"><h1 id="menu_title" >Script Weeder</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="Allow related and helper domains." oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li><li id="options_details" class="inactive"><table><tr><td class="details_item"><label onclick="show_details">Details</label></td><td class="options_item"><label onclick="options_menu">Options</label></td></tr></table></li></ul></div></widget>' },
@@ -3791,7 +3986,7 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
       init_proxy: function(w, ph){ script_detail_init(w, ph.host_node, ph.script, ph.iframe, ph.file_only); },
       layout: '<widget name="script_detail" host_node script iframe file_only init><li><img/><a href="" onclick="link_loader"></a></li></widget>' },
    'options_menu' : {
-      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div id="general_options" class="frame" ><div class="frame_title">General</div><button title="Turn it off to avoid fetching blocked scripts."   	    onclick="speculative_parser_onclick">Speculative parser…</button><br><button title="Enable to control secure pages."   	    onclick="userjs_on_https_onclick">userjs on secure pages…</button><select_reload_method></select_reload_method><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="Useful for debugging."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div id="settings_options" class="frame" ><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="Hosts or domains always allowed" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div id="interface_options" class="frame" oninit="check_disable_button_ui_settings"><div class="frame_title">User Interface</div><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_button_display></select_button_display><select_ui_position></select_ui_position><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item></div></td><td><options_custom_style></options_custom_style><div id="export_options" class="frame" ><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div id="" class="frame" ><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptweeder/wiki" onclick="link_loader">Home</a></div></td></tr></table></div></widget>' },
+      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div id="general_options" class="frame" ><div class="frame_title">General</div><button title="Turn it off to avoid fetching blocked scripts."   	    onclick="speculative_parser_onclick">Speculative parser…</button><br><button title="Enable to control secure pages."   	    onclick="userjs_on_https_onclick">userjs on secure pages…</button><select_reload_method></select_reload_method><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="Useful for debugging."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div id="settings_options" class="frame" ><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="Hosts or domains always allowed" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div id="interface_options" class="frame" oninit="check_disable_button_ui_settings"><div class="frame_title">User Interface</div><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_button_display></select_button_display><select_ui_position></select_ui_position><select_badge_logic></select_badge_logic><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item></div></td><td><options_custom_style></options_custom_style><div id="export_options" class="frame" ><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div id="" class="frame" ><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptweeder/wiki" onclick="link_loader">Home</a></div></td></tr></table></div></widget>' },
    'options_custom_style' : {
       init: options_custom_style_init,
       layout: '<widget name="options_custom_style" init><div id="style_options" class="frame" ><div class="frame_title">Custom Style</div><table class="button_table"><edit_style lazy></edit_style><tr><td><form id="load_custom_style" title="Load a .style or .css file (can stack .style files)"><input type="file" autocomplete="off" onchange="file_loader(load_custom_style)"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit="clear_saved_style_init">Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><a href="https://github.com/lemonsqueeze/scriptweeder/wiki/Custom-styles" onclick="link_loader">Find styles</a></div></widget>' },
@@ -3803,6 +3998,9 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
    'select_button_display' : {
       init: select_button_display_init,
       layout: '<widget name="select_button_display" init><table class="dropdown_setting"><tr><td>Button display</td><td><select><option value="y">Toolbar</option><option value="n">Page</option></select></td></tr></table></widget>' },
+   'select_badge_logic' : {
+      init: select_badge_logic_init,
+      layout: '<widget name="select_badge_logic" init><table class="dropdown_setting"  	 title="Number displayed in ScriptWeeder button."><tr><td>Badge</td><td><select><option value="off">None</option><option value="nloaded">Scripts not loaded</option><option value="loaded">Scripts loaded</option><option value="nblocked">Scripts we block</option></select></td></tr></table></widget>' },
    'select_iframe_logic' : {
       init: select_iframe_logic_init,
       layout: '<widget name="select_iframe_logic" init><table id="iframe_logic" class="dropdown_setting"   	 title="Allowed iframes run in the current mode, blocked iframes run in Block All mode. The policy decides which iframes are allowed: [Block] no iframes allowed. [Filter] iframe allowed if host allowed in menu. [Allow] all iframes are allowed (permissive)."><tr><td>Iframe policy</td><td><select><option value="block_all">Block</option><option value="filter">Filter</option><option value="allow">Allow</option></select></td></tr></table></widget>' },

@@ -493,6 +493,18 @@ function(){   // fake line, keep_editor_happy
 	});
     }
 
+    // call f(script, hn, dn) for every script (arbitrary order)
+    function foreach_script(f)
+    {
+	_foreach_host_node(function(hn, dn)
+	{
+	    foreach(hn.scripts, function(s)
+	    {
+		f(s, hn, dn);
+	    });
+	});
+    }
+    
     function sort_domains()
     {
 	domain_nodes.sort(function(d1,d2)
