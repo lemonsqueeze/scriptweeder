@@ -40,8 +40,8 @@ function(){   // fake line, keep_editor_happy
 	badge_logic = global_setting('badge_logic', default_badge_logic);
 	
 	// window.opera.scriptweeder.toggle_menu() api for opera buttons etc...
-	message_handlers['scriptweeder_toggle_menu'] = api_toggle_menu;
-	window.opera.scriptweeder.toggle_menu = function() { window.postMessage('scriptweeder_toggle_menu', '*'); };
+	message_handlers['scriptweeder_toggle_menu:'] = api_toggle_menu;
+	window.opera.scriptweeder.toggle_menu = function() { window.postMessage('scriptweeder_toggle_menu:', '*'); };
     }
 
     function reset_ui()
@@ -606,6 +606,7 @@ function(){   // fake line, keep_editor_happy
 	{
 	    badge_logic = this.value;
 	    set_global_setting('badge_logic', this.value);
+	    update_extension_button(true); // force so tooltip gets updated
 	    need_repaint = true;
 	};       
     }    

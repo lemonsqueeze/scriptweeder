@@ -112,14 +112,18 @@ function(){   // fake line, keep_editor_happy
 	extension_button_badge = status;
     }    
 
+    var msg_header_bgproc_request = "scriptweeder bgproc mode request:";
     function extension_message_handler(e)
     {
 	var m = e.data;
 	debug_log("message from extension !");
-	check_init();
-	update_extension_button(true);
+	if (m == msg_header_bgproc_request)
+	{
+	    check_init();
+	    update_extension_button(true);
+	}
     }
-
+    
     function init_extension_messaging()
     {
 	// userjs_only stuff

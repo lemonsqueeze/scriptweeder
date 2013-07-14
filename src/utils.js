@@ -352,6 +352,7 @@ function(){   // fake line, keep_editor_happy
 
     function min(a, b) { return (a < b ? a : b); }
     function max(a, b) { return (a > b ? a : b); }
+    function to_int(s) { return parseInt(s); }
     
     function get_size_kb(x)
     {

@@ -313,9 +313,11 @@
     }
 
     // script loaded event from iframe, update menu
-    function message_iframe_script_loaded(e, url)
+    function message_iframe_script_loaded(e, o)
     {
-	var ev = { from_iframe:true, event:{ target:{ tagName:'script', src:url } } };
+	// FIXME: stats: main window doesn't know about iframes' inline script sizes ...
+	//alert("size:"+size+" url:"+url);
+	var ev = { from_iframe:true, size:o.size, event:{ target:{ tagName:'script', src:o.url } } };
 	beforeload_handler(ev);
     }
     
@@ -549,16 +551,13 @@
     
     /****************************** Handlers **********************************/
 
-    var blocked_current_host = 0;
-    var loaded_current_host = 0;
-    var total_current_host = 0;
-    
-    var blocked_external = 0;
-    var loaded_external = 0;
-    var total_external = 0;
-
-    var total_inline = 0;
-    var total_inline_size = 0;
+    var stats = { blocked: 0,     // no. ext scripts blocked 
+		  loaded: 0,	  // no. ext scripts loaded
+		  total: 0,	  // no. ext scripts
+		  total_size: 0,  // cummulated size of all external scripts
+                  inline: 0,      // no. inline scripts
+		  inline_size: 0  // cummulated size of all inline scripts
+                };
 
     var blocked_script_elements = []; // for reload_script()
 
@@ -580,9 +579,9 @@
 	}
 	
 	check_init();
-	debug_log("beforescript");      
-	total_inline++;
-	total_inline_size += e.element.text.length;
+	debug_log("beforescript");
+	stats.inline++;
+	stats.inline_size += e.element.text.length;
 	
 	repaint_ui();
 	
@@ -602,19 +601,11 @@
 
 	debug_log("beforeextscript: " + host);	
 	add_script(url, host);
-	if (host == current_host)
-	{
-	  total_current_host++;
-	  if (!allowed)
-	      blocked_current_host++;
-	}
-	else
-	{
-	  total_external++;
-	  if (!allowed)
-	      blocked_external++;
-	}
 
+	stats.total++;
+	if (!allowed)
+	    stats.blocked++;
+	
         if (!allowed)
 	    block_script(e);
 	repaint_ui();
@@ -631,22 +622,23 @@
 	check_init();
 	
 	var host = url_hostname(e.src);
-	var script = find_script(e.src, host);	
+	var script = find_script(e.src, host);
 	debug_log("loaded: " + host);
-	if (!ev.from_iframe)  // sanity check ...
+	if (ev.from_iframe)
+	    script.size = ev.size; // hack it in
+	else // sanity check ...
 	    assert(allowed_host(host),
 		   "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
-	
-	if (host == current_host)
-	    loaded_current_host++; 
-	else
-	    loaded_external++;
+
+	stats.loaded++;
+	stats.total_size += script.size;
 	script.loaded = 1;
 
 	if (nsmenu)
 	    repaint_ui();
 	if (in_iframe()) 	// tell parent so it can update menu
-	    window.top.postMessage(msg_header_iframe_script_loaded + e.src, '*');
+	    window.top.postMessage({ header: msg_header_iframe_script_loaded,
+		                     size: script.size, url: e.src }, '*');
     }
 
     function domcontentloaded_handler(e)
@@ -673,26 +665,36 @@
     {
 	var e = ue.event;
 	var m = e.data;
-	if (typeof(m) != "string")
-	    return;
-	check_init();
-	for (var h in message_handlers)
+	var header, data;
+	if (typeof(m) == "string")
 	{
-	    if (is_prefix(h, m))
-	    {
-		if (e.source == window)
-		{
-		    error("Looks like a script on this page is trying to forge ScriptWeeder messages, " +
-			  "something funny is going on !");
-		    return;
-		}
-		//debug_log("[msg] " + m);
-		ue.preventDefault();	// keep this conversation private.
-		var content = m.slice(h.length);		
-		(message_handlers[h])(e, content);
+	    var d = m.indexOf(':');
+	    if (d == -1)
 		return;
-	    }
+	    header = m.slice(0, d+1);
+	    data = m.slice(d+1);
 	}
+	else // object
+	{
+	    if (!m.header)
+		return;
+	    header = m.header;
+	    data = m;
+	}
+	
+	check_init();
+	if (!message_handlers[header])
+	    return;
+	if (e.source == window)
+	{
+	    error("Looks like a script on this page is trying to forge ScriptWeeder messages, " +
+		  "something funny is going on !");
+	    return;
+	}
+	//debug_log("[msg] " + m);
+	ue.preventDefault();	// keep this conversation private.
+	(message_handlers[header])(e, data);
+	return;
 	// not for us then.
     }
    
@@ -1380,14 +1382,18 @@
 	extension_button_badge = status;
     }    
 
+    var msg_header_bgproc_request = "scriptweeder bgproc mode request:";
     function extension_message_handler(e)
     {
 	var m = e.data;
 	debug_log("message from extension !");
-	check_init();
-	update_extension_button(true);
+	if (m == msg_header_bgproc_request)
+	{
+	    check_init();
+	    update_extension_button(true);
+	}
     }
-
+    
     function init_extension_messaging()
     {
 	// userjs_only stuff
@@ -2197,6 +2203,7 @@
 
     function min(a, b) { return (a < b ? a : b); }
     function max(a, b) { return (a > b ? a : b); }
+    function to_int(s) { return parseInt(s); }
     
     function get_size_kb(x)
     {
@@ -2361,8 +2368,8 @@
 	badge_logic = global_setting('badge_logic', default_badge_logic);
 	
 	// window.opera.scriptweeder.toggle_menu() api for opera buttons etc...
-	message_handlers['scriptweeder_toggle_menu'] = api_toggle_menu;
-	window.opera.scriptweeder.toggle_menu = function() { window.postMessage('scriptweeder_toggle_menu', '*'); };
+	message_handlers['scriptweeder_toggle_menu:'] = api_toggle_menu;
+	window.opera.scriptweeder.toggle_menu = function() { window.postMessage('scriptweeder_toggle_menu:', '*'); };
     }
 
     function reset_ui()
@@ -2927,6 +2934,7 @@
 	{
 	    badge_logic = this.value;
 	    set_global_setting('badge_logic', this.value);
+	    update_extension_button(true); // force so tooltip gets updated
 	    need_repaint = true;
 	};       
     }    
@@ -3150,7 +3158,7 @@
 	setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);	    
 	    
 	var w = find_element(widget, "right_item");
-	w.innerText = " [" + get_size_kb(total_inline_size) + "k]";
+	w.innerText = " [" + get_size_kb(stats.inline_size) + "k]";
 
 	if (!block_inline_scripts)
 	{
@@ -3504,10 +3512,9 @@
 
     function main_button_tooltip()
     {
-	var total = total_current_host + total_external;
-	var loaded = total - scripts_not_loaded();
-	var tooltip = (loaded + "/" + total + " scripts loaded, " +
-		       inline_scripts_loaded_tooltip());
+	var size = (!stats.loaded ? "" : " (" + get_size_kb(stats.total_size) + "k)");
+	var tooltip = (stats.loaded + "/" + stats.total + " scripts loaded" +
+		       size + ", " + inline_scripts_loaded_tooltip());
 	return tooltip;
     }
 
@@ -3515,32 +3522,9 @@
     {
 	if (block_inline_scripts)
 	    return "inline: 0";
-        return ("inline: " + total_inline +
-		" (" + get_size_kb(total_inline_size) + "k)");
+        return ("inline: " + stats.inline +
+		" (" + get_size_kb(stats.inline_size) + "k)");
     }
-
-/*    
-    function old_main_button_tooltip()
-    {
-        var tooltip = "[Inline scripts] " + total_inline +
-	  (block_inline_scripts ? " blocked": "") +
-	  " (" + get_size_kb(total_inline_size) + "k), " +
-	  "[" + current_host + "] " + blocked_current_host;
-	if (blocked_current_host != total_current_host)
-	    tooltip += "/" + total_current_host;
-	tooltip += " blocked";
-	if (loaded_current_host)
-	    tooltip += " (" + loaded_current_host + " loaded)";
-
-        tooltip += ", [Other hosts] " + blocked_external;
-	if (blocked_external != total_external)
-	    tooltip += "/" + total_external; 
-	tooltip += " blocked";
-	if (loaded_external)
-	    tooltip += " (" + loaded_external + " loaded)";
-	return tooltip;
-    }
- */
 
     function main_button_init(div)
     {
@@ -3622,24 +3606,24 @@
     function badge_object()
     {
 	var n = 0, tooltip = null;
-	var total = total_current_host + total_external;
+	var total = stats.total;
 	if (badge_logic == 'nloaded')
 	{
-	    n = scripts_not_loaded();
+	    n = total - stats.loaded;
 	    tooltip = (n + " scripts not loaded" +
-		       (!block_inline_scripts ? "." : " + " + total_inline + " inline."));
+		       (!block_inline_scripts ? "." : " + " + stats.inline + " inline."));
 	    // tooltip = n + "/" + total + " scripts not loaded.";
 	}	  
 	if (badge_logic == 'nblocked')
 	{
-	    n = blocked_current_host + blocked_external;
+	    n = stats.blocked;
 	    tooltip = (n + " scripts blocked" +
-		       (!block_inline_scripts ? "." : " + " + total_inline + " inline."));
+		       (!block_inline_scripts ? "." : " + " + stats.inline + " inline."));
 	    // tooltip = n + "/" + total + " scripts blocked.";	    
 	}
 	if (badge_logic == 'loaded')
 	{
-	    n = total - scripts_not_loaded();
+	    n = stats.loaded;
 	    // keep main button tooltip
 	}
 	
@@ -3655,19 +3639,6 @@
 	};
     }
     
-    // FIXME: we don't know about inline scripts that didn't load ...
-    function scripts_not_loaded(inline_also)
-    {
-	var n = 0;
-	foreach_script(function(s)
-	{
-	    if (!s.loaded)
-		n++;
-	});
-	if (inline_also && block_inline_scripts)  // inline scripts
-	    n += total_inline;
-	return n;
-    }	
     
     /***************************** Repaint logic ******************************/
 

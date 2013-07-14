@@ -290,9 +290,11 @@ function(){   // fake line, keep_editor_happy
     }
 
     // script loaded event from iframe, update menu
-    function message_iframe_script_loaded(e, url)
+    function message_iframe_script_loaded(e, o)
     {
-	var ev = { from_iframe:true, event:{ target:{ tagName:'script', src:url } } };
+	// FIXME: stats: main window doesn't know about iframes' inline script sizes ...
+	//alert("size:"+size+" url:"+url);
+	var ev = { from_iframe:true, size:o.size, event:{ target:{ tagName:'script', src:o.url } } };
 	beforeload_handler(ev);
     }
     
@@ -597,9 +599,11 @@ function(){   // fake line, keep_editor_happy
 	check_init();
 	
 	var host = url_hostname(e.src);
-	var script = find_script(e.src, host);	
+	var script = find_script(e.src, host);
 	debug_log("loaded: " + host);
-	if (!ev.from_iframe)  // sanity check ...
+	if (ev.from_iframe)
+	    script.size = ev.size; // hack it in
+	else // sanity check ...
 	    assert(allowed_host(host),
 		   "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
 
@@ -610,7 +614,8 @@ function(){   // fake line, keep_editor_happy
 	if (nsmenu)
 	    repaint_ui();
 	if (in_iframe()) 	// tell parent so it can update menu
-	    window.top.postMessage(msg_header_iframe_script_loaded + e.src, '*');
+	    window.top.postMessage({ header: msg_header_iframe_script_loaded,
+		                     size: script.size, url: e.src }, '*');
     }
 
     function domcontentloaded_handler(e)
@@ -637,26 +642,36 @@ function(){   // fake line, keep_editor_happy
     {
 	var e = ue.event;
 	var m = e.data;
-	if (typeof(m) != "string")
-	    return;
-	check_init();
-	for (var h in message_handlers)
+	var header, data;
+	if (typeof(m) == "string")
 	{
-	    if (is_prefix(h, m))
-	    {
-		if (e.source == window)
-		{
-		    error("Looks like a script on this page is trying to forge ScriptWeeder messages, " +
-			  "something funny is going on !");
-		    return;
-		}
-		//debug_log("[msg] " + m);
-		ue.preventDefault();	// keep this conversation private.
-		var content = m.slice(h.length);		
-		(message_handlers[h])(e, content);
+	    var d = m.indexOf(':');
+	    if (d == -1)
 		return;
-	    }
+	    header = m.slice(0, d+1);
+	    data = m.slice(d+1);
 	}
+	else // object
+	{
+	    if (!m.header)
+		return;
+	    header = m.header;
+	    data = m;
+	}
+	
+	check_init();
+	if (!message_handlers[header])
+	    return;
+	if (e.source == window)
+	{
+	    error("Looks like a script on this page is trying to forge ScriptWeeder messages, " +
+		  "something funny is going on !");
+	    return;
+	}
+	//debug_log("[msg] " + m);
+	ue.preventDefault();	// keep this conversation private.
+	(message_handlers[header])(e, data);
+	return;
 	// not for us then.
     }
    
