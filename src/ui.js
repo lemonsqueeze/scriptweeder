@@ -829,7 +829,7 @@ function(){   // fake line, keep_editor_happy
 	setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);	    
 	    
 	var w = find_element(widget, "right_item");
-	w.innerText = " [" + get_size_kb(total_inline_size) + "k]";
+	w.innerText = " [" + get_size_kb(stats.inline_size) + "k]";
 
 	if (!block_inline_scripts)
 	{
@@ -1183,10 +1183,9 @@ function(){   // fake line, keep_editor_happy
 
     function main_button_tooltip()
     {
-	var total = total_current_host + total_external;
-	var loaded = total - scripts_not_loaded();
-	var tooltip = (loaded + "/" + total + " scripts loaded, " +
-		       inline_scripts_loaded_tooltip());
+	var size = (!stats.loaded ? "" : " (" + get_size_kb(stats.total_size) + "k)");
+	var tooltip = (stats.loaded + "/" + stats.total + " scripts loaded" +
+		       size + ", " + inline_scripts_loaded_tooltip());
 	return tooltip;
     }
 
@@ -1194,32 +1193,9 @@ function(){   // fake line, keep_editor_happy
     {
 	if (block_inline_scripts)
 	    return "inline: 0";
-        return ("inline: " + total_inline +
-		" (" + get_size_kb(total_inline_size) + "k)");
+        return ("inline: " + stats.inline +
+		" (" + get_size_kb(stats.inline_size) + "k)");
     }
-
-/*    
-    function old_main_button_tooltip()
-    {
-        var tooltip = "[Inline scripts] " + total_inline +
-	  (block_inline_scripts ? " blocked": "") +
-	  " (" + get_size_kb(total_inline_size) + "k), " +
-	  "[" + current_host + "] " + blocked_current_host;
-	if (blocked_current_host != total_current_host)
-	    tooltip += "/" + total_current_host;
-	tooltip += " blocked";
-	if (loaded_current_host)
-	    tooltip += " (" + loaded_current_host + " loaded)";
-
-        tooltip += ", [Other hosts] " + blocked_external;
-	if (blocked_external != total_external)
-	    tooltip += "/" + total_external; 
-	tooltip += " blocked";
-	if (loaded_external)
-	    tooltip += " (" + loaded_external + " loaded)";
-	return tooltip;
-    }
- */
 
     function main_button_init(div)
     {
@@ -1301,24 +1277,24 @@ function(){   // fake line, keep_editor_happy
     function badge_object()
     {
 	var n = 0, tooltip = null;
-	var total = total_current_host + total_external;
+	var total = stats.total;
 	if (badge_logic == 'nloaded')
 	{
-	    n = scripts_not_loaded();
+	    n = total - stats.loaded;
 	    tooltip = (n + " scripts not loaded" +
-		       (!block_inline_scripts ? "." : " + " + total_inline + " inline."));
+		       (!block_inline_scripts ? "." : " + " + stats.inline + " inline."));
 	    // tooltip = n + "/" + total + " scripts not loaded.";
 	}	  
 	if (badge_logic == 'nblocked')
 	{
-	    n = blocked_current_host + blocked_external;
+	    n = stats.blocked;
 	    tooltip = (n + " scripts blocked" +
-		       (!block_inline_scripts ? "." : " + " + total_inline + " inline."));
+		       (!block_inline_scripts ? "." : " + " + stats.inline + " inline."));
 	    // tooltip = n + "/" + total + " scripts blocked.";	    
 	}
 	if (badge_logic == 'loaded')
 	{
-	    n = total - scripts_not_loaded();
+	    n = stats.loaded;
 	    // keep main button tooltip
 	}
 	
@@ -1334,19 +1310,6 @@ function(){   // fake line, keep_editor_happy
 	};
     }
     
-    // FIXME: we don't know about inline scripts that didn't load ...
-    function scripts_not_loaded(inline_also)
-    {
-	var n = 0;
-	foreach_script(function(s)
-	{
-	    if (!s.loaded)
-		n++;
-	});
-	if (inline_also && block_inline_scripts)  // inline scripts
-	    n += total_inline;
-	return n;
-    }	
     
     /***************************** Repaint logic ******************************/
 

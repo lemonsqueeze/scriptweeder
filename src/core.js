@@ -526,16 +526,13 @@ function(){   // fake line, keep_editor_happy
     
     /****************************** Handlers **********************************/
 
-    var blocked_current_host = 0;
-    var loaded_current_host = 0;
-    var total_current_host = 0;
-    
-    var blocked_external = 0;
-    var loaded_external = 0;
-    var total_external = 0;
-
-    var total_inline = 0;
-    var total_inline_size = 0;
+    var stats = { blocked: 0,     // no. ext scripts blocked 
+		  loaded: 0,	  // no. ext scripts loaded
+		  total: 0,	  // no. ext scripts
+		  total_size: 0,  // cummulated size of all external scripts
+                  inline: 0,      // no. inline scripts
+		  inline_size: 0  // cummulated size of all inline scripts
+                };
 
     var blocked_script_elements = []; // for reload_script()
 
@@ -557,9 +554,9 @@ function(){   // fake line, keep_editor_happy
 	}
 	
 	check_init();
-	debug_log("beforescript");      
-	total_inline++;
-	total_inline_size += e.element.text.length;
+	debug_log("beforescript");
+	stats.inline++;
+	stats.inline_size += e.element.text.length;
 	
 	repaint_ui();
 	
@@ -579,19 +576,11 @@ function(){   // fake line, keep_editor_happy
 
 	debug_log("beforeextscript: " + host);	
 	add_script(url, host);
-	if (host == current_host)
-	{
-	  total_current_host++;
-	  if (!allowed)
-	      blocked_current_host++;
-	}
-	else
-	{
-	  total_external++;
-	  if (!allowed)
-	      blocked_external++;
-	}
 
+	stats.total++;
+	if (!allowed)
+	    stats.blocked++;
+	
         if (!allowed)
 	    block_script(e);
 	repaint_ui();
@@ -613,11 +602,9 @@ function(){   // fake line, keep_editor_happy
 	if (!ev.from_iframe)  // sanity check ...
 	    assert(allowed_host(host),
 		   "a script from\n" + host + "\nis being loaded even though it's blocked. That's a bug !!");
-	
-	if (host == current_host)
-	    loaded_current_host++; 
-	else
-	    loaded_external++;
+
+	stats.loaded++;
+	stats.total_size += script.size;
 	script.loaded = 1;
 
 	if (nsmenu)
