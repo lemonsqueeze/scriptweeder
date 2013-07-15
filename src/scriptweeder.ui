@@ -34,9 +34,7 @@
 
 <widget name="badge" init>
   <div id="badge">
-    <div id="badge_inner">
-      <div id="badge_number">x</div>
-    </div>
+    <div id="badge_number" class="px"></div>
   </div>
 </widget>
 
@@ -256,6 +254,7 @@
       <option value="nloaded">Scripts not loaded</option>
       <option value="loaded">Scripts loaded</option>
       <option value="nblocked">Scripts we block</option>
+      <option value="weight">Scripts weight</option>
     </select></td>
   </tr></table>
 </widget>

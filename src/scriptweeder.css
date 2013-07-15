@@ -218,22 +218,36 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
 
 /* outer border*/
 #badge { position:absolute; bottom:0px; right:0px; 
-	 border:1px solid rgba(0,0,0,0.2);
-	 border-radius:5px;
+	 border-radius:5px; border:1px solid rgba(0,0,0,0.2);	 
          /* background-color set with classname */
        }
 
-.badge_nloaded, .badge_nblocked		{ background-color:#d75f3a; }   /* red */
-.badge_ok,	.badge_loaded		{ background-color:#73ac07;  }  /* green */
-/* #fe911c, orange */
+.badge_nloaded, .badge_nblocked, .badge_heavy	{ background-color:#d75f3a; }   /* red */
+.badge_medium					{ background-color:#fe911c;  }  /* orange */
+.badge_ok,	.badge_loaded,	 .badge_light	{ background-color:#73ac07;  }  /* green */
 
-/* inner border */
-#badge_inner { border:1px solid rgba(255,255,255,0.4);
-	       border-radius:3px;
-	       /*width:16px;*/ height:13px;
-	       font-size:10pt; font-weight:bold;
-	       text-align:center;
-	     }
+#badge_number { border-radius:3px; border:1px solid rgba(255,255,255,0.4); }
 
-#badge_number { margin-top:-3px; }  /* why we need this ?? */
+/* css digit rendering, not used.
+   - show stopper: if min font size is set in opera, we end up with a big font.
+   - imitating toolbar badge is tricky, font used is platform dependent.
+     reasonably good:
+       line-height:80%; font-size:small; font-weight:bold;
+     for a better match on windows:
+       line-height:90%; font-size:70%; font-weight:bold; font-family:sans-serif;
+ */
+#badge_number.css { line-height:80%; font-size:9pt; font-weight:bold; text-align:center; }
 
+/* img digit rendering */
+#badge_number.px  { direction:ltr; line-height:1px; }
+
+#badge_number .d0	{ /*img_size*/ background-image:url('../img/badge_0.png') }
+#badge_number .d1	{ /*img_size*/ background-image:url('../img/badge_1.png') }
+#badge_number .d2	{ /*img_size*/ background-image:url('../img/badge_2.png') }
+#badge_number .d3	{ /*img_size*/ background-image:url('../img/badge_3.png') }
+#badge_number .d4	{ /*img_size*/ background-image:url('../img/badge_4.png') }
+#badge_number .d5	{ /*img_size*/ background-image:url('../img/badge_5.png') }
+#badge_number .d6	{ /*img_size*/ background-image:url('../img/badge_6.png') }
+#badge_number .d7	{ /*img_size*/ background-image:url('../img/badge_7.png') }
+#badge_number .d8	{ /*img_size*/ background-image:url('../img/badge_8.png') }
+#badge_number .d9	{ /*img_size*/ background-image:url('../img/badge_9.png') }

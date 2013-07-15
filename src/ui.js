@@ -10,6 +10,7 @@ function(){   // fake line, keep_editor_happy
     var default_menu_display_logic = 'auto';
     var default_show_scripts_in_main_menu = true;
     var default_badge_logic = 'nloaded';
+    var default_badge_rendering = 'px';
     
     // can be used to display stuff in scriptweeder menu from outside scripts.
     var enable_plugin_api = false;
@@ -23,6 +24,7 @@ function(){   // fake line, keep_editor_happy
     var font_size;
     var disable_main_button;
     var badge_logic;
+    var badge_rendering;		// px   css
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
     var show_scripts_in_main_menu;
@@ -116,6 +118,7 @@ function(){   // fake line, keep_editor_happy
 	font_size = global_setting('font_size', default_font_size);
 	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);
 	show_scripts_in_main_menu = global_bool_setting('show_scripts_in_main_menu', default_show_scripts_in_main_menu);
+	badge_rendering = global_setting('badge_rendering', default_badge_rendering);
 	
 	if (menu_display_logic == 'click')
 	    window.addEventListener('click',  function (e) { main_ui && close_menu(); }, false);
@@ -1269,16 +1272,37 @@ function(){   // fake line, keep_editor_happy
     {
 	var o = badge_object();	
 	d = w.querySelector('#badge_number');
-	d.innerText = o.n;
+
+	if (badge_rendering == 'px')  	// pixel rendering
+	    badge_px_render(d, o.n);
+	else				// css rendering
+	{
+	    d.className = 'css';
+	    d.innerText = o.n;
+	}
+	
 	w.className = 'badge_' + o.className;
 	w.tooltip = o.tooltip; // for main_button
     }
 
+    function badge_px_render(w, n)
+    {
+	n = '' + n;
+	for (var i = 0; i < n.length; i++)
+	{
+	    var img = idoc.createElement('img');
+	    img.className = 'd' + n[i];
+	    w.appendChild(img);
+	}
+    }
+    
     // internal use
     function badge_object()
     {
 	var n = 0, tooltip = null;
 	var total = stats.total;
+	var klass = badge_logic;
+	
 	if (badge_logic == 'nloaded')
 	{
 	    n = total - stats.loaded;
@@ -1293,16 +1317,26 @@ function(){   // fake line, keep_editor_happy
 		       (!block_inline_scripts ? "." : " + " + stats.inline + " inline."));
 	    // tooltip = n + "/" + total + " scripts blocked.";	    
 	}
+	// fix color for n == 0
+	if (n == 0 && (badge_logic == 'nloaded' || badge_logic == 'nblocked'))
+	    klass = 'ok';
+	
 	if (badge_logic == 'loaded')
 	{
 	    n = stats.loaded;
 	    // keep main button tooltip
 	}
-	
-	var klass = badge_logic;
-	if ((badge_logic == 'nloaded' || badge_logic == 'nblocked') &&
-	    n == 0)
-	    klass = 'ok';
+	if (badge_logic == 'weight')
+	{
+	    var size = stats.total_size + stats.inline_size;
+	    n = get_size_kb(size / 100, true);
+	    tooltip = get_size_kb(size) + "k loaded.";
+	    klass = 'heavy';
+	    if (n <= 1)
+		klass = 'medium';
+	    if (n == 0)
+		klass = 'light';
+	}	
 	
 	return {
 	    className: klass,

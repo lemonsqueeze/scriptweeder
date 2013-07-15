@@ -97,7 +97,8 @@ function(){   // fake line, keep_editor_happy
 	var status = (needed ? o.n : 'off');
 	if (!force && extension_button_badge == status) // already in the right state
 	    return;
-	
+
+	var color = (!needed ? '#000' : get_css_prop('.badge_' + o.className, 'background-color', true));
 	window.postMessage({				// userjs_only
 	      scriptweeder:true,
 	      tooltip: o.tooltip,
@@ -105,7 +106,7 @@ function(){   // fake line, keep_editor_happy
 		{
 		  display: (needed ? 'block' : 'none'),
 		  color: '#ffffff',
-		  backgroundColor: get_css_prop('.badge_' + o.className, 'background-color', true),
+		  backgroundColor: color,
 		  textContent: o.n
 		}
 	    }, '*');

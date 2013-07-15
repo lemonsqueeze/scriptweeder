@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Jul 15 2013
+// @published Jul 16 2013
 // ==/UserScript==
 
 
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.8";
     var version_type = "userjs";
-    var version_date = "Jul 15 2013";
+    var version_date = "Jul 16 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -1367,7 +1367,8 @@
 	var status = (needed ? o.n : 'off');
 	if (!force && extension_button_badge == status) // already in the right state
 	    return;
-	
+
+	var color = (!needed ? '#000' : get_css_prop('.badge_' + o.className, 'background-color', true));
 	window.postMessage({				// userjs_only
 	      scriptweeder:true,
 	      tooltip: o.tooltip,
@@ -1375,7 +1376,7 @@
 		{
 		  display: (needed ? 'block' : 'none'),
 		  color: '#ffffff',
-		  backgroundColor: get_css_prop('.badge_' + o.className, 'background-color', true),
+		  backgroundColor: color,
 		  textContent: o.n
 		}
 	    }, '*');
@@ -2205,12 +2206,12 @@
     function max(a, b) { return (a > b ? a : b); }
     function to_int(s) { return parseInt(s); }
     
-    function get_size_kb(x)
+    function get_size_kb(x, int_only)
     {
 	var k = new String(x / 1000);
 	var d = k.indexOf('.');
-	if (d)
-	    return (x >= 1000 ? k.slice(0, d) : k.slice(0, d + 2));
+	if (d != -1)
+	    return (x >= 1000 || int_only ? k.slice(0, d) : k.slice(0, d + 2));
 	return k;
     }
 
@@ -2338,6 +2339,7 @@
     var default_menu_display_logic = 'auto';
     var default_show_scripts_in_main_menu = true;
     var default_badge_logic = 'nloaded';
+    var default_badge_rendering = 'px';
     
     // can be used to display stuff in scriptweeder menu from outside scripts.
     var enable_plugin_api = false;
@@ -2351,6 +2353,7 @@
     var font_size;
     var disable_main_button;
     var badge_logic;
+    var badge_rendering;		// px   css
     var menu_display_logic;		// auto   delay   click
     var menu_display_timer = null;
     var show_scripts_in_main_menu;
@@ -2444,6 +2447,7 @@
 	font_size = global_setting('font_size', default_font_size);
 	menu_display_logic = global_setting('menu_display_logic', default_menu_display_logic);
 	show_scripts_in_main_menu = global_bool_setting('show_scripts_in_main_menu', default_show_scripts_in_main_menu);
+	badge_rendering = global_setting('badge_rendering', default_badge_rendering);
 	
 	if (menu_display_logic == 'click')
 	    window.addEventListener('click',  function (e) { main_ui && close_menu(); }, false);
@@ -3597,16 +3601,37 @@
     {
 	var o = badge_object();	
 	d = w.querySelector('#badge_number');
-	d.innerText = o.n;
+
+	if (badge_rendering == 'px')  	// pixel rendering
+	    badge_px_render(d, o.n);
+	else				// css rendering
+	{
+	    d.className = 'css';
+	    d.innerText = o.n;
+	}
+	
 	w.className = 'badge_' + o.className;
 	w.tooltip = o.tooltip; // for main_button
     }
 
+    function badge_px_render(w, n)
+    {
+	n = '' + n;
+	for (var i = 0; i < n.length; i++)
+	{
+	    var img = idoc.createElement('img');
+	    img.className = 'd' + n[i];
+	    w.appendChild(img);
+	}
+    }
+    
     // internal use
     function badge_object()
     {
 	var n = 0, tooltip = null;
 	var total = stats.total;
+	var klass = badge_logic;
+	
 	if (badge_logic == 'nloaded')
 	{
 	    n = total - stats.loaded;
@@ -3621,16 +3646,26 @@
 		       (!block_inline_scripts ? "." : " + " + stats.inline + " inline."));
 	    // tooltip = n + "/" + total + " scripts blocked.";	    
 	}
+	// fix color for n == 0
+	if (n == 0 && (badge_logic == 'nloaded' || badge_logic == 'nblocked'))
+	    klass = 'ok';
+	
 	if (badge_logic == 'loaded')
 	{
 	    n = stats.loaded;
 	    // keep main button tooltip
 	}
-	
-	var klass = badge_logic;
-	if ((badge_logic == 'nloaded' || badge_logic == 'nblocked') &&
-	    n == 0)
-	    klass = 'ok';
+	if (badge_logic == 'weight')
+	{
+	    var size = stats.total_size + stats.inline_size;
+	    n = get_size_kb(size / 100, true);
+	    tooltip = get_size_kb(size) + "k loaded.";
+	    klass = 'heavy';
+	    if (n <= 1)
+		klass = 'medium';
+	    if (n == 0)
+		klass = 'light';
+	}	
 	
 	return {
 	    className: klass,
@@ -3909,25 +3944,39 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
   \n\
 /* outer border*/  \n\
 #badge { position:absolute; bottom:0px; right:0px;   \n\
-	 border:1px solid rgba(0,0,0,0.2);  \n\
-	 border-radius:5px;  \n\
+	 border-radius:5px; border:1px solid rgba(0,0,0,0.2);	   \n\
          /* background-color set with classname */  \n\
        }  \n\
   \n\
-.badge_nloaded, .badge_nblocked		{ background-color:#d75f3a; }   /* red */  \n\
-.badge_ok,	.badge_loaded		{ background-color:#73ac07;  }  /* green */  \n\
-/* #fe911c, orange */  \n\
+.badge_nloaded, .badge_nblocked, .badge_heavy	{ background-color:#d75f3a; }   /* red */  \n\
+.badge_medium					{ background-color:#fe911c;  }  /* orange */  \n\
+.badge_ok,	.badge_loaded,	 .badge_light	{ background-color:#73ac07;  }  /* green */  \n\
   \n\
-/* inner border */  \n\
-#badge_inner { border:1px solid rgba(255,255,255,0.4);  \n\
-	       border-radius:3px;  \n\
-	       /*width:16px;*/ height:13px;  \n\
-	       font-size:10pt; font-weight:bold;  \n\
-	       text-align:center;  \n\
-	     }  \n\
+#badge_number { border-radius:3px; border:1px solid rgba(255,255,255,0.4); }  \n\
   \n\
-#badge_number { margin-top:-3px; }  /* why we need this ?? */  \n\
+/* css digit rendering, not used.  \n\
+   - show stopper: if min font size is set in opera, we end up with a big font.  \n\
+   - imitating toolbar badge is tricky, font used is platform dependent.  \n\
+     reasonably good:  \n\
+       line-height:80%; font-size:small; font-weight:bold;  \n\
+     for a better match on windows:  \n\
+       line-height:90%; font-size:70%; font-weight:bold; font-family:sans-serif;  \n\
+ */  \n\
+#badge_number.css { line-height:80%; font-size:9pt; font-weight:bold; text-align:center; }  \n\
   \n\
+/* img digit rendering */  \n\
+#badge_number.px  { direction:ltr; line-height:1px; }  \n\
+  \n\
+#badge_number .d0	{ width:7px; height:12px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAMCAYAAACulacQAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90HDw0ODvnU+s0AAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAABS0lEQVQY0y3DwUuTYRzA8e/7vHt992xs8K6RrCYyPBRoHYTA05AgzGCHRHbyEoEg3oT+nSToIipIRZZ1EC9dKsKmMgaRok409rZX9z7au3c/L33gY0+QcqZw7AyOPtNRwusWEgv6whkqYalkLtRrPM9W3namN07lxbosVcwYuW+NVB/3eFh4vSLrnVgC87+cv/w0f5/bzFTlUS2UoCubO9UPMvhmS+pGjC+/H5fV6AhPb7lg779a/VqxrNo7Fv1e0sa9+0ylPUoaoHVUDyOik0P2DIDj3VG2iwOAXF4YIOoSxwAJB3X1l1YPQOcHNOD1k3cBLv2OOjhmswVw88FkTqGLIzy5AdBufob0z+LHbfljpOf7obxvRhJcyffm2jL9DEN2fk7GvzRktxNL8E9+/diX2dFhyFpVCsmabloZk3KPdKiyQMYUwjLt+BopYpKKEfrvTwAAAABJRU5ErkJggg==') }  \n\
+#badge_number .d1	{ width:6px; height:12px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAMCAYAAABBV8wuAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90HDw0OAvBituYAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAAA+0lEQVQY002LPUvDQABA351XIZEkatAKllaHKnRwEzIJHd1du4ibCP4CHfwDgv/ADlKd6+gHiHYQpKMURBxaQRCschdNzri06hvf44k6Ue683CLsuEAw0nZ6Yq0Asl5uqbTjjp6y5Cw2uhv7+m6rX8Bh3WFSsDN9eJId9GzWj7Prl+Mac6oxlblnTW6iCgFDYpALT1X5/E7zUT5sXt0PfAxy3ruQe6tityqOLvXX74C0OZLXNwzMJoI/FAZCQgzwP0g7Qaow1sOzciDHAXnbdT/yjv7WFO3w+LQkcoXAChOlM+5yqgSAEF6RVJUoJTWgrcf0dqTzFR/H9zE/uldW7kV8epkAAAAASUVORK5CYII=') }  \n\
+#badge_number .d2	{ width:8px; height:12px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAMCAYAAABfnvydAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90HDw0NNvr7EZAAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAABcElEQVQY00XDvWsTcRzA4c+91fwu5YfeVS8hwaqYIqZQqApdii9onQQDWUSExC7WSVFxEByECtKxODl06CBkKP0DBME6ZFEHNW6NLzFQUwnk2t7FpPm6FPrAYy0z5Zwka5RUI/Gnn7ZDteUc6qftOQZGKdezjBmFciPfOfxoM3u9RCFzCnrm209Pxi5Vsw0ipkG/ei5313ekE+3ul+3FSlHhmUGA/b3Ol1CFazVz9fL9ea59bELszlx58R6HYoCXBz2BeySH5WsW0itV2Yhkvd2SoRETAHw0Kg6Bx08fFifPohLxu2/Pxv5ZFBVeHl+f4aD/4J4UPv+VTiy11hs5kUqBZhr0VIA3W5YLH5rSiaTe/iU3x09bBBO4SfKgMVb81TWpR7LV3pHy+eOQOWcR5EEbtxXesVty8cZLlo7aP7Z/RqOV7gBsRdc177y20ZDJkBs2YTAYTWYPUGZP4msnNK7iOsDQJt3Eb/Z5aldyiv5/TPCJtwmSWXYAAAAASUVORK5CYII=') }  \n\
+#badge_number .d3	{ width:8px; height:12px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAMCAYAAABfnvydAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90HDw0NLumXicYAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAABcElEQVQY003OzyvDcRzH8de+333Gd+M7+2I/jFH6HhDC1JI5rzQOcnAg5US5WfEPiHJzsUUpyUU5KrswaUqmoQm1HMZhpuU721f4ft8OO/Co5/3J78DHbHKGD6qouGJgFQzM9uMyzkI3bEz26QYnzMwHt9AZeegZDMDvaID+ycevdwMDF8UYFIxKECOLNP30Q4qq/UVKOLoowwG/BBEsZV3PUdBFD/beEPWfPJGiUiIfm0cL2iWI3TBbLA6y79/TSiJNRzmNFPrYik50wW2sBaAAmPLC3lyDubY6lJne4pkMAFGA4ISr0g+ITtTbxxbId5KinErZfImaGrlG/Fcsnq1Z0jeHOCa9nheS3nFOFsC4kRfhdLNVl6ylKkBm1R54DBxpoFIGQfC128u0mqPCa1anvcdnuixopHxRLB1ZghsdgBheppnbF0oVNFJU+s6X6O5gn4bdTpgthhB8LCmcG59VsDeYufKLoDfD9DWEd+0XNpyl9adl9JcAAAAASUVORK5CYII=') }  \n\
+#badge_number .d4	{ width:8px; height:12px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAMCAYAAABfnvydAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90HDw0NJX5FUE4AAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAABb0lEQVQY0y2NP0hUcRzAP+/3/vFe4ckpnO8spctDKC7NiN6QhItSgzgEUSCBGrSINdziqi5Nji66XNASQdzs4uRggxc1+KTHcdlSwnVx753le9+G8zN/Pnw0GfctSvC5QsI8SaVSM/fI6KP81g0nSlkoYpbxzTKuOYNr3rstuY+BbBxL9eVklh7jPHCtOvWk6URaGK+662t8mC5QsjkLpq5QNcJspB/GUerFrr38ZuPVg4eUuOCXYKpcjHEDnP477fzEE1b61XEjPO0K0sFQX4F2fMtefM3mxFAzqZN59qPdFc4AxV/Mu3OHhfFH+E5z5+B635dYuj1YmKBb3vaOVNuJtP7Jydv9hmyFkbQ68u1nXd69MAaS+/TmKCjgPM3PjuUv/uk1+6o6WOKxQ3YAt3dYJ3cTBvFOCruhtFJ5/2lhiBHViL1onkxn1KJ1Ge/0eTEvlgagccnmj1bG1wGKxX0VBH5ao6a+EzlHwFPc5D8GDYnjb+ynEQAAAABJRU5ErkJggg==') }  \n\
+#badge_number .d5	{ width:7px; height:12px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAMCAYAAACulacQAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90HDw0NGVEqLMkAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAABO0lEQVQY0z3BMS8DUQDA8X/fPaVXbSlpB1KKU9KhiaUrFhIDAwZMNmHxHXwBG5+gi51IiFEiERqRaoWQphFaFLlTvXfPIPH7+aYwWwB/GduALmo4KhqwvflekGXswOaOXhpbISn54w++fOaxtmWDZFtbiOXRABn+uSqVH9yTrYRbhEkQcaNWySZyqVETgZsqFJS0iWKECME3uXq3ThZPpYPh1lGecBjGH6YTL2M4odtKSd8dHOq1wT5k0Jdmomfx6DibGSDW1WDSspiOiGt1cZ4eYTxCfAgz1mcQ7yeW2NnV+47SH/pybkMU6mn33bJ97Qr5xpfyNE0NgICtdb38oJsPVa1zNxV9UlP641tfVfMlosJtpfb8KKuGx0wizlhA3J8V2Z5csEzPN2sRfiqZ4pWG8QlARzODo4CfX4qgfyJW3lPgAAAAAElFTkSuQmCC') }  \n\
+#badge_number .d6	{ width:8px; height:12px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAMCAYAAABfnvydAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90HDw0NEsb49UEAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAABdElEQVQY0zXMz0uTcRzA8feePRv7Pk89e9iQPWJUBkNW+AM9+EBg3naJCrp161IQeFL/ALX+iUhESLBTF4nwInpQsctcHkQPsdSKpk2/uT217Xk+XdobXtd3rIwfB9jObxuHh34EZaMMyVSmEc8GtGLTdKfgIjxTDfNDQOLBnPTef8z49cI3c22q5y0PMzhFLFux5C6vyLvTUHQQig7kqKbF8xjEsj263fnXslALRYeytfhUdm5Q9HPXFBnugHO3X/LrX0X/kS/VvbrMbErlGZtm2iOexcNyX03K80pn/d9fKR0vbZAzumgqx6XPBlLnc29U1/DQ/ALv69Gg8+Tmi1kjImnQ6fcRhV977U+rLFcBrFy/cZlutM9/UroEuJL306qVvNXLwFWAlj7GA8d2JfexJKeBRDUtzcX976IDqdYiGStwW6E8LHt6Qu5tHcjneii6KSeVH/Ly0QjxbKyInxigzK5qmCdBNnGhzkwHiAW0RxWtf+8SrWsl/fYOAAAAAElFTkSuQmCC') }  \n\
+#badge_number .d7	{ width:7px; height:12px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAMCAYAAACulacQAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90HDw0NC6KTXYEAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAABP0lEQVQY01XBzSuDcQDA8e/ztvk9hD2ZbV5qyvC4uDgs7TxllDg5OLoo5eIk95UiF2lX5WJ/ACcuOHGi1FpemohsbOyZPW8OTj4fKS0QTxZaG7r8QN2LC9SKpXsmwlOn1v3p1CrjAcDjj6zitAQ3TtRQkMyQYE7jv5bnWo/EwFKIVEKj/i6PeNmuvS3Ok/Fb56hkmkShPR3BGO0gsrvt5yquX/VLK9kJjTijAiMpMBDf0eNr/7PhX77l1oinDXrl1iYaQHZZnzVNpOBL/iy/iV2ysOTBAOq91S/FxlkIyw2X74utO5QGgFpr4nxxoHSbjEncOIc7p49RA1spd2ryl6s4izOp3nAfcoBi8eoISy/r7qvxYasdhmsPR+gLhUCqFNxAFRtoZsoxRZpE13xRV9tB1Cz9Zz5R95KFZHMf+AXWAXL5Rj0hQgAAAABJRU5ErkJggg==') }  \n\
+#badge_number .d8	{ width:7px; height:12px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAMCAYAAACulacQAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90HDw0NAttP5SUAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAABR0lEQVQY0zXMOywDYQAH8P/1PHLE4TqoR0RIjQw1GE1iMBi9ggGJxEYTSbHYxObZxMRCYxArKhFTEwQRQdB4pKLa6rXuE3efv0EMv/WntHqhldyWM420egbAa1iqV8DOinLCB9UNZcG9HOZgJM2ZU9705S5C9wA6ajBZvXXAMyFp/nN4eDE7hBqMDbPzXtJkJriL0pbq1U3uCUmT1x0DrqJCFKsAYL99NqaO9I8XxB0AgGOjopJ14du/zqIdimZpOty/nG5Hg8t6GbdjD4gCgBQ5bWUaQBg57l4kMBfgREzSZHJqvhDN9UsbDKUlTcZGgy7DQJMOAE8nxxYidmQH20kAcGm1mPOz/86m+cXneDTDpatHJgR/Uox198CDZn1lnYGbN74KSfOb79EE10a6qlCp+FGQew7kPWlWflKoiqFJKgKODwXyF2+Ht9hbObm7AAAAAElFTkSuQmCC') }  \n\
+#badge_number .d9	{ width:7px; height:12px; background-image:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAcAAAAMCAYAAACulacQAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB90HDw0ML4eLiBEAAAAZdEVYdENvbW1lbnQAQ3JlYXRlZCB3aXRoIEdJTVBXgQ4XAAABVUlEQVQY0zXDPUgCcRgH4J+epnfWZSaedXVa5pKKVGNZBFGjWxAt4ezk0BpNQTYIDUUQQZOLDREl9EEZbSVEDUFSGkX0efDXPLP0beqBh3NCME7yP6b6r2DSwdjQCDsX40tG86+ggw8Q4ak7khcUy1Zo7pyOw5FRyL02iJC95D66pletRuw/sfX9WABuJBZoRa0RIxZfhjTbldyjS41KKn31B/R8E1xmAMjvZhR10XydwRarWzi89U0bCg9IvwNDUmAjnv5wpSrPGBcBwNTYwt2enbxK/hlOcloHO0UM2Jth1ekBA9s+hA+QnTC0tRvhVjDs3zygW41+VMqNjCEEyC4OkhsOJZ6g+acasSqd5pfC6IFFoY6dHK3ePNJVuUZMow+1SJFQyAYZ0QkKZl+IValU+KTcWoqiHi+4VpEHbyjf6e6nJEHh+LL+UxO+gwC6YaoWNeAP8T+YQ9xom4kAAAAASUVORK5CYII=') }  \n\
 ";
 
     /* widgets (generated from scriptweeder.xml). */
@@ -3939,7 +3988,7 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
       layout: '<widget name="main_button" init><div id="main_button" class="main_menu_sibling" onmouseover onclick onmouseout><button><img id="main_button_image"/><badge lazy></badge></button></div></widget>' },
    'badge' : {
       init: badge_init,
-      layout: '<widget name="badge" init><div id="badge"><div id="badge_inner"><div id="badge_number">x</div></div></div></widget>' },
+      layout: '<widget name="badge" init><div id="badge"><div id="badge_number" class="px"></div></div></widget>' },
    'main_menu' : {
       init: main_menu_init,
       layout: '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown"><h1 id="menu_title" >Script Weeder</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="Allow related and helper domains." oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li><li id="options_details" class="inactive"><table><tr><td class="details_item"><label onclick="show_details">Details</label></td><td class="options_item"><label onclick="options_menu">Options</label></td></tr></table></li></ul></div></widget>' },
@@ -3971,7 +4020,7 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
       layout: '<widget name="select_button_display" init><table class="dropdown_setting"><tr><td>Button display</td><td><select><option value="y">Toolbar</option><option value="n">Page</option></select></td></tr></table></widget>' },
    'select_badge_logic' : {
       init: select_badge_logic_init,
-      layout: '<widget name="select_badge_logic" init><table class="dropdown_setting"  	 title="Number displayed in ScriptWeeder button."><tr><td>Badge</td><td><select><option value="off">None</option><option value="nloaded">Scripts not loaded</option><option value="loaded">Scripts loaded</option><option value="nblocked">Scripts we block</option></select></td></tr></table></widget>' },
+      layout: '<widget name="select_badge_logic" init><table class="dropdown_setting"  	 title="Number displayed in ScriptWeeder button."><tr><td>Badge</td><td><select><option value="off">None</option><option value="nloaded">Scripts not loaded</option><option value="loaded">Scripts loaded</option><option value="nblocked">Scripts we block</option><option value="weight">Scripts weight</option></select></td></tr></table></widget>' },
    'select_iframe_logic' : {
       init: select_iframe_logic_init,
       layout: '<widget name="select_iframe_logic" init><table id="iframe_logic" class="dropdown_setting"   	 title="Allowed iframes run in the current mode, blocked iframes run in Block All mode. The policy decides which iframes are allowed: [Block] no iframes allowed. [Filter] iframe allowed if host allowed in menu. [Allow] all iframes are allowed (permissive)."><tr><td>Iframe policy</td><td><select><option value="block_all">Block</option><option value="filter">Filter</option><option value="allow">Allow</option></select></td></tr></table></widget>' },
