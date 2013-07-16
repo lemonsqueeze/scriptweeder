@@ -1,18 +1,6 @@
 function(){   // fake line, keep_editor_happy
-    
+
     /**************************** Extension messaging ***************************/
-    
-    // userjs_only: prevent lockout if extension goes away and we were using its button.
-    function prevent_userjs_lockout()
-    {
-	if (extension_button || !disable_main_button || !something_to_display())
-	    return;
-	disable_main_button = false;	
-	set_global_bool_setting('disable_main_button', false);
-	set_global_setting('ui_position', 'bottom_right');
-	set_global_setting('menu_display_logic', 'auto');
-	init_ui();
-    }
 
     // not super robust, and won't match if there's a \n in the css.
     function get_css_prop(selector, prop, fatal)
@@ -58,8 +46,7 @@ function(){   // fake line, keep_editor_happy
 
     function update_extension_button(force)
     {
-	if (in_iframe() ||
-	    (!force && !extension_button)) // not talking to extension (yet) - userjs_only
+	if (in_iframe() || !bgproc)
 	    return;
 	update_extension_button_icon(force);
 	update_extension_button_badge(force);
@@ -81,11 +68,10 @@ function(){   // fake line, keep_editor_happy
 	    msg.icon = (needed ? get_icon_from_css(mode, true) : msg.disabled_icon);
 	    msg.tooltip = main_button_tooltip();
 	}
-	msg.scriptweeder = true;
-	window.postMessage(msg, '*');	// userjs_only
+	bgproc.postMessage(msg);	
 	extension_button = status;
     }
-    
+
     var extension_button_badge;
     function update_extension_button_badge(force)
     {
@@ -97,10 +83,9 @@ function(){   // fake line, keep_editor_happy
 	var status = (needed ? o.n : 'off');
 	if (!force && extension_button_badge == status) // already in the right state
 	    return;
-
-	var color = (!needed ? '#000' : get_css_prop('.badge_' + o.className, 'background-color', true));
-	window.postMessage({				// userjs_only
-	      scriptweeder:true,
+	
+	var color = (!needed ? '#000' : get_css_prop('.badge_' + o.className, 'background-color', true));		
+	bgproc.postMessage({
 	      tooltip: o.tooltip,
 	      badge:
 		{
@@ -109,27 +94,95 @@ function(){   // fake line, keep_editor_happy
 		  backgroundColor: color,
 		  textContent: o.n
 		}
-	    }, '*');
+	    });
 	extension_button_badge = status;
-    }    
-
+    }
+    
+    var bgproc;
     var msg_header_bgproc_request = "scriptweeder bgproc mode request:";
-    function extension_message_handler(e)
+    function extension_message_handler(e) 
     {
 	var m = e.data;
-	debug_log("message from extension !");
+	debug_log("message from background process !");
+	if (!bgproc)
+	    bgproc = e.source;
 	if (m == msg_header_bgproc_request)
 	{
 	    check_init();
 	    update_extension_button(true);
 	}
     }
+
+    /**************************** userjs messaging ***************************/
+
+    var bgproc;
+    function ujsfwd_before_message(ujs_event)
+    {
+	var e = ujs_event.event;
+	var m = e.data;
+	debug_log("[msg] " + m);
+	
+	if (m == "scriptweeder bgproc to injected script:")  // hello from bgproc
+	{
+	    bgproc = e.source;
+	    ujs_event.preventDefault(); // keep this private
+	    return;
+	}       	
+	
+	if (m && m.scriptweeder) // from userjs, forward to bgproc
+	{
+	    debug_log("forwarding to bgproc");
+	    bgproc.postMessage(m);
+	    ujs_event.preventDefault(); // keep this private
+	}
+	// other msg, leave alone
+    }
+    
+    function ujsfwd_guard()
+    {
+	// userjs should have caught this one and cancelled it, something funny is going on !    
+	//if (m == "scriptweeder background process:")
+	//{
+	my_alert("WARNING there is something wrong here !\n\n" +
+		 "If the userjs version of scriptweeder is installed then it's not working properly, " +
+		 "otherwise there's a script on this page trying to pass as scriptweeder !");
+	opera.extension.onmessage = null;
+	//}
+    }
+    
+
+    function check_userjs_version()
+    {
+	var userjs_version = window.opera.scriptweeder.version;
+	var pair = userjs_version + ':' + version_number;
+	if (userjs_version != version_number &&
+	    global_setting('warn_userjs_version') != pair)
+	{
+	    set_global_setting('warn_userjs_version', pair);
+	    my_alert("userjs and extension versions differ:\n" +
+		     userjs_version + " vs " + version_number + "\n" +
+		     "This may not work, installing matching versions is recommended.");
+	}
+    }
+    
+    function forward_to_userjs()
+    {
+	if (!window.opera.scriptweeder) // userjs is not running
+	    return false;
+
+	opera.extension.onmessage = ujsfwd_guard;
+	// this is enough for userjs beforeEvent to fire,
+	// so no need to forward anything in this direction.
+	window.opera.addEventListener('BeforeEvent.message', ujsfwd_before_message, false);
+	debug_log("userjs detected, handing over and forwarding");
+	
+	window.setTimeout(check_userjs_version, 10); // don't do it during async startup
+	return true;
+    }
     
     function init_extension_messaging()
     {
-	// userjs_only stuff
-	message_handlers["scriptweeder bgproc mode request:"] = extension_message_handler;
-	window.setTimeout(prevent_userjs_lockout, 500);
+	opera.extension.onmessage = extension_message_handler; // regular msg handler fires also		
     }
     
 }   // keep_editor_happy

@@ -1,17 +1,15 @@
 function(){   // fake line, keep_editor_happy
 
     /************************* Loading/Saving Settings ************************/
-
+    
     function check_script_storage()
     {
 	if (!scriptStorage)
 	{
-	    location.href = "opera:config#user%20js%20storage";  // userjs_only
+	    location.href = "opera:config#widget%20pref";
 	    alert("Welcome to scriptweeder !\n\n" +
-		  "Script storage is currently disabled.\n" +
-		  "For scriptweeder to work, set quota to\n" +
-		  "                 1000\n" +
-		  "on the following page.");
+		  "Extension storage seems to be disabled,\n" +
+		  "check widget preferences quota on the following page.");
 	}
     }
     

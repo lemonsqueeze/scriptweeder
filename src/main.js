@@ -35,32 +35,23 @@
     // quiet: no page redirect
     function startup_checks(quiet)
     {
-	var start_page = "https://github.com/lemonsqueeze/scriptweeder/wiki/scriptweeder-userjs-installed-!";	
+	var start_page = "https://github.com/lemonsqueeze/scriptweeder/wiki/scriptweeder-extension-installed-!";
 	if (in_iframe()) // don't redirect to start page in iframes.
 	    return;
 	
-        // first run, send to start page
-        if (global_setting('mode') == '') // will work with old settings	
-        {
-	    // userjs_only: can't wait until we get there, userjs on https may not be enabled ...	    
-            set_global_setting('version_number', version_number);
-            set_global_setting('version_type', version_type);
-            set_global_setting('mode', default_mode);
-	    default_filter_settings();	    
-
-	    if (!quiet)
-		location.href = start_page;	    
-        }
-	
-	// userjs_only: upgrade from 1.44 or before
-	if (global_setting('version_number') == '')
+        // first run setup
+        if ((location.href == start_page || quiet) && global_setting('mode') == '')
 	{
 	    set_global_setting('version_number', version_number);
 	    set_global_setting('version_type', version_type);
-	    // didn't exist:
-	    set_global_setting('helper_blacklist',	serialize_name_hash(default_helper_blacklist) );
+	    set_global_setting('mode', default_mode);
+	    default_filter_settings();	    	    
 	}
-
+	
+        // first run, send to start page
+	if (global_setting('mode') == '') // will work with old settings
+	    location.href = start_page;
+	
 	// upgrade from previous version
 	if (global_setting('version_number') != version_number)
 	{
@@ -81,7 +72,7 @@
 	    convert_old_list_settings();
     }
 
-    // to run safely as extension, only thing that can be done here is event registration.
+    // to run safely as extension, only thing that should be done here is event registration.
     // see http://my.opera.com/community/forums/topic.dml?id=1621542
     // for userjs doesn't matter, we could init() here no problem.
     function boot()
@@ -91,21 +82,18 @@
 	    return;
 	if (location.hostname == "")	// bad url, opera's error page. 
 	    return;
-	assert(typeof GM_getValue == 'undefined',  // userjs_only
-	       "needs to run as native opera UserJS, won't work as GreaseMonkey script.");
-	if (window.opera.scriptweeder && window.opera.scriptweeder.version_type == 'extension')		// userjs_only
-	{
-	    my_alert("ScriptWeeder extension detected. Currently it has precedence, so UserJS version is not needed.");
-	    return;
-	}
 	
 	setup_event_handlers();
 	window.opera.scriptweeder = new Object();	// external api
 	window.opera.scriptweeder.version = version_number;
 	window.opera.scriptweeder.version_type = version_type;	
-	debug_log("start");	
     }
 
+    debug_log("start");
+        
+    if (forward_to_userjs())  // userjs detected, let it takeover and forward messages to it.
+	return;
+    
     boot();
 
-})(window.document, window.location, window.opera, window.opera.scriptStorage);
+})(window.document, window.location, opera, widget.preferences);

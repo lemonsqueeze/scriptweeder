@@ -218,14 +218,14 @@ function(){   // fake line, keep_editor_happy
     // css used in scriptweeder's iframe
     var style;
     function get_style()
-    {	
+    {
 	if (style)
 	    return style;
 	// use custom style ?
 	var use_custom = (enable_custom_style && !rescue_mode());
 	style = (use_custom ? global_setting('css') : '');
 	style = (style == '' ? builtin_style : style);
-
+	
 	// style patches
 	if (use_custom)
 	    style += '\n' + global_setting('style');
@@ -274,7 +274,7 @@ function(){   // fake line, keep_editor_happy
 	    if (e.offsetTop + e.realheight > main_ui.offsetTop + main_ui.scrollHeight) // bottom clipped
 		height += e.offsetTop + e.realheight - (main_ui.offsetTop + main_ui.scrollHeight);
 	}
-
+	
 	if (menu_shown())	// extra space for menu shadows
 	{
 	    width += 20;

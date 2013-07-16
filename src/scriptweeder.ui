@@ -163,8 +163,6 @@
   <frame id="general_options" title="General">
     <button title="Turn it off to avoid fetching blocked scripts." 
 	    onclick="speculative_parser_onclick">Speculative parser…</button><br>
-    <button title="Enable to control secure pages." 
-	    onclick="userjs_on_https_onclick">userjs on secure pages…</button>
     <select_reload_method></select_reload_method>
     <select_iframe_logic></select_iframe_logic>
     <checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"
@@ -416,6 +414,11 @@
 <widget name="block_inline_scripts" >
   <li id="block_inline_scripts">
     <input type="checkbox"/>Block Inline Scripts
+    <a class="not_loaded" href="https://files.myopera.com/lemonsqueeze/scriptweeder/userjs_needed.html"
+       onclick="link_loader"
+       title="Depending on your setup there may be limitations for inline script blocking in extensions (first script cannot be blocked). Click to find out if you are affected. UserJS version of ScriptWeeder has no problem with this.">
+      <img/>
+    </a>
     <div class="right_item">[-2k]</div>
   </li>
 </widget>
