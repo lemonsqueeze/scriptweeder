@@ -355,6 +355,10 @@ function(){   // fake line, keep_editor_happy
 	var domain = get_domain(host);
 	var i = new_script(url); // iframe really
 
+	stats.iframes++;
+	if (!allowed_iframe(host))
+	    stats.iframes_blocked++;
+	
 	var domain_node = get_domain_node(domain, true);
 	var host_node = get_host_node(host, domain_node, true);
 	host_node.iframes.push(i);
@@ -436,6 +440,10 @@ function(){   // fake line, keep_editor_happy
 
     function add_script(url, host)
     {
+	stats.total++;
+	if (!allowed_host(host))
+	    stats.blocked++;
+	
 	var domain = get_domain(host);
 	var s = new_script(url);
 
@@ -443,7 +451,9 @@ function(){   // fake line, keep_editor_happy
 	var host_node = get_host_node(host, domain_node, true);
 	host_node.scripts.push(s);
 
-	if (in_iframe()) 	// tell parent so it can display script in the menu.
+	// TODO: iframe scripts will show up in the menu only if it's allowed, but when toggling an iframe
+	//       update happens after reload. instant update would be really cool ...
+	if (in_iframe() && mode != 'block_all') 	// tell parent so it can display script in the menu.
 	    window.top.postMessage(msg_header_iframe_script + url, '*');
 	
 	return s;
@@ -528,12 +538,14 @@ function(){   // fake line, keep_editor_happy
     
     /****************************** Handlers **********************************/
 
-    var stats = { blocked: 0,     // no. ext scripts blocked 
-		  loaded: 0,	  // no. ext scripts loaded
-		  total: 0,	  // no. ext scripts
-		  total_size: 0,  // cummulated size of all external scripts
-                  inline: 0,      // no. inline scripts
-		  inline_size: 0  // cummulated size of all inline scripts
+    var stats = { blocked: 0,        // no. ext scripts blocked 
+		  loaded: 0,	     // no. ext scripts loaded
+		  total: 0,	     // no. ext scripts
+		  total_size: 0,     // cummulated size of all external scripts
+                  inline: 0,         // no. inline scripts
+		  inline_size: 0,    // cummulated size of all inline scripts
+		  iframes: 0,
+		  iframes_blocked: 0
                 };
 
     var blocked_script_elements = []; // for reload_script()
@@ -574,16 +586,11 @@ function(){   // fake line, keep_editor_happy
 	
 	var url = e.element.src;
 	var host = url_hostname(url);
-	var allowed = allowed_host(host);
-
+	
 	debug_log("beforeextscript: " + host);	
 	add_script(url, host);
-
-	stats.total++;
-	if (!allowed)
-	    stats.blocked++;
 	
-        if (!allowed)
+        if (!allowed_host(host))
 	    block_script(e);
 	repaint_ui();
     }

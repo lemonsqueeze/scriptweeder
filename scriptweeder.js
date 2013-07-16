@@ -378,6 +378,10 @@
 	var domain = get_domain(host);
 	var i = new_script(url); // iframe really
 
+	stats.iframes++;
+	if (!allowed_iframe(host))
+	    stats.iframes_blocked++;
+	
 	var domain_node = get_domain_node(domain, true);
 	var host_node = get_host_node(host, domain_node, true);
 	host_node.iframes.push(i);
@@ -459,6 +463,10 @@
 
     function add_script(url, host)
     {
+	stats.total++;
+	if (!allowed_host(host))
+	    stats.blocked++;
+	
 	var domain = get_domain(host);
 	var s = new_script(url);
 
@@ -466,7 +474,9 @@
 	var host_node = get_host_node(host, domain_node, true);
 	host_node.scripts.push(s);
 
-	if (in_iframe()) 	// tell parent so it can display script in the menu.
+	// TODO: iframe scripts will show up in the menu only if it's allowed, but when toggling an iframe
+	//       update happens after reload. instant update would be really cool ...
+	if (in_iframe() && mode != 'block_all') 	// tell parent so it can display script in the menu.
 	    window.top.postMessage(msg_header_iframe_script + url, '*');
 	
 	return s;
@@ -551,12 +561,14 @@
     
     /****************************** Handlers **********************************/
 
-    var stats = { blocked: 0,     // no. ext scripts blocked 
-		  loaded: 0,	  // no. ext scripts loaded
-		  total: 0,	  // no. ext scripts
-		  total_size: 0,  // cummulated size of all external scripts
-                  inline: 0,      // no. inline scripts
-		  inline_size: 0  // cummulated size of all inline scripts
+    var stats = { blocked: 0,        // no. ext scripts blocked 
+		  loaded: 0,	     // no. ext scripts loaded
+		  total: 0,	     // no. ext scripts
+		  total_size: 0,     // cummulated size of all external scripts
+                  inline: 0,         // no. inline scripts
+		  inline_size: 0,    // cummulated size of all inline scripts
+		  iframes: 0,
+		  iframes_blocked: 0
                 };
 
     var blocked_script_elements = []; // for reload_script()
@@ -597,16 +609,11 @@
 	
 	var url = e.element.src;
 	var host = url_hostname(url);
-	var allowed = allowed_host(host);
-
+	
 	debug_log("beforeextscript: " + host);	
 	add_script(url, host);
-
-	stats.total++;
-	if (!allowed)
-	    stats.blocked++;
 	
-        if (!allowed)
+        if (!allowed_host(host))
 	    block_script(e);
 	repaint_ui();
     }
@@ -897,7 +904,16 @@
 	local_hosts = parent_hosts;			// use parent settings, it knows about our scripts
 	return o;
     }
-    
+
+    // for main window use, iframes can't use that
+    function allowed_iframe(host)
+    {
+	if (iframe_logic == 'block_all')
+	    return false;
+	if (iframe_logic == 'allow')
+	    return true;
+	return allowed_host(host);
+    }
     
 
     /************************* Loading/Saving Settings ************************/
@@ -2979,8 +2995,7 @@
 
     function script_detail_iframe_status(w, hn, s)
     {
-	var allowed = allowed_host(hn.name);
-	var iframes = iframes_info(hn, allowed);
+	var iframes = iframes_info(hn);
 	if (iframes.allowed)	// iframes never null here
 	    return 'iframe';
 	return 'blocked_iframe';
@@ -3352,7 +3367,7 @@
 	update_host_table(main_ui); // preserves current scroll position
     };
 
-    function iframes_info(hn, allowed)
+    function iframes_info(hn)
     {
 	if (!hn.iframes || !hn.iframes.length)
 	    return null;
@@ -3361,11 +3376,7 @@
 	if (iframe_logic != 'filter')
 	    title += ". use 'filter' iframe setting to block/allow in the menu.";
 	
-	if (iframe_logic == 'block_all')
-	    allowed = false;
-	if (iframe_logic == 'allow')
-	    allowed = true;
-	return {count:n, title:title, allowed:allowed};
+	return {count:n, title:title, allowed:allowed_iframe(hn.name)};
     }
 
     function not_loaded_tooltip(hn, allowed)
@@ -3411,7 +3422,7 @@
 	    var not_loaded = not_loaded_tooltip(hn, allowed);
 	    var count = hn.scripts.length;
 	    var helper = hn.helper_host;
-	    var iframes = iframes_info(hn, allowed);
+	    var iframes = iframes_info(hn);
 
 	    var tr = new_widget("host_table_row");
 	    tr = tr.firstChild.firstChild; // skip dummy <table> and <tbody> tags
@@ -3516,18 +3527,15 @@
 
     function main_button_tooltip()
     {
-	var size = (!stats.loaded ? "" : " (" + get_size_kb(stats.total_size) + "k)");
-	var tooltip = (stats.loaded + "/" + stats.total + " scripts loaded" +
-		       size + ", " + inline_scripts_loaded_tooltip());
-	return tooltip;
-    }
-
-    function inline_scripts_loaded_tooltip()
-    {
-	if (block_inline_scripts)
-	    return "inline: 0";
-        return ("inline: " + stats.inline +
-		" (" + get_size_kb(stats.inline_size) + "k)");
+	var size = stats.total_size + (block_inline_scripts ? 0 : stats.inline_size);
+	size = (!size ? "" : " (" + get_size_kb(size) + "k total)");
+	var s = "";
+	if (stats.total)
+	    s += stats.loaded + "/" + stats.total + " scripts";
+	if (!block_inline_scripts && stats.inline)
+	    s += ((s != "" ? ", " : "") + stats.inline + " inline");
+	s = (s == "" ? "none" : s);
+	return "loaded: " + s + size;
     }
 
     function main_button_init(div)
@@ -3628,23 +3636,35 @@
     // internal use
     function badge_object()
     {
-	var n = 0, tooltip = null;
+	var n = 0, s = null; // number and tooltip
 	var total = stats.total;
 	var klass = badge_logic;
 	
 	if (badge_logic == 'nloaded')
 	{
-	    n = total - stats.loaded;
-	    tooltip = (n + " scripts not loaded" +
-		       (!block_inline_scripts ? "." : " + " + stats.inline + " inline."));
-	    // tooltip = n + "/" + total + " scripts not loaded.";
+	    n = (total - stats.loaded) + stats.iframes_blocked + (block_inline_scripts ? stats.inline : 0);
+	    s = "";
+	    if (total - stats.loaded)
+		s += (total - stats.loaded) + " scripts";
+	    if (block_inline_scripts && stats.inline)
+		s += (s != "" ? ", " : "") + stats.inline + " inline";
+	    if (stats.iframes_blocked)
+		s += (s != "" ? ", " : "") + stats.iframes_blocked + " iframes";
+	    s = (s == "" ? "none" : s);	    
+	    s = "not loaded: " + s + ".";
 	}	  
 	if (badge_logic == 'nblocked')
 	{
-	    n = stats.blocked;
-	    tooltip = (n + " scripts blocked" +
-		       (!block_inline_scripts ? "." : " + " + stats.inline + " inline."));
-	    // tooltip = n + "/" + total + " scripts blocked.";	    
+	    n = stats.blocked + stats.iframes_blocked + (block_inline_scripts ? stats.inline : 0);
+	    s = "";
+	    if (stats.blocked)
+		s += stats.blocked + " scripts";
+	    if (block_inline_scripts && stats.inline)
+		s += (s != "" ? ", " : "") + stats.inline + " inline";
+	    if (stats.iframes_blocked)
+		s += (s != "" ? ", " : "") + stats.iframes_blocked + " iframes";
+	    s = (s == "" ? "none" : s);	    
+	    s = "blocked: " + s + ".";
 	}
 	// fix color for n == 0
 	if (n == 0 && (badge_logic == 'nloaded' || badge_logic == 'nblocked'))
@@ -3659,7 +3679,7 @@
 	{
 	    var size = stats.total_size + stats.inline_size;
 	    n = get_size_kb(size / 100, true);
-	    tooltip = get_size_kb(size) + "k loaded.";
+	    s = get_size_kb(size) + "k loaded.";
 	    klass = 'heavy';
 	    if (n <= 1)
 		klass = 'medium';
@@ -3667,11 +3687,7 @@
 		klass = 'light';
 	}	
 	
-	return {
-	    className: klass,
-	    n: n,
-	    tooltip: tooltip
-	};
+	return { className: klass, n: n, tooltip: s };
     }
     
     
@@ -4020,7 +4036,7 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
       layout: '<widget name="select_button_display" init><table class="dropdown_setting"><tr><td>Button display</td><td><select><option value="y">Toolbar</option><option value="n">Page</option></select></td></tr></table></widget>' },
    'select_badge_logic' : {
       init: select_badge_logic_init,
-      layout: '<widget name="select_badge_logic" init><table class="dropdown_setting"  	 title="Number displayed in ScriptWeeder button."><tr><td>Badge</td><td><select><option value="off">None</option><option value="nloaded">Scripts not loaded</option><option value="loaded">Scripts loaded</option><option value="nblocked">Scripts we block</option><option value="weight">Scripts weight</option></select></td></tr></table></widget>' },
+      layout: '<widget name="select_badge_logic" init><table class="dropdown_setting"  	 title="Number displayed in ScriptWeeder button."><tr><td>Badge</td><td><select><option value="off">None</option><option value="nloaded">Scripts not loaded</option><option value="loaded">Scripts loaded</option><option value="nblocked">Scripts we block</option><option value="weight">Script weight</option></select></td></tr></table></widget>' },
    'select_iframe_logic' : {
       init: select_iframe_logic_init,
       layout: '<widget name="select_iframe_logic" init><table id="iframe_logic" class="dropdown_setting"   	 title="Allowed iframes run in the current mode, blocked iframes run in Block All mode. The policy decides which iframes are allowed: [Block] no iframes allowed. [Filter] iframe allowed if host allowed in menu. [Allow] all iframes are allowed (permissive)."><tr><td>Iframe policy</td><td><select><option value="block_all">Block</option><option value="filter">Filter</option><option value="allow">Allow</option></select></td></tr></table></widget>' },

@@ -165,6 +165,15 @@ function(){   // fake line, keep_editor_happy
 	local_hosts = parent_hosts;			// use parent settings, it knows about our scripts
 	return o;
     }
-    
+
+    // for main window use, iframes can't use that
+    function allowed_iframe(host)
+    {
+	if (iframe_logic == 'block_all')
+	    return false;
+	if (iframe_logic == 'allow')
+	    return true;
+	return allowed_host(host);
+    }
     
 }   // keep_editor_happy

@@ -650,8 +650,7 @@ function(){   // fake line, keep_editor_happy
 
     function script_detail_iframe_status(w, hn, s)
     {
-	var allowed = allowed_host(hn.name);
-	var iframes = iframes_info(hn, allowed);
+	var iframes = iframes_info(hn);
 	if (iframes.allowed)	// iframes never null here
 	    return 'iframe';
 	return 'blocked_iframe';
@@ -1023,7 +1022,7 @@ function(){   // fake line, keep_editor_happy
 	update_host_table(main_ui); // preserves current scroll position
     };
 
-    function iframes_info(hn, allowed)
+    function iframes_info(hn)
     {
 	if (!hn.iframes || !hn.iframes.length)
 	    return null;
@@ -1032,11 +1031,7 @@ function(){   // fake line, keep_editor_happy
 	if (iframe_logic != 'filter')
 	    title += ". use 'filter' iframe setting to block/allow in the menu.";
 	
-	if (iframe_logic == 'block_all')
-	    allowed = false;
-	if (iframe_logic == 'allow')
-	    allowed = true;
-	return {count:n, title:title, allowed:allowed};
+	return {count:n, title:title, allowed:allowed_iframe(hn.name)};
     }
 
     function not_loaded_tooltip(hn, allowed)
@@ -1082,7 +1077,7 @@ function(){   // fake line, keep_editor_happy
 	    var not_loaded = not_loaded_tooltip(hn, allowed);
 	    var count = hn.scripts.length;
 	    var helper = hn.helper_host;
-	    var iframes = iframes_info(hn, allowed);
+	    var iframes = iframes_info(hn);
 
 	    var tr = new_widget("host_table_row");
 	    tr = tr.firstChild.firstChild; // skip dummy <table> and <tbody> tags
@@ -1187,18 +1182,15 @@ function(){   // fake line, keep_editor_happy
 
     function main_button_tooltip()
     {
-	var size = (!stats.loaded ? "" : " (" + get_size_kb(stats.total_size) + "k)");
-	var tooltip = (stats.loaded + "/" + stats.total + " scripts loaded" +
-		       size + ", " + inline_scripts_loaded_tooltip());
-	return tooltip;
-    }
-
-    function inline_scripts_loaded_tooltip()
-    {
-	if (block_inline_scripts)
-	    return "inline: 0";
-        return ("inline: " + stats.inline +
-		" (" + get_size_kb(stats.inline_size) + "k)");
+	var size = stats.total_size + (block_inline_scripts ? 0 : stats.inline_size);
+	size = (!size ? "" : " (" + get_size_kb(size) + "k total)");
+	var s = "";
+	if (stats.total)
+	    s += stats.loaded + "/" + stats.total + " scripts";
+	if (!block_inline_scripts && stats.inline)
+	    s += ((s != "" ? ", " : "") + stats.inline + " inline");
+	s = (s == "" ? "none" : s);
+	return "loaded: " + s + size;
     }
 
     function main_button_init(div)
@@ -1299,23 +1291,35 @@ function(){   // fake line, keep_editor_happy
     // internal use
     function badge_object()
     {
-	var n = 0, tooltip = null;
+	var n = 0, s = null; // number and tooltip
 	var total = stats.total;
 	var klass = badge_logic;
 	
 	if (badge_logic == 'nloaded')
 	{
-	    n = total - stats.loaded;
-	    tooltip = (n + " scripts not loaded" +
-		       (!block_inline_scripts ? "." : " + " + stats.inline + " inline."));
-	    // tooltip = n + "/" + total + " scripts not loaded.";
+	    n = (total - stats.loaded) + stats.iframes_blocked + (block_inline_scripts ? stats.inline : 0);
+	    s = "";
+	    if (total - stats.loaded)
+		s += (total - stats.loaded) + " scripts";
+	    if (block_inline_scripts && stats.inline)
+		s += (s != "" ? ", " : "") + stats.inline + " inline";
+	    if (stats.iframes_blocked)
+		s += (s != "" ? ", " : "") + stats.iframes_blocked + " iframes";
+	    s = (s == "" ? "none" : s);	    
+	    s = "not loaded: " + s + ".";
 	}	  
 	if (badge_logic == 'nblocked')
 	{
-	    n = stats.blocked;
-	    tooltip = (n + " scripts blocked" +
-		       (!block_inline_scripts ? "." : " + " + stats.inline + " inline."));
-	    // tooltip = n + "/" + total + " scripts blocked.";	    
+	    n = stats.blocked + stats.iframes_blocked + (block_inline_scripts ? stats.inline : 0);
+	    s = "";
+	    if (stats.blocked)
+		s += stats.blocked + " scripts";
+	    if (block_inline_scripts && stats.inline)
+		s += (s != "" ? ", " : "") + stats.inline + " inline";
+	    if (stats.iframes_blocked)
+		s += (s != "" ? ", " : "") + stats.iframes_blocked + " iframes";
+	    s = (s == "" ? "none" : s);	    
+	    s = "blocked: " + s + ".";
 	}
 	// fix color for n == 0
 	if (n == 0 && (badge_logic == 'nloaded' || badge_logic == 'nblocked'))
@@ -1330,19 +1334,15 @@ function(){   // fake line, keep_editor_happy
 	{
 	    var size = stats.total_size + stats.inline_size;
 	    n = get_size_kb(size / 100, true);
-	    tooltip = get_size_kb(size) + "k loaded.";
+	    s = get_size_kb(size) + "k loaded.";
 	    klass = 'heavy';
 	    if (n <= 1)
 		klass = 'medium';
 	    if (n == 0)
 		klass = 'light';
-	}	
+	}
 	
-	return {
-	    className: klass,
-	    n: n,
-	    tooltip: tooltip
-	};
+	return { className: klass, n: n, tooltip: s };
     }
     
     

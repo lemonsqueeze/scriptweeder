@@ -254,7 +254,7 @@
       <option value="nloaded">Scripts not loaded</option>
       <option value="loaded">Scripts loaded</option>
       <option value="nblocked">Scripts we block</option>
-      <option value="weight">Scripts weight</option>
+      <option value="weight">Script weight</option>
     </select></td>
   </tr></table>
 </widget>
