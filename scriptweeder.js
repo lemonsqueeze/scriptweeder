@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Jul 16 2013
+// @published Jul 21 2013
 // ==/UserScript==
 
 
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.8";
     var version_type = "userjs";
-    var version_date = "Jul 16 2013";
+    var version_date = "Jul 21 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -1380,7 +1380,7 @@
 	
 	var o = badge_object();
 	var needed = (badge_logic != 'off');
-	var status = (needed ? o.n : 'off');
+	var status = (needed ? o.n + o.tooltip : 'off');
 	if (!force && extension_button_badge == status) // already in the right state
 	    return;
 
@@ -2214,6 +2214,12 @@
     function is_prefix(p, str)
     {
 	return (str.slice(0, p.length) == p);
+    }
+
+    // make "n items" messages, adding an 's' if needed
+    function count_item(n, name)
+    {
+	return n + " " + name + (n != 1 ? "s" : "");
     }
     
     /**************************** Misc utils *******************************/
@@ -3442,7 +3448,6 @@
 		tr.childNodes[4].className += " helper";
 	    if (iframes)
 	    {
-		count += iframes.count;
 		var c = (iframes.allowed ? 'iframe' : 'blocked_iframe');
 		tr.childNodes[5].className += " " + c;
 		tr.childNodes[5].title = iframes.title;
@@ -3645,11 +3650,11 @@
 	    n = (total - stats.loaded) + stats.iframes_blocked + (block_inline_scripts ? stats.inline : 0);
 	    s = "";
 	    if (total - stats.loaded)
-		s += (total - stats.loaded) + " scripts";
+		s += count_item(total - stats.loaded, "script");
 	    if (block_inline_scripts && stats.inline)
 		s += (s != "" ? ", " : "") + stats.inline + " inline";
 	    if (stats.iframes_blocked)
-		s += (s != "" ? ", " : "") + stats.iframes_blocked + " iframes";
+		s += (s != "" ? ", " : "") + count_item(stats.iframes_blocked, "iframe");
 	    s = (s == "" ? "none" : s);	    
 	    s = "not loaded: " + s + ".";
 	}	  
@@ -3658,11 +3663,11 @@
 	    n = stats.blocked + stats.iframes_blocked + (block_inline_scripts ? stats.inline : 0);
 	    s = "";
 	    if (stats.blocked)
-		s += stats.blocked + " scripts";
+		s += count_item(stats.blocked, "script");
 	    if (block_inline_scripts && stats.inline)
 		s += (s != "" ? ", " : "") + stats.inline + " inline";
 	    if (stats.iframes_blocked)
-		s += (s != "" ? ", " : "") + stats.iframes_blocked + " iframes";
+		s += (s != "" ? ", " : "") + count_item(stats.iframes_blocked, "iframe");
 	    s = (s == "" ? "none" : s);	    
 	    s = "blocked: " + s + ".";
 	}
@@ -3672,8 +3677,8 @@
 	
 	if (badge_logic == 'loaded')
 	{
-	    n = stats.loaded;
-	    // keep main button tooltip
+	    n = stats.loaded + (!block_inline_scripts ? stats.inline : 0);
+	    s = main_button_tooltip();
 	}
 	if (badge_logic == 'weight')
 	{
@@ -3685,7 +3690,7 @@
 		klass = 'medium';
 	    if (n == 0)
 		klass = 'light';
-	}	
+	}
 	
 	return { className: klass, n: n, tooltip: s };
     }

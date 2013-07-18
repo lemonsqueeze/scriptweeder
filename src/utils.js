@@ -347,6 +347,12 @@ function(){   // fake line, keep_editor_happy
     {
 	return (str.slice(0, p.length) == p);
     }
+
+    // make "n items" messages, adding an 's' if needed
+    function item_count(n, name)
+    {
+	return n + " " + name + (n != 1 ? "s" : "");
+    }
     
     /**************************** Misc utils *******************************/
 

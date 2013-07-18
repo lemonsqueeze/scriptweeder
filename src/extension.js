@@ -94,7 +94,7 @@ function(){   // fake line, keep_editor_happy
 	
 	var o = badge_object();
 	var needed = (badge_logic != 'off');
-	var status = (needed ? o.n : 'off');
+	var status = (needed ? o.n + o.tooltip : 'off');
 	if (!force && extension_button_badge == status) // already in the right state
 	    return;
 

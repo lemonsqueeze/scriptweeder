@@ -1097,7 +1097,6 @@ function(){   // fake line, keep_editor_happy
 		tr.childNodes[4].className += " helper";
 	    if (iframes)
 	    {
-		count += iframes.count;
 		var c = (iframes.allowed ? 'iframe' : 'blocked_iframe');
 		tr.childNodes[5].className += " " + c;
 		tr.childNodes[5].title = iframes.title;
@@ -1300,11 +1299,11 @@ function(){   // fake line, keep_editor_happy
 	    n = (total - stats.loaded) + stats.iframes_blocked + (block_inline_scripts ? stats.inline : 0);
 	    s = "";
 	    if (total - stats.loaded)
-		s += (total - stats.loaded) + " scripts";
+		s += item_count(total - stats.loaded, "script");
 	    if (block_inline_scripts && stats.inline)
 		s += (s != "" ? ", " : "") + stats.inline + " inline";
 	    if (stats.iframes_blocked)
-		s += (s != "" ? ", " : "") + stats.iframes_blocked + " iframes";
+		s += (s != "" ? ", " : "") + item_count(stats.iframes_blocked, "iframe");
 	    s = (s == "" ? "none" : s);	    
 	    s = "not loaded: " + s + ".";
 	}	  
@@ -1313,11 +1312,11 @@ function(){   // fake line, keep_editor_happy
 	    n = stats.blocked + stats.iframes_blocked + (block_inline_scripts ? stats.inline : 0);
 	    s = "";
 	    if (stats.blocked)
-		s += stats.blocked + " scripts";
+		s += item_count(stats.blocked, "script");
 	    if (block_inline_scripts && stats.inline)
 		s += (s != "" ? ", " : "") + stats.inline + " inline";
 	    if (stats.iframes_blocked)
-		s += (s != "" ? ", " : "") + stats.iframes_blocked + " iframes";
+		s += (s != "" ? ", " : "") + item_count(stats.iframes_blocked, "iframe");
 	    s = (s == "" ? "none" : s);	    
 	    s = "blocked: " + s + ".";
 	}
@@ -1327,8 +1326,8 @@ function(){   // fake line, keep_editor_happy
 	
 	if (badge_logic == 'loaded')
 	{
-	    n = stats.loaded;
-	    // keep main button tooltip
+	    n = stats.loaded + (!block_inline_scripts ? stats.inline : 0);
+	    s = main_button_tooltip();
 	}
 	if (badge_logic == 'weight')
 	{
