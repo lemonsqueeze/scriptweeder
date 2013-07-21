@@ -1146,6 +1146,8 @@ function(){   // fake line, keep_editor_happy
 	t.style = 'max-height:inherit;';
 	
 	var win_height = document.documentElement.clientHeight;
+	if (document.compatMode == 'BackCompat')  // quirks mode
+	    win_height = document.body.clientHeight;
 	var ui_height = main_ui.offsetHeight;	
 	if (ui_height <= win_height)
 	    return;

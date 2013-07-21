@@ -2217,7 +2217,7 @@
     }
 
     // make "n items" messages, adding an 's' if needed
-    function count_item(n, name)
+    function item_count(n, name)
     {
 	return n + " " + name + (n != 1 ? "s" : "");
     }
@@ -3497,6 +3497,8 @@
 	t.style = 'max-height:inherit;';
 	
 	var win_height = document.documentElement.clientHeight;
+	if (document.compatMode == 'BackCompat')  // quirks mode
+	    win_height = document.body.clientHeight;
 	var ui_height = main_ui.offsetHeight;	
 	if (ui_height <= win_height)
 	    return;
@@ -3650,11 +3652,11 @@
 	    n = (total - stats.loaded) + stats.iframes_blocked + (block_inline_scripts ? stats.inline : 0);
 	    s = "";
 	    if (total - stats.loaded)
-		s += count_item(total - stats.loaded, "script");
+		s += item_count(total - stats.loaded, "script");
 	    if (block_inline_scripts && stats.inline)
 		s += (s != "" ? ", " : "") + stats.inline + " inline";
 	    if (stats.iframes_blocked)
-		s += (s != "" ? ", " : "") + count_item(stats.iframes_blocked, "iframe");
+		s += (s != "" ? ", " : "") + item_count(stats.iframes_blocked, "iframe");
 	    s = (s == "" ? "none" : s);	    
 	    s = "not loaded: " + s + ".";
 	}	  
@@ -3663,11 +3665,11 @@
 	    n = stats.blocked + stats.iframes_blocked + (block_inline_scripts ? stats.inline : 0);
 	    s = "";
 	    if (stats.blocked)
-		s += count_item(stats.blocked, "script");
+		s += item_count(stats.blocked, "script");
 	    if (block_inline_scripts && stats.inline)
 		s += (s != "" ? ", " : "") + stats.inline + " inline";
 	    if (stats.iframes_blocked)
-		s += (s != "" ? ", " : "") + count_item(stats.iframes_blocked, "iframe");
+		s += (s != "" ? ", " : "") + item_count(stats.iframes_blocked, "iframe");
 	    s = (s == "" ? "none" : s);	    
 	    s = "blocked: " + s + ".";
 	}

@@ -1,11 +1,19 @@
 [ TODO ]
 
-  - hide blocked iframe scripts
-  - way to distinguish iframe scripts ?
+--------------------------------------------------------------------------
+[ Ideas ]
 
+  Feature Requests:
+  - way to copy details menu content to clipboard
   - control individual scripts ?
+
+  Iframes:
+  - account for iframes' inline scripts ?
+  - way to distinguish iframe scripts from page scripts ?
+
+  - FIXME: back/forward button -> toolbar button doesn't get updated
   - detect + settings redirect for userjs on https ?
-  - way to show menu where toolbar button is ?
+  - way to display menu where toolbar button is ?
   - page script can manipulate ui ! block syn events ?
   - bold option for small fonts ?
   - check wiki -> gollum [[_]]
@@ -15,20 +23,14 @@
 
   - other language support
 
-  - set scrollbar on htable: calc max-height
-
   - Check what happens for http redirect on script url
     Which url shows up ??
-
-
 
 --------------------------------------------------------------------------
 
 [ Extension <-> userjs interaction ]
 
-  - prevent userjs lockout
   - register userjs, detect outside script interfering
-  - check ext/userjs version
   - display status in options ?
   - fix warning when both end up running
 
@@ -48,6 +50,10 @@
 --------------------------------------------------------------------------
 
 [ FIXME ]
+
+  - weird !!
+    tests/iframes/3rd_party_script.html
+    with ext + userjs, switching page->toolbar, ui shows up at the bottom !
 
   - fix reload from cache !
     cache reload doesn't work sometimes, reload for real after timer ?
@@ -74,21 +80,20 @@ Sites:
   - http://www.instructables.com/id/Very-simple-PWM-with-555Modulate-every-thing/
     what is this data:javascript ... stuff ??
 
-  - http://precarioussecurity.blogspot.fr/2012/03/simulated-man-in-middle-with-privoxy.html
-    ui not showing up!!
-
 ----------------------------------------------------------------------------  
 
 [ IDEAS ]
 
-- placeholder icon for blocked iframes ?
+- page placeholder icon for blocked iframes ?
 - use xhtml doctype, this way we can use real xml for ui layout
 - can we use css for the layout as well ??
 - frameset shows ui everywhere ... forward to biggest frame ?
 
 Features:
-- options window, notebook style
+- better way to find out about big inline scripts
+- options window, notebook style ?
 - animate/display something on main button to notify about changes ?
+  (-> badge kindof does it now ...)
   say flash, or blink, small popup, tooltip ...
   (especially important when new script is added after DOM loaded)
 
@@ -101,14 +106,13 @@ Features:
   and javascript urls
 - option to build database of scripts used by websites ?
   would be useful for testing
-- way to find out about dns aliases in JS ?
+- way to find out about DNS aliases in JS ?
 - shut the door option ? block outgoing requests once DOM loaded !!
-- show big inline scripts, allow to block them!
+- Detect / block ajax ?
 - way to make it work when using offline with mht files ?
   (permission problem creating iframe ui...)
 
 - XSS ??
-- Detect / block ajax ?
 - display info on startup ? in bottom bar a la noscript or with timer ?
 
 --------------------------------------------------------
