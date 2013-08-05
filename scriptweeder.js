@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Jul 21 2013
+// @published Aug 05 2013
 // ==/UserScript==
 
 
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.8";
     var version_type = "userjs";
-    var version_date = "Jul 21 2013";
+    var version_date = "Aug 05 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -2952,15 +2952,20 @@
 	};	
     }
 
+    function set_badge_logic(value)
+    {
+	    badge_logic = value;
+	    set_global_setting('badge_logic', value);
+	    update_extension_button(true); // force so tooltip gets updated
+    }
+    
     function select_badge_logic_init(w)
     {
 	var select = w.querySelector('select');
 	select.options.value = badge_logic;
 	select.onchange = function(n)
 	{
-	    badge_logic = this.value;
-	    set_global_setting('badge_logic', this.value);
-	    update_extension_button(true); // force so tooltip gets updated
+	    set_badge_logic(this.value);
 	    need_repaint = true;
 	};       
     }    
@@ -3591,6 +3596,11 @@
 	    repaint_ui_now();
 	    return;
 	}
+	if (e.shiftKey) // shift+click -> rotate badge
+	{
+	    rotate_badge_logic();
+	    return;
+	}
 	    
 	// cycle through the modes    	    
 	if (mode == 'block_all')      set_mode('filtered');
@@ -3638,6 +3648,17 @@
 	    img.className = 'd' + n[i];
 	    w.appendChild(img);
 	}
+    }
+
+    function rotate_badge_logic()
+    {
+	if (badge_logic == 'nloaded')		badge_logic = 'loaded';
+	else if (badge_logic == 'loaded')	badge_logic = 'nblocked';
+	else if (badge_logic == 'nblocked')	badge_logic = 'weight';
+	else if (badge_logic == 'weight')	badge_logic = 'off';
+	else if (badge_logic == 'off')		badge_logic = 'nloaded';
+	set_badge_logic(badge_logic);
+	repaint_ui_now();
     }
     
     // internal use
@@ -4043,7 +4064,7 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
       layout: '<widget name="select_button_display" init><table class="dropdown_setting"><tr><td>Button display</td><td><select><option value="y">Toolbar</option><option value="n">Page</option></select></td></tr></table></widget>' },
    'select_badge_logic' : {
       init: select_badge_logic_init,
-      layout: '<widget name="select_badge_logic" init><table class="dropdown_setting"  	 title="Number displayed in ScriptWeeder button."><tr><td>Badge</td><td><select><option value="off">None</option><option value="nloaded">Scripts not loaded</option><option value="loaded">Scripts loaded</option><option value="nblocked">Scripts we block</option><option value="weight">Script weight</option></select></td></tr></table></widget>' },
+      layout: '<widget name="select_badge_logic" init><table class="dropdown_setting"  	 title="Number displayed in ScriptWeeder button.\nCan also use shift+click on main button to rotate options."><tr><td>Badge</td><td><select><option value="off">None</option><option value="nloaded">Scripts not loaded</option><option value="loaded">Scripts loaded</option><option value="nblocked">Scripts we block</option><option value="weight">Script weight</option></select></td></tr></table></widget>' },
    'select_iframe_logic' : {
       init: select_iframe_logic_init,
       layout: '<widget name="select_iframe_logic" init><table id="iframe_logic" class="dropdown_setting"   	 title="Allowed iframes run in the current mode, blocked iframes run in Block All mode. The policy decides which iframes are allowed: [Block] no iframes allowed. [Filter] iframe allowed if host allowed in menu. [Allow] all iframes are allowed (permissive)."><tr><td>Iframe policy</td><td><select><option value="block_all">Block</option><option value="filter">Filter</option><option value="allow">Allow</option></select></td></tr></table></widget>' },

@@ -247,7 +247,7 @@
 
 <widget name="select_badge_logic" init>
   <table class="dropdown_setting"
-	 title="Number displayed in ScriptWeeder button."><tr>
+	 title="Number displayed in ScriptWeeder button. Can also use shift+click on main button to rotate options."><tr>
     <td>Badge</td>
     <td><select>
       <option value="off">None</option>

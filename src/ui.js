@@ -601,15 +601,20 @@ function(){   // fake line, keep_editor_happy
 	};	
     }
 
+    function set_badge_logic(value)
+    {
+	    badge_logic = value;
+	    set_global_setting('badge_logic', value);
+	    update_extension_button(true); // force so tooltip gets updated
+    }
+    
     function select_badge_logic_init(w)
     {
 	var select = w.querySelector('select');
 	select.options.value = badge_logic;
 	select.onchange = function(n)
 	{
-	    badge_logic = this.value;
-	    set_global_setting('badge_logic', this.value);
-	    update_extension_button(true); // force so tooltip gets updated
+	    set_badge_logic(this.value);
 	    need_repaint = true;
 	};       
     }    
@@ -1240,6 +1245,11 @@ function(){   // fake line, keep_editor_happy
 	    repaint_ui_now();
 	    return;
 	}
+	if (e.shiftKey) // shift+click -> rotate badge
+	{
+	    rotate_badge_logic();
+	    return;
+	}
 	    
 	// cycle through the modes    	    
 	if (mode == 'block_all')      set_mode('filtered');
@@ -1287,6 +1297,17 @@ function(){   // fake line, keep_editor_happy
 	    img.className = 'd' + n[i];
 	    w.appendChild(img);
 	}
+    }
+
+    function rotate_badge_logic()
+    {
+	if (badge_logic == 'nloaded')		badge_logic = 'loaded';
+	else if (badge_logic == 'loaded')	badge_logic = 'nblocked';
+	else if (badge_logic == 'nblocked')	badge_logic = 'weight';
+	else if (badge_logic == 'weight')	badge_logic = 'off';
+	else if (badge_logic == 'off')		badge_logic = 'nloaded';
+	set_badge_logic(badge_logic);
+	repaint_ui_now();
     }
     
     // internal use
