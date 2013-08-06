@@ -143,7 +143,7 @@ function(){   // fake line, keep_editor_happy
     function hosts_setting()
     {
 	var hosts = setting('hosts');
-	if (hosts == '') // current host allowed by default in filtered mode
+	if (hosts == '' && allow_current_host) // current host allowed by default in filtered mode
 	    hosts = current_host;
 	return ' ' + hosts;
     }
@@ -152,10 +152,13 @@ function(){   // fake line, keep_editor_happy
     {
 	assert(!in_iframe() || topwin_cant_display, "Use main menu to change hosts in iframes");
 	hosts = hosts.replace(/^ */, '');
-	if (hosts == '')
-	    hosts = ' '; // can't store empty string, would mean current_host.
-	if (hosts == current_host)
-	    hosts = '';
+	if (allow_current_host)
+	{
+	    if (hosts == '')
+		hosts = ' '; // can't store empty string, would mean current_host.
+	    if (hosts == current_host)
+		hosts = '';
+	}
 	set_setting('hosts', hosts);
     }
 

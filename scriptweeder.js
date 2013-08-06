@@ -120,6 +120,8 @@
 	    startup_checks();
 
 	init_filter();
+	if (!allowed_host(current_host))  // block inline scripts if current_host not allowed
+            block_inline_scripts = true;	
     }
 
     
@@ -451,6 +453,8 @@
 	n.name = host;
 	n.scripts = [];
 	n.iframes = [];
+	n.inline = 0;
+	n.inline_size = 0;
 	n.helper_host = relaxed_mode_helper_host(host, domain_node); // caching
 	hosts.push(n);
 	return n;
@@ -461,6 +465,17 @@
 	domain_nodes = [];
     }
 
+    function add_inline_script(code)
+    {
+	stats.inline++;
+	stats.inline_size += code.length;
+	
+	var dn = get_domain_node(current_domain, true);
+	var hn = get_host_node(current_host, dn, true);		// ensure host node is created so it shows up in menu
+	hn.inline++;
+	hn.inline_size += code.length;
+    }
+    
     function add_script(url, host)
     {
 	stats.total++;
@@ -592,8 +607,7 @@
 	
 	check_init();
 	debug_log("beforescript");
-	stats.inline++;
-	stats.inline_size += e.element.text.length;
+	add_inline_script(e.element.text);
 	
 	repaint_ui();
 	
@@ -772,12 +786,14 @@
 
     var whitelist;
     var helper_blacklist;
+    var allow_current_host;		// current host allowed by default in filtered mode ?
     var local_hosts;			// hosts allowed for this site/url/domain
 
     function init_filter()
     {
 	whitelist = deserialize_name_hash(global_setting('whitelist'));
 	helper_blacklist = deserialize_name_hash(global_setting('helper_blacklist'));
+	allow_current_host = global_bool_setting('allow_current_host', true);
 	local_hosts = hosts_setting();
     }	
     
@@ -1059,7 +1075,7 @@
     function hosts_setting()
     {
 	var hosts = setting('hosts');
-	if (hosts == '') // current host allowed by default in filtered mode
+	if (hosts == '' && allow_current_host) // current host allowed by default in filtered mode
 	    hosts = current_host;
 	return ' ' + hosts;
     }
@@ -1068,10 +1084,13 @@
     {
 	assert(!in_iframe() || topwin_cant_display, "Use main menu to change hosts in iframes");
 	hosts = hosts.replace(/^ */, '');
-	if (hosts == '')
-	    hosts = ' '; // can't store empty string, would mean current_host.
-	if (hosts == current_host)
-	    hosts = '';
+	if (allow_current_host)
+	{
+	    if (hosts == '')
+		hosts = ' '; // can't store empty string, would mean current_host.
+	    if (hosts == current_host)
+		hosts = '';
+	}
 	set_setting('hosts', hosts);
     }
 
@@ -2891,6 +2910,12 @@
 	need_reload = true;
     }
 
+    function toggle_allow_current_host(event)
+    {
+	allow_current_host = toggle_global_setting(this, allow_current_host, 'allow_current_host');
+	need_reload = true;
+    }    
+
     function toggle_autohide_main_button(event)
     {
 	autohide_main_button = toggle_global_setting(this, autohide_main_button, 'autohide_main_button');
@@ -3030,6 +3055,21 @@
 	var status = (iframe ? script_detail_iframe_status(w, hn, s) : script_detail_status(w, h, s));
 	w.className += " " + status;       
     }
+
+    function inline_script_detail_init(w, hn)
+    {
+	var h = hn.name;
+	var img = w.firstChild;
+	var link = img.nextSibling;
+
+	var label = hn.inline + ' inline';
+	
+	link.innerText = label;
+	link.title = get_size_kb(hn.inline_size) + 'k';
+	//link.href = s.url;
+	var status = (block_inline_scripts ? 'blocked' : 'allowed');
+	w.className += " " + status;
+    }
     
     function show_details()
     {
@@ -3051,22 +3091,28 @@
 	var last = find_element(realmenu, "last_item");
 
 	// FIXME show iframes urls somewhere
-	foreach_host_node(function(host_node)
+	foreach_host_node(function(hn)
 	{
-	  var h = host_node.name;
-	  var s = host_node.scripts;
+	  var h = hn.name;
+	  var s = hn.scripts;
+
+	  if (hn.inline)
+	  {
+	      var w = new_inline_script_detail(hn);
+	      menu.insertBefore(w, last);
+	  }
 	  
 	  sort_scripts(s);
 	  for (var j = 0; j < s.length; j++)
 	  {
-	      var w = new_script_detail(host_node, s[j], false, false);
+	      var w = new_script_detail(hn, s[j], false, false);
 	      menu.insertBefore(w, last);
 	  }
 
-	  var iframes = host_node.iframes;
+	  var iframes = hn.iframes;
 	  for (var j = 0; j < iframes.length; j++)
 	  {
-	      var w = new_script_detail(host_node, iframes[j], true, false);
+	      var w = new_script_detail(hn, iframes[j], true, false);
 	      menu.insertBefore(w, last);
 	  }
 	  
@@ -3204,7 +3250,12 @@
 	if (for_mode == mode)
 	    this.className += " selected";
 	else
-	    this.onclick = function() { set_mode(for_mode); }	
+	    this.onclick = function() { set_mode(for_mode); }
+	if (for_mode == 'filtered')
+	    this.title += (allow_current_host ?
+			   " (current site allowed by default)" :
+			   " (nothing allowed by default)");
+
     }
 
     function main_menu_autoscroll()
@@ -3288,15 +3339,13 @@
 	sub.style = (h + 'px;') + (v + 'px;');
     }
 
-    // TODO: show iframes as well ?
     function host_table_row_onmouseover(event)
     {
 	if (!show_scripts_in_main_menu)
 	    return;
 	var tr = this;
 	var hn = tr.host_node;
-	if (!hn.scripts.length &&
-	    !(hn.iframes && hn.iframes.length))
+	if (hn.scripts.length + hn.inline + hn.iframes.length == 0)
 	    return;
 	if (!this.timer)
 	    this.timer = iwin.setTimeout(function(){ scripts_submenu(tr) }, 600);
@@ -3309,22 +3358,28 @@
 	var sub = new_widget("submenu");
 	var menu = find_element(sub, "menu_content");
 	var host = tr.host;
-	var host_node = tr.host_node;
-	var h = host_node.name;
-	var s = host_node.scripts;
+	var hn = tr.host_node;
+	var h = hn.name;
+	var s = hn.scripts;
 
 	// FIXME factor this and details_menu_init();
+	if (hn.inline)
+	{
+	    var w = new_inline_script_detail(hn);
+	    menu.appendChild(w);	    
+	}
+	
 	sort_scripts(s);
 	for (var j = 0; j < s.length; j++)
 	{
-	    var w = new_script_detail(host_node, s[j], false, true);
+	    var w = new_script_detail(hn, s[j], false, true);
 	    menu.appendChild(w);
 	}
 
-	var iframes = host_node.iframes;
+	var iframes = hn.iframes;
 	for (var j = 0; j < iframes.length; j++)
 	{
-	    var w = new_script_detail(host_node, iframes[j], true, true);
+	    var w = new_script_detail(hn, iframes[j], true, true);
 	    menu.appendChild(w);
 	}
 		
@@ -3381,7 +3436,7 @@
 
     function iframes_info(hn)
     {
-	if (!hn.iframes || !hn.iframes.length)
+	if (!hn.iframes.length)
 	    return null;
 	var n = hn.iframes.length;
 	var title = n + " iframe" + (n>1 ? "s" : "");
@@ -3412,10 +3467,16 @@
 	return title;
     }
 
-    function ext_scripts_size_tooltip(scripts)
+    function script_count_tooltip(hn)
     {
-	var total = scripts.reduce(function(val, script){ return val + script.size }, 0);
-	return (total ? get_size_kb(total) + 'k' : '');
+	var s = '';
+	if (hn.inline)
+	{
+	    s += (hn.scripts.length ? hn.scripts.length + '+' : '');
+	    s += hn.inline + ' inline, ';
+	}
+	var total = hn.inline_size + hn.scripts.reduce(function(val, script){ return val + script.size }, 0);
+	return s + (total ? get_size_kb(total) + 'k' : '');
     }
     
     function update_host_table(w)
@@ -3432,7 +3493,7 @@
 	    var allowed = allowed_host(h);
 	    var host_part = truncate_left(h.slice(0, h.length - d.length), 15);
 	    var not_loaded = not_loaded_tooltip(hn, allowed);
-	    var count = hn.scripts.length;
+	    var count = hn.scripts.length + hn.inline;
 	    var helper = hn.helper_host;
 	    var iframes = iframes_info(hn);
 
@@ -3464,7 +3525,7 @@
 		tr.childNodes[6].title = "Allowed globally";		
 	    }
 	    tr.childNodes[7].innerText = '[' + count + ']';		// scripts + iframes
-	    tr.childNodes[7].title = ext_scripts_size_tooltip(hn.scripts);
+	    tr.childNodes[7].title = script_count_tooltip(hn);
 
 	    t.replaceChild(tr, prev_tr);
 	});
@@ -3855,6 +3916,7 @@ input[type=radio] + label		{ box-shadow:inset 0px 1px 0px 0px #ffffff; border-ra
 textarea				{ width:400px; height:300px; }  \n\
   \n\
 a, a:visited				{ color:#00f }  \n\
+.inline_script_detail			{ text-decoration:none; }  \n\
   \n\
 /* images */  \n\
   \n\
@@ -4036,7 +4098,7 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
       layout: '<widget name="badge" init><div id="badge"><div id="badge_number" class="px"></div></div></widget>' },
    'main_menu' : {
       init: main_menu_init,
-      layout: '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown"><h1 id="menu_title" >Script Weeder</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="Allow related and helper domains." oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li><li id="options_details" class="inactive"><table><tr><td class="details_item"><label onclick="show_details">Details</label></td><td class="options_item"><label onclick="options_menu">Options</label></td></tr></table></li></ul></div></widget>' },
+      layout: '<widget name="main_menu" init><div id="main_menu" class="menu" onmouseout onmousedown="menu_onmousedown"><h1 id="menu_title" >Script Weeder</h1><ul><scope_widget></scope_widget><li class="block_all" formode="block_all" title="Block all scripts." oninit="mode_menu_item_oninit"><img/>Block All</li><block_all_settings lazy></block_all_settings><li class="filtered" formode="filtered" title="Select which hosts to allow" oninit="mode_menu_item_oninit"><img/>Filtered</li><li class="relaxed" formode="relaxed" title="Allow related and helper domains." oninit="mode_menu_item_oninit"><img/>Relaxed</li><li class="allow_all" formode="allow_all" title="Allow everything…" oninit="mode_menu_item_oninit"><img/>Allow All</li><li id="options_details" class="inactive"><table><tr><td class="details_item"><label onclick="show_details">Details</label></td><td class="options_item"><label onclick="options_menu">Options</label></td></tr></table></li></ul></div></widget>' },
    'host_table' : {
       layout: '<widget name="host_table"><li id="host_table" class="inactive"><table></table></li></widget>' },
    'host_table_row' : {
@@ -4049,12 +4111,16 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
    'script_detail' : {
       init: script_detail_init,
       init_proxy: function(w, ph){ script_detail_init(w, ph.host_node, ph.script, ph.iframe, ph.file_only); },
-      layout: '<widget name="script_detail" host_node script iframe file_only init><li><img/><a href="" onclick="link_loader"></a></li></widget>' },
+      layout: '<widget name="script_detail" host_node script iframe file_only init><li><img/><a href="" onclick="link_loader" class=""></a></li></widget>' },
+   'inline_script_detail' : {
+      init: inline_script_detail_init,
+      init_proxy: function(w, ph){ inline_script_detail_init(w, ph.host_node); },
+      layout: '<widget name="inline_script_detail" host_node init><li><img/><a href="" onclick="link_loader" class="inline_script_detail"></a></li></widget>' },
    'options_menu' : {
-      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div id="general_options" class="frame" ><div class="frame_title">General</div><button title="Turn it off to avoid fetching blocked scripts."   	    onclick="speculative_parser_onclick">Speculative parser…</button><br><button title="Enable to control secure pages."   	    onclick="userjs_on_https_onclick">userjs on secure pages…</button><select_reload_method></select_reload_method><select_iframe_logic></select_iframe_logic><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="Useful for debugging."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div id="settings_options" class="frame" ><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="Hosts or domains always allowed" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div id="interface_options" class="frame" oninit="check_disable_button_ui_settings"><div class="frame_title">User Interface</div><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_button_display></select_button_display><select_ui_position></select_ui_position><select_badge_logic></select_badge_logic><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item></div></td><td><options_custom_style></options_custom_style><div id="export_options" class="frame" ><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div id="" class="frame" ><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptweeder/wiki" onclick="link_loader">Home</a></div></td></tr></table></div></widget>' },
+      layout: '<widget name="options_menu"><div id="options_menu" class="menu" onmouseout="menu_onmouseout" ><h1 id="menu_title" >Options</h1><table><tr><td><div id="general_options" class="frame" ><div class="frame_title">General</div><button title="Turn it off to avoid fetching blocked scripts."   	    onclick="speculative_parser_onclick">Speculative parser…</button><br><button title="Enable to control secure pages."   	    onclick="userjs_on_https_onclick">userjs on secure pages…</button><select_reload_method></select_reload_method><select_iframe_logic></select_iframe_logic><checkbox_item label="allow current host by default" id="allow_current_host"  		   state="`allow_current_host" title="Allow current host by default in filtered mode"  		   callback="`toggle_allow_current_host"></checkbox_item><checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"  		   state="`show_ui_in_iframes" title="Useful for debugging."  		   callback="`toggle_show_ui_in_iframes"></checkbox_item></div><div id="settings_options" class="frame" ><div class="frame_title">Edit Settings</div><table class="button_table"><tr><td><button onclick="edit_site_settings" title="View/edit site specific settings." >Site settings…</button></td></tr><tr><td><button onclick="edit_whitelist" title="Hosts or domains always allowed" >Global whitelist…</button></td></tr><tr><td><button onclick="edit_blacklist" title="Stuff relaxed mode should never allow by default" >Helper blacklist…</button></td></tr></table></div></td><td><div id="interface_options" class="frame" oninit="check_disable_button_ui_settings"><div class="frame_title">User Interface</div><select_menu_display_logic></select_menu_display_logic><select_font_size></select_font_size><select_button_display></select_button_display><select_ui_position></select_ui_position><select_badge_logic></select_badge_logic><checkbox_item label="Auto-hide main button" klass="button_ui_setting"  		   state="`autohide_main_button"  		   callback="`toggle_autohide_main_button"></checkbox_item><checkbox_item label="Transparent button !" klass="button_ui_setting"  		   state="`transparent_main_button"  		   callback="`toggle_transparent_main_button"></checkbox_item><checkbox_item label="Fat icons"   		   state="`fat_icons"  		   callback="`toggle_fat_icons"></checkbox_item><checkbox_item label="Script popups in main menu" id="show_scripts_in_main_menu"  		   state="`show_scripts_in_main_menu"  		   callback="`toggle_show_scripts_in_main_menu"></checkbox_item></div></td><td><options_custom_style></options_custom_style><div id="export_options" class="frame" ><div class="frame_title">Import / Export</div><table class="button_table"><tr><td><form id="import_settings"><input type="file" autocomplete="off" oninit="import_settings_init" /><button>Load settings…</button></form></td></tr><tr><td><button onclick="export_settings_onclick" title="shift+click to view" >Save settings…</button></td></tr><tr><td><button onclick="reset_settings" title="" >Clear Settings…</button></td></tr></table></div><div id="" class="frame" ><div class="frame_title"></div><a href="https://github.com/lemonsqueeze/scriptweeder/wiki" onclick="link_loader" class="">Home</a></div></td></tr></table></div></widget>' },
    'options_custom_style' : {
       init: options_custom_style_init,
-      layout: '<widget name="options_custom_style" init><div id="style_options" class="frame" ><div class="frame_title">Custom Style</div><table class="button_table"><edit_style lazy></edit_style><tr><td><form id="load_custom_style" title="Load a .style or .css file (can stack .style files)"><input type="file" autocomplete="off" onchange="file_loader(load_custom_style)"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit="clear_saved_style_init">Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><a href="https://github.com/lemonsqueeze/scriptweeder/wiki/Custom-styles" onclick="link_loader">Find styles</a></div></widget>' },
+      layout: '<widget name="options_custom_style" init><div id="style_options" class="frame" ><div class="frame_title">Custom Style</div><table class="button_table"><edit_style lazy></edit_style><tr><td><form id="load_custom_style" title="Load a .style or .css file (can stack .style files)"><input type="file" autocomplete="off" onchange="file_loader(load_custom_style)"/><button>Load style…</button></form></td></tr><tr><td><button onclick="clear_saved_style" title="" oninit="clear_saved_style_init">Back to default</button></td></tr></table><a oninit="rescue_mode_link_init">Rescue mode</a><a href="https://github.com/lemonsqueeze/scriptweeder/wiki/Custom-styles" onclick="link_loader" class="">Find styles</a></div></widget>' },
    'edit_style' : {
       layout: '<widget name="edit_style"><tr><td><button onclick="style_editor" title="" >Edit style…</button></td></tr></widget>' },
    'select_ui_position' : {
@@ -4110,6 +4176,12 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
     {
       return new_widget("script_detail", function(w)
         { script_detail_init(w, host_node, script, iframe, file_only); });
+    }
+
+    function new_inline_script_detail(host_node)
+    {
+      return new_widget("inline_script_detail", function(w)
+        { inline_script_detail_init(w, host_node); });
     }
 
     function new_editor_window(title, text, default_setting, save_callback)

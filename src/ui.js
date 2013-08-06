@@ -539,6 +539,12 @@ function(){   // fake line, keep_editor_happy
 	need_reload = true;
     }
 
+    function toggle_allow_current_host(event)
+    {
+	allow_current_host = toggle_global_setting(this, allow_current_host, 'allow_current_host');
+	need_reload = true;
+    }    
+
     function toggle_autohide_main_button(event)
     {
 	autohide_main_button = toggle_global_setting(this, autohide_main_button, 'autohide_main_button');
@@ -678,6 +684,21 @@ function(){   // fake line, keep_editor_happy
 	var status = (iframe ? script_detail_iframe_status(w, hn, s) : script_detail_status(w, h, s));
 	w.className += " " + status;       
     }
+
+    function inline_script_detail_init(w, hn)
+    {
+	var h = hn.name;
+	var img = w.firstChild;
+	var link = img.nextSibling;
+
+	var label = hn.inline + ' inline';
+	
+	link.innerText = label;
+	link.title = get_size_kb(hn.inline_size) + 'k';
+	//link.href = s.url;
+	var status = (block_inline_scripts ? 'blocked' : 'allowed');
+	w.className += " " + status;
+    }
     
     function show_details()
     {
@@ -699,22 +720,28 @@ function(){   // fake line, keep_editor_happy
 	var last = find_element(realmenu, "last_item");
 
 	// FIXME show iframes urls somewhere
-	foreach_host_node(function(host_node)
+	foreach_host_node(function(hn)
 	{
-	  var h = host_node.name;
-	  var s = host_node.scripts;
+	  var h = hn.name;
+	  var s = hn.scripts;
+
+	  if (hn.inline)
+	  {
+	      var w = new_inline_script_detail(hn);
+	      menu.insertBefore(w, last);
+	  }
 	  
 	  sort_scripts(s);
 	  for (var j = 0; j < s.length; j++)
 	  {
-	      var w = new_script_detail(host_node, s[j], false, false);
+	      var w = new_script_detail(hn, s[j], false, false);
 	      menu.insertBefore(w, last);
 	  }
 
-	  var iframes = host_node.iframes;
+	  var iframes = hn.iframes;
 	  for (var j = 0; j < iframes.length; j++)
 	  {
-	      var w = new_script_detail(host_node, iframes[j], true, false);
+	      var w = new_script_detail(hn, iframes[j], true, false);
 	      menu.insertBefore(w, last);
 	  }
 	  
@@ -852,7 +879,12 @@ function(){   // fake line, keep_editor_happy
 	if (for_mode == mode)
 	    this.className += " selected";
 	else
-	    this.onclick = function() { set_mode(for_mode); }	
+	    this.onclick = function() { set_mode(for_mode); }
+	if (for_mode == 'filtered')
+	    this.title += (allow_current_host ?
+			   " (current site allowed by default)" :
+			   " (nothing allowed by default)");
+
     }
 
     function main_menu_autoscroll()
@@ -936,15 +968,13 @@ function(){   // fake line, keep_editor_happy
 	sub.style = (h + 'px;') + (v + 'px;');
     }
 
-    // TODO: show iframes as well ?
     function host_table_row_onmouseover(event)
     {
 	if (!show_scripts_in_main_menu)
 	    return;
 	var tr = this;
 	var hn = tr.host_node;
-	if (!hn.scripts.length &&
-	    !(hn.iframes && hn.iframes.length))
+	if (hn.scripts.length + hn.inline + hn.iframes.length == 0)
 	    return;
 	if (!this.timer)
 	    this.timer = iwin.setTimeout(function(){ scripts_submenu(tr) }, 600);
@@ -957,22 +987,28 @@ function(){   // fake line, keep_editor_happy
 	var sub = new_widget("submenu");
 	var menu = find_element(sub, "menu_content");
 	var host = tr.host;
-	var host_node = tr.host_node;
-	var h = host_node.name;
-	var s = host_node.scripts;
+	var hn = tr.host_node;
+	var h = hn.name;
+	var s = hn.scripts;
 
 	// FIXME factor this and details_menu_init();
+	if (hn.inline)
+	{
+	    var w = new_inline_script_detail(hn);
+	    menu.appendChild(w);	    
+	}
+	
 	sort_scripts(s);
 	for (var j = 0; j < s.length; j++)
 	{
-	    var w = new_script_detail(host_node, s[j], false, true);
+	    var w = new_script_detail(hn, s[j], false, true);
 	    menu.appendChild(w);
 	}
 
-	var iframes = host_node.iframes;
+	var iframes = hn.iframes;
 	for (var j = 0; j < iframes.length; j++)
 	{
-	    var w = new_script_detail(host_node, iframes[j], true, true);
+	    var w = new_script_detail(hn, iframes[j], true, true);
 	    menu.appendChild(w);
 	}
 		
@@ -1029,7 +1065,7 @@ function(){   // fake line, keep_editor_happy
 
     function iframes_info(hn)
     {
-	if (!hn.iframes || !hn.iframes.length)
+	if (!hn.iframes.length)
 	    return null;
 	var n = hn.iframes.length;
 	var title = n + " iframe" + (n>1 ? "s" : "");
@@ -1060,10 +1096,16 @@ function(){   // fake line, keep_editor_happy
 	return title;
     }
 
-    function ext_scripts_size_tooltip(scripts)
+    function script_count_tooltip(hn)
     {
-	var total = scripts.reduce(function(val, script){ return val + script.size }, 0);
-	return (total ? get_size_kb(total) + 'k' : '');
+	var s = '';
+	if (hn.inline)
+	{
+	    s += (hn.scripts.length ? hn.scripts.length + '+' : '');
+	    s += hn.inline + ' inline, ';
+	}
+	var total = hn.inline_size + hn.scripts.reduce(function(val, script){ return val + script.size }, 0);
+	return s + (total ? get_size_kb(total) + 'k' : '');
     }
     
     function update_host_table(w)
@@ -1080,7 +1122,7 @@ function(){   // fake line, keep_editor_happy
 	    var allowed = allowed_host(h);
 	    var host_part = truncate_left(h.slice(0, h.length - d.length), 15);
 	    var not_loaded = not_loaded_tooltip(hn, allowed);
-	    var count = hn.scripts.length;
+	    var count = hn.scripts.length + hn.inline;
 	    var helper = hn.helper_host;
 	    var iframes = iframes_info(hn);
 
@@ -1112,7 +1154,7 @@ function(){   // fake line, keep_editor_happy
 		tr.childNodes[6].title = "Allowed globally";		
 	    }
 	    tr.childNodes[7].innerText = '[' + count + ']';		// scripts + iframes
-	    tr.childNodes[7].title = ext_scripts_size_tooltip(hn.scripts);
+	    tr.childNodes[7].title = script_count_tooltip(hn);
 
 	    t.replaceChild(tr, prev_tr);
 	});

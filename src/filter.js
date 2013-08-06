@@ -33,12 +33,14 @@ function(){   // fake line, keep_editor_happy
 
     var whitelist;
     var helper_blacklist;
+    var allow_current_host;		// current host allowed by default in filtered mode ?
     var local_hosts;			// hosts allowed for this site/url/domain
 
     function init_filter()
     {
 	whitelist = deserialize_name_hash(global_setting('whitelist'));
 	helper_blacklist = deserialize_name_hash(global_setting('helper_blacklist'));
+	allow_current_host = global_bool_setting('allow_current_host', true);
 	local_hosts = hosts_setting();
     }	
     

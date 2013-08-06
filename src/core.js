@@ -97,6 +97,8 @@ function(){   // fake line, keep_editor_happy
 	    startup_checks();
 
 	init_filter();
+	if (!allowed_host(current_host))  // block inline scripts if current_host not allowed
+            block_inline_scripts = true;	
     }
 
     
@@ -428,6 +430,8 @@ function(){   // fake line, keep_editor_happy
 	n.name = host;
 	n.scripts = [];
 	n.iframes = [];
+	n.inline = 0;
+	n.inline_size = 0;
 	n.helper_host = relaxed_mode_helper_host(host, domain_node); // caching
 	hosts.push(n);
 	return n;
@@ -438,6 +442,17 @@ function(){   // fake line, keep_editor_happy
 	domain_nodes = [];
     }
 
+    function add_inline_script(code)
+    {
+	stats.inline++;
+	stats.inline_size += code.length;
+	
+	var dn = get_domain_node(current_domain, true);
+	var hn = get_host_node(current_host, dn, true);		// ensure host node is created so it shows up in menu
+	hn.inline++;
+	hn.inline_size += code.length;
+    }
+    
     function add_script(url, host)
     {
 	stats.total++;
@@ -569,8 +584,7 @@ function(){   // fake line, keep_editor_happy
 	
 	check_init();
 	debug_log("beforescript");
-	stats.inline++;
-	stats.inline_size += e.element.text.length;
+	add_inline_script(e.element.text);
 	
 	repaint_ui();
 	

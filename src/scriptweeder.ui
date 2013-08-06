@@ -47,7 +47,7 @@
       <mode_menu_item mode="block_all" label="Block All" title="Block all scripts." />
       <block_all_settings lazy></block_all_settings>
       <mode_menu_item mode="filtered" label="Filtered" 
-	      title="Select which scripts to run. (current site allowed by default, inline scripts always allowed.)" />
+	      title="Select which hosts to allow" />
       <mode_menu_item mode="relaxed" label="Relaxed" 
 	      title="Allow related and helper domains." />
       <mode_menu_item mode="allow_all" label="Allow All" title="Allow everything…" />
@@ -113,6 +113,10 @@
     <li><img/><link/></li>
 </widget>
 
+<widget name="inline_script_detail" host_node init>
+    <li><img/><link klass="inline_script_detail"/></li>
+</widget>
+
 
 <!-- options menu -->
 <widget name="options_menu">
@@ -167,6 +171,9 @@
 	    onclick="userjs_on_https_onclick">userjs on secure pages…</button>
     <select_reload_method></select_reload_method>
     <select_iframe_logic></select_iframe_logic>
+    <checkbox_item label="allow current host by default" id="allow_current_host"
+		   state="`allow_current_host" title="Allow current host by default in filtered mode"
+		   callback="`toggle_allow_current_host"></checkbox_item>
     <checkbox_item label="Show ui in iframes" id="show_ui_in_iframes"
 		   state="`show_ui_in_iframes" title="Useful for debugging."
 		   callback="`toggle_show_ui_in_iframes"></checkbox_item>
@@ -202,8 +209,8 @@
   <tabled_button onclick="style_editor" label="Edit style…" />
 </widget>
 
-<def macro="link" href label>
-  <a href="$href" onclick="link_loader">$label</a>
+<def macro="link" href label klass>
+  <a href="$href" onclick="link_loader" class="$klass">$label</a>
 </def>
 	  
 <def macro="options_import_export">

@@ -84,6 +84,7 @@ input[type=radio] + label		{ box-shadow:inset 0px 1px 0px 0px #ffffff; border-ra
 textarea				{ width:400px; height:300px; }
 
 a, a:visited				{ color:#00f }
+.inline_script_detail			{ text-decoration:none; }
 
 /* images */
 
