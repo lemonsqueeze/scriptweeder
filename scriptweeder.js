@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Aug 05 2013
+// @published Aug 08 2013
 // ==/UserScript==
 
 
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.8";
     var version_type = "userjs";
-    var version_date = "Aug 05 2013";
+    var version_date = "Aug 08 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -294,7 +294,7 @@
 	try {  return window.top.location.href;  } catch(e) { }
 	
 	// 2) try document.referrer. not available if referrer disabled in opera ...
-	if (document.referrer != "")
+	if (window.parent == window.top && document.referrer != "")
 	    return document.referrer;
 	
 	// 3) hack it. this will work unless loading multiple tabs with iframes simultaneously.
@@ -1375,7 +1375,8 @@
     var extension_button_badge;
     function update_extension_button_badge(force)
     {
-	if (!disable_main_button) // not using extension button, don't bother
+	if (!disable_main_button ||	// not using extension button, don't bother
+	    !something_to_display())	// not needed -> tb button is disabled
 	    return;
 	
 	var o = badge_object();
@@ -4064,7 +4065,7 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
       layout: '<widget name="select_button_display" init><table class="dropdown_setting"><tr><td>Button display</td><td><select><option value="y">Toolbar</option><option value="n">Page</option></select></td></tr></table></widget>' },
    'select_badge_logic' : {
       init: select_badge_logic_init,
-      layout: '<widget name="select_badge_logic" init><table class="dropdown_setting"  	 title="Number displayed in ScriptWeeder button.\nCan also use shift+click on main button to rotate options."><tr><td>Badge</td><td><select><option value="off">None</option><option value="nloaded">Scripts not loaded</option><option value="loaded">Scripts loaded</option><option value="nblocked">Scripts we block</option><option value="weight">Script weight</option></select></td></tr></table></widget>' },
+      layout: '<widget name="select_badge_logic" init><table class="dropdown_setting"  	 title="Number displayed in ScriptWeeder button. Can also use shift+click on main button to rotate options."><tr><td>Badge</td><td><select><option value="off">None</option><option value="nloaded">Scripts not loaded</option><option value="loaded">Scripts loaded</option><option value="nblocked">Scripts we block</option><option value="weight">Script weight</option></select></td></tr></table></widget>' },
    'select_iframe_logic' : {
       init: select_iframe_logic_init,
       layout: '<widget name="select_iframe_logic" init><table id="iframe_logic" class="dropdown_setting"   	 title="Allowed iframes run in the current mode, blocked iframes run in Block All mode. The policy decides which iframes are allowed: [Block] no iframes allowed. [Filter] iframe allowed if host allowed in menu. [Allow] all iframes are allowed (permissive)."><tr><td>Iframe policy</td><td><select><option value="block_all">Block</option><option value="filter">Filter</option><option value="allow">Allow</option></select></td></tr></table></widget>' },

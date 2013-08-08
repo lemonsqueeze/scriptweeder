@@ -271,7 +271,7 @@ function(){   // fake line, keep_editor_happy
 	try {  return window.top.location.href;  } catch(e) { }
 	
 	// 2) try document.referrer. not available if referrer disabled in opera ...
-	if (document.referrer != "")
+	if (window.parent == window.top && document.referrer != "")
 	    return document.referrer;
 	
 	// 3) hack it. this will work unless loading multiple tabs with iframes simultaneously.

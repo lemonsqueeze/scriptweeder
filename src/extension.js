@@ -89,7 +89,8 @@ function(){   // fake line, keep_editor_happy
     var extension_button_badge;
     function update_extension_button_badge(force)
     {
-	if (!disable_main_button) // not using extension button, don't bother
+	if (!disable_main_button ||	// not using extension button, don't bother
+	    !something_to_display())	// not needed -> tb button is disabled
 	    return;
 	
 	var o = badge_object();
