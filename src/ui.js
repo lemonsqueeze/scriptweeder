@@ -1251,13 +1251,11 @@ function(){   // fake line, keep_editor_happy
 	div.title = tooltip; // badge will override it
 	div.className += " " + mode;
 
-	if (badge_logic != 'off')		  // badge needed
-	{
+	update_badge_object();
+	if (badge_obj.needed)
 	    wakeup_lazy_widgets(div);
-	    var b = div.querySelector('#badge');
-	    if (b.tooltip)
-		div.title = b.tooltip;
-	}
+	if (badge_obj.tooltip)
+	    div.title = badge_obj.tooltip;
 	
 	if (autohide_main_button && !rescue_mode())
 	    div.className += " autohide";
@@ -1319,7 +1317,7 @@ function(){   // fake line, keep_editor_happy
     
     function badge_init(w)
     {
-	var o = badge_object();	
+	var o = badge_obj;
 	d = w.querySelector('#badge_number');
 
 	if (badge_rendering == 'px')  	// pixel rendering
@@ -1357,11 +1355,16 @@ function(){   // fake line, keep_editor_happy
     }
     
     // internal use
-    function badge_object()
+    var badge_obj;
+    function update_badge_object()
     {
 	var n = 0, s = null; // number and tooltip
 	var total = stats.total;
 	var klass = badge_logic;
+	var needed = (badge_logic != 'off');
+
+	if (badge_logic == 'off')
+	    s = main_button_tooltip();
 	
 	if (badge_logic == 'nloaded')
 	{
@@ -1375,7 +1378,8 @@ function(){   // fake line, keep_editor_happy
 		s += (s != "" ? ", " : "") + item_count(stats.iframes_blocked, "iframe");
 	    s = (s == "" ? "none" : s);	    
 	    s = "not loaded: " + s + ".";
-	}	  
+	}
+	
 	if (badge_logic == 'nblocked')
 	{
 	    n = stats.blocked + stats.iframes_blocked + (block_inline_scripts ? stats.inline : 0);
@@ -1389,15 +1393,13 @@ function(){   // fake line, keep_editor_happy
 	    s = (s == "" ? "none" : s);	    
 	    s = "blocked: " + s + ".";
 	}
-	// fix color for n == 0
-	if (n == 0 && (badge_logic == 'nloaded' || badge_logic == 'nblocked'))
-	    klass = 'ok';
 	
 	if (badge_logic == 'loaded')
 	{
 	    n = stats.loaded + (!block_inline_scripts ? stats.inline : 0);
 	    s = main_button_tooltip();
-	}
+	}	
+	
 	if (badge_logic == 'weight')
 	{
 	    var size = stats.total_size + stats.inline_size;
@@ -1409,8 +1411,12 @@ function(){   // fake line, keep_editor_happy
 	    if (n == 0)
 		klass = 'light';
 	}
+
+	if (n == 0 && badge_logic != 'weight')
+	    needed = false;
 	
-	return { className: klass, n: n, tooltip: s };
+	badge_obj = { className:klass, n:n, tooltip:s, needed:needed };
+	return badge_obj;
     }
     
     

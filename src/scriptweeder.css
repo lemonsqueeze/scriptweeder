@@ -223,9 +223,11 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
          /* background-color set with classname */
        }
 
-.badge_nloaded, .badge_nblocked, .badge_heavy	{ background-color:#d75f3a; }   /* red */
-.badge_medium					{ background-color:#fe911c;  }  /* orange */
-.badge_ok,	.badge_loaded,	 .badge_light	{ background-color:#73ac07;  }  /* green */
+.badge_nblocked, .badge_heavy	{ background-color:#e82a2a; }   /* red */
+.badge_nloaded, .badge_medium	{ background-color:#ee811c;  }  /* orange */
+.badge_loaded			{ background-color:#4897b7;  }	/* blue */
+.badge_light			{ background-color:#73ac07;  }  /* green */
+
 
 #badge_number { border-radius:3px; border:1px solid rgba(255,255,255,0.4); }
 

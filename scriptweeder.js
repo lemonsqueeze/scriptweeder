@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Aug 09 2013
+// @published Aug 10 2013
 // ==/UserScript==
 
 
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.8";
     var version_type = "userjs";
-    var version_date = "Aug 09 2013";
+    var version_date = "Aug 10 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -1409,9 +1409,9 @@
 	    !something_to_display())	// not needed -> tb button is disabled
 	    return;
 	
-	var o = badge_object();
-	var needed = (badge_logic != 'off');
-	var status = (needed ? o.n + o.tooltip : 'off');
+	var o = update_badge_object();
+	var needed = o.needed;
+	var status = '' + o.needed + o.n + o.tooltip;
 	if (!force && extension_button_badge == status) // already in the right state
 	    return;
 
@@ -3633,13 +3633,11 @@
 	div.title = tooltip; // badge will override it
 	div.className += " " + mode;
 
-	if (badge_logic != 'off')		  // badge needed
-	{
+	update_badge_object();
+	if (badge_obj.needed)
 	    wakeup_lazy_widgets(div);
-	    var b = div.querySelector('#badge');
-	    if (b.tooltip)
-		div.title = b.tooltip;
-	}
+	if (badge_obj.tooltip)
+	    div.title = badge_obj.tooltip;
 	
 	if (autohide_main_button && !rescue_mode())
 	    div.className += " autohide";
@@ -3701,7 +3699,7 @@
     
     function badge_init(w)
     {
-	var o = badge_object();	
+	var o = badge_obj;
 	d = w.querySelector('#badge_number');
 
 	if (badge_rendering == 'px')  	// pixel rendering
@@ -3739,11 +3737,16 @@
     }
     
     // internal use
-    function badge_object()
+    var badge_obj;
+    function update_badge_object()
     {
 	var n = 0, s = null; // number and tooltip
 	var total = stats.total;
 	var klass = badge_logic;
+	var needed = (badge_logic != 'off');
+
+	if (badge_logic == 'off')
+	    s = main_button_tooltip();
 	
 	if (badge_logic == 'nloaded')
 	{
@@ -3757,7 +3760,8 @@
 		s += (s != "" ? ", " : "") + item_count(stats.iframes_blocked, "iframe");
 	    s = (s == "" ? "none" : s);	    
 	    s = "not loaded: " + s + ".";
-	}	  
+	}
+	
 	if (badge_logic == 'nblocked')
 	{
 	    n = stats.blocked + stats.iframes_blocked + (block_inline_scripts ? stats.inline : 0);
@@ -3771,15 +3775,13 @@
 	    s = (s == "" ? "none" : s);	    
 	    s = "blocked: " + s + ".";
 	}
-	// fix color for n == 0
-	if (n == 0 && (badge_logic == 'nloaded' || badge_logic == 'nblocked'))
-	    klass = 'ok';
 	
 	if (badge_logic == 'loaded')
 	{
 	    n = stats.loaded + (!block_inline_scripts ? stats.inline : 0);
 	    s = main_button_tooltip();
-	}
+	}	
+	
 	if (badge_logic == 'weight')
 	{
 	    var size = stats.total_size + stats.inline_size;
@@ -3791,8 +3793,12 @@
 	    if (n == 0)
 		klass = 'light';
 	}
+
+	if (n == 0 && badge_logic != 'weight')
+	    needed = false;
 	
-	return { className: klass, n: n, tooltip: s };
+	badge_obj = { className:klass, n:n, tooltip:s, needed:needed };
+	return badge_obj;
     }
     
     
@@ -4070,9 +4076,11 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
          /* background-color set with classname */  \n\
        }  \n\
   \n\
-.badge_nloaded, .badge_nblocked, .badge_heavy	{ background-color:#d75f3a; }   /* red */  \n\
-.badge_medium					{ background-color:#fe911c;  }  /* orange */  \n\
-.badge_ok,	.badge_loaded,	 .badge_light	{ background-color:#73ac07;  }  /* green */  \n\
+.badge_nblocked, .badge_heavy	{ background-color:#e82a2a; }   /* red */  \n\
+.badge_nloaded, .badge_medium	{ background-color:#ee811c;  }  /* orange */  \n\
+.badge_loaded			{ background-color:#4897b7;  }	/* blue */  \n\
+.badge_light			{ background-color:#73ac07;  }  /* green */  \n\
+  \n\
   \n\
 #badge_number { border-radius:3px; border:1px solid rgba(255,255,255,0.4); }  \n\
   \n\

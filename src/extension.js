@@ -93,9 +93,9 @@ function(){   // fake line, keep_editor_happy
 	    !something_to_display())	// not needed -> tb button is disabled
 	    return;
 	
-	var o = badge_object();
-	var needed = (badge_logic != 'off');
-	var status = (needed ? o.n + o.tooltip : 'off');
+	var o = update_badge_object();
+	var needed = o.needed;
+	var status = '' + o.needed + o.n + o.tooltip;
 	if (!force && extension_button_badge == status) // already in the right state
 	    return;
 
