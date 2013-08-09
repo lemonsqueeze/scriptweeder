@@ -1033,6 +1033,7 @@ function(){   // fake line, keep_editor_happy
     {
 	var h = this.host;
 	var glob_icon_clicked = (event.target.parentNode.className.indexOf("allowed_globally") != -1);
+	need_reload = true;
 
 	if (glob_icon_clicked)
 	{
@@ -1049,17 +1050,20 @@ function(){   // fake line, keep_editor_happy
 	    else
 		allow_host(h);
 	    global_remove_host(h);	      
-	}	 
+	}
 
-	if (mode != 'filtered' && mode != 'relaxed')
-	    set_mode_no_update('filtered');
+	if (mode != 'filtered' && !glob_icon_clicked)	// blocking something, need to switch mode
+	{
+	    // blocking related/helper host in relaxed mode ? switch to filtered mode.
+	    // (related/helper hosts are always allowed in relaxed mode)
+	    if (mode == 'relaxed' && relaxed_mode_helper_host(h))
+		relaxed_mode_to_filtered_mode(h);
+	    if (mode == 'allow_all')
+		allow_all_mode_to_filtered_mode(h);
+	    set_mode('filtered');
+	    return;
+	}	
 
-	// blocking related/helper host in relaxed mode ? switch to filtered mode.
-	// (related/helper hosts are always allowed in relaxed mode)
-	if (mode == 'relaxed' && relaxed_mode_helper_host(h))
-	    relaxed_mode_to_filtered_mode(h);
-	  
-	need_reload = true;
 	update_host_table(main_ui); // preserves current scroll position
     };
 

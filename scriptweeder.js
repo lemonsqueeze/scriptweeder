@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Aug 08 2013
+// @published Aug 09 2013
 // ==/UserScript==
 
 
@@ -19,7 +19,7 @@
 {
     var version_number = "1.5.8";
     var version_type = "userjs";
-    var version_date = "Aug 08 2013";
+    var version_date = "Aug 09 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -883,14 +883,9 @@
       error('mode="' + mode + '", this should not happen!');
     }
     
-    // switch to filtered mode for this site,
     // allow every host allowed in relaxed mode, except host
     function relaxed_mode_to_filtered_mode(host)
     {
-	if (scope == 3)  // FIXME: should we handle others ?
-	    change_scope(1);
-	set_mode('filtered');
-	
 	foreach_host_node(function(hn)
 	{
 	  var h = hn.name;
@@ -902,7 +897,23 @@
 		  allow_host(h);
 	  }
 	});      
-    }    
+    }
+
+    // allow every host except host
+    function allow_all_mode_to_filtered_mode(host)
+    {
+	foreach_host_node(function(hn)
+	{
+	  var h = hn.name;
+	  if (!filtered_mode_allowed_host(h))
+	  {
+	      if (h == host)
+		  remove_host(h);
+	      else
+		  allow_host(h);
+	  }
+	});      
+    }        
 
     /* iframe stuff */
     function merge_parent_settings(parent_url, check_allowed)
@@ -3404,6 +3415,7 @@
     {
 	var h = this.host;
 	var glob_icon_clicked = (event.target.parentNode.className.indexOf("allowed_globally") != -1);
+	need_reload = true;
 
 	if (glob_icon_clicked)
 	{
@@ -3420,17 +3432,20 @@
 	    else
 		allow_host(h);
 	    global_remove_host(h);	      
-	}	 
+	}
 
-	if (mode != 'filtered' && mode != 'relaxed')
-	    set_mode_no_update('filtered');
+	if (mode != 'filtered' && !glob_icon_clicked)	// blocking something, need to switch mode
+	{
+	    // blocking related/helper host in relaxed mode ? switch to filtered mode.
+	    // (related/helper hosts are always allowed in relaxed mode)
+	    if (mode == 'relaxed' && relaxed_mode_helper_host(h))
+		relaxed_mode_to_filtered_mode(h);
+	    if (mode == 'allow_all')
+		allow_all_mode_to_filtered_mode(h);
+	    set_mode('filtered');
+	    return;
+	}	
 
-	// blocking related/helper host in relaxed mode ? switch to filtered mode.
-	// (related/helper hosts are always allowed in relaxed mode)
-	if (mode == 'relaxed' && relaxed_mode_helper_host(h))
-	    relaxed_mode_to_filtered_mode(h);
-	  
-	need_reload = true;
 	update_host_table(main_ui); // preserves current scroll position
     };
 

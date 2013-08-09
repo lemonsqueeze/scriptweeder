@@ -130,14 +130,9 @@ function(){   // fake line, keep_editor_happy
       error('mode="' + mode + '", this should not happen!');
     }
     
-    // switch to filtered mode for this site,
     // allow every host allowed in relaxed mode, except host
     function relaxed_mode_to_filtered_mode(host)
     {
-	if (scope == 3)  // FIXME: should we handle others ?
-	    change_scope(1);
-	set_mode('filtered');
-	
 	foreach_host_node(function(hn)
 	{
 	  var h = hn.name;
@@ -149,7 +144,23 @@ function(){   // fake line, keep_editor_happy
 		  allow_host(h);
 	  }
 	});      
-    }    
+    }
+
+    // allow every host except host
+    function allow_all_mode_to_filtered_mode(host)
+    {
+	foreach_host_node(function(hn)
+	{
+	  var h = hn.name;
+	  if (!filtered_mode_allowed_host(h))
+	  {
+	      if (h == host)
+		  remove_host(h);
+	      else
+		  allow_host(h);
+	  }
+	});      
+    }        
 
     /* iframe stuff */
     function merge_parent_settings(parent_url, check_allowed)
