@@ -2,12 +2,12 @@ function(){   // fake line, keep_editor_happy
 
     /********************************* Builtin ui *********************************/
 
-    var default_ui_position = 'bottom_right';
+    var default_ui_position = 'top_right';
     var default_autohide_main_button = false;
     var default_transparent_main_button = true;
     var default_fat_icons = false;
     var default_font_size = 'normal';
-    var default_menu_display_logic = 'auto';
+    var default_menu_display_logic = 'click';
     var default_show_scripts_in_main_menu = true;
     var default_badge_logic = 'nloaded';
     var default_badge_rendering = 'px';
@@ -38,12 +38,11 @@ function(){   // fake line, keep_editor_happy
     // called on script startup, no ui available at this stage.
     function register_ui()
     {
-	disable_main_button = global_bool_setting('disable_main_button', false);
+	disable_main_button = global_bool_setting('disable_main_button', true);
 	badge_logic = global_setting('badge_logic', default_badge_logic);
 	
 	// window.opera.scriptweeder.toggle_menu() api for opera buttons etc...
 	message_handlers['scriptweeder_toggle_menu:'] = api_toggle_menu;
-	window.opera.scriptweeder.toggle_menu = function() { window.postMessage('scriptweeder_toggle_menu:', '*'); };
     }
 
     function reset_ui()
@@ -75,7 +74,7 @@ function(){   // fake line, keep_editor_happy
     function init_ui_needed()
     {
 	if (init_ui_done || !document_ready)
-	    return false;
+	    return false;	
 	if (element_tag_is(document.body, 'frameset')) // frames, can't show ui in there !
 	    return false;
         if (!there_is_work_todo &&			// no scripts ?
@@ -134,7 +133,7 @@ function(){   // fake line, keep_editor_happy
     }
     
     function create_main_ui()
-    {
+    {	
 	main_ui = new_widget("main_ui");
 	set_unset_class(idoc.body, 'fat_icons', fat_icons);
 	// set font size
@@ -199,7 +198,7 @@ function(){   // fake line, keep_editor_happy
     {	
 	setup_radio_buttons(widget, "scope", scope, change_scope);
     }
-
+    
     function setup_radio_buttons(widget, name, current, f)
     {
 	var l = widget.getElementsByTagName('input');
@@ -506,16 +505,10 @@ function(){   // fake line, keep_editor_happy
 	   set_global_setting('reload_method', reload_method);
 	};	
     }
-
+    
     function speculative_parser_onclick()
     {
 	window.open("opera:config#Speculative");
-    }
-
-    // userjs_only
-    function userjs_on_https_onclick()
-    {
-	window.open("opera:config#User%20JavaScript%20on%20HTTPS");
     }
     
     // returns toggled value, sets setting and updates this.checkbox
@@ -582,11 +575,6 @@ function(){   // fake line, keep_editor_happy
     {
 	var select = w.querySelector('select');
 	select.options.value = (get_disable_main_button() ? 'y' : 'n');
-	if (!extension_button)  // userjs_only: can't throw away main button if extension's not there !
-	{
-	    select.disabled = true;
-	    select.title = "Install scriptweeder extension to use toolbar button.";
-	}
 	select.onchange = function(n)
 	{
 	   if (this.value == 'y') // toolbar button
@@ -632,7 +620,7 @@ function(){   // fake line, keep_editor_happy
 	// disable ui button settings then
 	foreach(getElementsByClassName(this, 'button_ui_setting'), function(n)
 		{   disable_checkbox(n);  });
-	this.querySelector('#ui_position select').disabled = true;	
+	this.querySelector('#ui_position select').disabled = true;
     }
  
     

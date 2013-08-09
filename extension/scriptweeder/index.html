@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script>
+  
+  var debug = false;   // enabled by '#swdebug' url hash
+
+  function debug_log(m)
+  {
+      if (debug)
+	  opera.postError("scriptweeder (bgprc): " + m);
+  }
+
+  function post_message(dest, msg)
+  {
+      try
+      {   // can get DOMException: INVALID_STATE_ERR if tab's in a weird state    
+          dest.postMessage(msg);
+      }
+      catch(e) {}      
+  }
+
+  function update_icon(mode, icon)
+  {
+      if (!button)
+	  return;
+      debug_log("setting icon for " + mode + " mode");
+      // button.disabled too buggy right now, gets ignored sometimes ...
+      //button.disabled = false;
+
+      // this works but throws (?!)
+      try { button.icon = icon; }
+      catch(e) {}
+  }
+
+  function update_badge(badge, tooltip)
+  {
+      if (!button || button.is_disabled)
+	  return;
+      button.badge.display = badge.display;
+      button.badge.backgroundColor = badge.backgroundColor;
+      button.badge.color = badge.color;
+      button.badge.textContent = badge.textContent;
+      if (tooltip)
+	  button.title = tooltip;
+  }
+
+  function set_button_disabled(disabled)
+  {
+      if (!button)
+	  return;
+      if (disabled)
+      {
+	  button.icon = disabled_icon;
+	  button.badge.display = 'none';
+      }
+      button.is_disabled = disabled;
+      //button.disabled = true;
+  }
+
+  function clicked(e)
+  {
+      if (button.is_disabled) // poor man's button.disabled =P
+	  return;
+      var tab = get_current_tab()
+      if (!tab)
+	  return;
+      post_message(tab, 'scriptweeder_toggle_menu:');
+  }
+
+  var button;
+  var disabled_icon = "img/disabled.png";
+  function create_button()
+  {
+      var ToolbarUIItemProperties =
+      {
+        //disabled: true,
+	title: "ScriptWeeder Menu",
+	icon: disabled_icon,
+	badge: {
+	    display: 'none',
+	    backgroundColor: '#5566ff',
+	    color: '#ffffff',
+	    textContent: '42'
+	  }
+      };
+      button = opera.contexts.toolbar.createItem(ToolbarUIItemProperties);
+      button.onclick = clicked;
+      opera.contexts.toolbar.addItem(button);
+      // use special setting for saving, the real one's unreachable if we're using userjs.
+      widget.preferences.setItem('extension_button', 'y');
+  }
+
+  function destroy_button()
+  {
+      opera.contexts.toolbar.removeItem(button);
+      button = null;
+      // use special setting for saving, the real one's unreachable if we're using userjs.
+      widget.preferences.setItem('extension_button', 'n');
+  }
+
+  function get_current_tab()
+  {
+      var tab = opera.extension.tabs.getFocused();
+      if (tab && tab.url)
+	  return tab;
+      return null;
+  }
+
+  function messaged(e)
+  {
+      var m = e.data;
+      debug = m.debug;
+      debug_log("messaged, updating button");
+      //if (debug)
+      //  debug_log("message: " + JSON.stringify(m));
+
+      if (m.badge) // badge message
+      {
+	  update_badge(m.badge, m.tooltip);
+	  return;
+      }
+      
+      if (m.button && !button)
+	  create_button();
+      if (!m.button && button)
+	  destroy_button();
+      
+      if (m.disabled_icon != '')
+	  disabled_icon = m.disabled_icon;
+      if (m.icon)
+	  update_icon(m.mode, m.icon);
+      if (m.tooltip)
+	  button.title = m.tooltip;
+      set_button_disabled(m.disabled);
+  }
+
+  function request_mode(dest)
+  {
+      post_message(dest, "scriptweeder bgproc to injected script:");
+      post_message(dest, "scriptweeder bgproc mode request:");
+  }
+
+  function tab_switched(e)
+  {
+      set_button_disabled(true);
+      var tab = get_current_tab();
+      if (!tab)
+	  return;
+      debug_log("tab_switched(), requesting mode");      
+      request_mode(tab);
+  }
+
+  function connected(e)
+  {
+      debug_log("connected");
+      // how do we find out if this is coming from the current tab ??
+      // (get_current_tab() == e.source) doesn't work.
+
+      if (get_current_tab())
+      {
+	  debug_log("requesting mode from current tab ...");	  
+	  request_mode(get_current_tab());
+      }
+  }
+
+  debug_log("start");
+
+//  Doing away with the load handler, causing race conditions with onconnect on startup.
+//  http://my.opera.com/community/forums/topic.dml?id=1706742
+//  window.addEventListener("load", loaded, false);
+
+  // when an injected script loads, background process gets a connect event      
+  opera.extension.onconnect = connected;
+  opera.extension.onmessage = messaged;
+  opera.extension.tabs.onfocus = tab_switched;
+      
+  if (widget.preferences.getItem('extension_button') != 'n')
+      create_button();
+
+</script>
+</head>
+<body>
+</body>
+</html>
