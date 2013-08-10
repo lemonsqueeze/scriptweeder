@@ -360,13 +360,36 @@ function(){   // fake line, keep_editor_happy
     function max(a, b) { return (a > b ? a : b); }
     function to_int(s) { return parseInt(s); }
     
+    // returns size in kb (as an int)
+    //   123 -> 0.1,  12345 -> 12,  123456 -> 120
     function get_size_kb(x, int_only)
     {
-	var k = new String(x / 1000);
+	var k = x / 1000;
+	if (k > 40)
+	    k = k - k % 10;
+	k = new String(k);
 	var d = k.indexOf('.');
 	if (d != -1)
 	    return (x >= 1000 || int_only ? k.slice(0, d) : k.slice(0, d + 2));
 	return k;
+    }
+    
+    // returns size in mb (as an int)
+    //   765432 -> 0.7,  1234567 -> 1.2
+    function get_size_mb(x, int_only)
+    {
+	var m = new String(x / 1000000);
+	var d = m.indexOf('.');
+	if (d != -1)
+	    return (int_only ? m.slice(0, d) : m.slice(0, d + 2));
+	return m;
+    }
+    
+    // returns size in kb/mb as string:
+    //   123 -> '0.1k',  1234567 -> '1.2m'
+    function format_size(x)
+    {
+	return (x >= 1000000 ? get_size_mb(x) + 'm' : get_size_kb(x) + 'k');
     }
 
     function cmp_versions(v1, v2)

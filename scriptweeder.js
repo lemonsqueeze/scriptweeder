@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Aug 10 2013
+// @published Aug 11 2013
 // ==/UserScript==
 
 
@@ -17,9 +17,9 @@
 // but when running as an extension they're 2 different things, beware !
 (function(document, location, opera, scriptStorage)
 {
-    var version_number = "1.5.8";
+    var version_number = "1.5.9";
     var version_type = "userjs";
-    var version_date = "Aug 10 2013";
+    var version_date = "Aug 11 2013";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -2259,13 +2259,36 @@
     function max(a, b) { return (a > b ? a : b); }
     function to_int(s) { return parseInt(s); }
     
+    // returns size in kb (as an int)
+    //   123 -> 0.1,  12345 -> 12,  123456 -> 120
     function get_size_kb(x, int_only)
     {
-	var k = new String(x / 1000);
+	var k = x / 1000;
+	if (k > 40)
+	    k = k - k % 10;
+	k = new String(k);
 	var d = k.indexOf('.');
 	if (d != -1)
 	    return (x >= 1000 || int_only ? k.slice(0, d) : k.slice(0, d + 2));
 	return k;
+    }
+    
+    // returns size in mb (as an int)
+    //   765432 -> 0.7,  1234567 -> 1.2
+    function get_size_mb(x, int_only)
+    {
+	var m = new String(x / 1000000);
+	var d = m.indexOf('.');
+	if (d != -1)
+	    return (int_only ? m.slice(0, d) : m.slice(0, d + 2));
+	return m;
+    }
+    
+    // returns size in kb/mb as string:
+    //   123 -> '0.1k',  1234567 -> '1.2m'
+    function format_size(x)
+    {
+	return (x >= 1000000 ? get_size_mb(x) + 'm' : get_size_kb(x) + 'k');
     }
 
     function cmp_versions(v1, v2)
@@ -3076,7 +3099,7 @@
 	var label = hn.inline + ' inline';
 	
 	link.innerText = label;
-	link.title = get_size_kb(hn.inline_size) + 'k';
+	link.title = format_size(hn.inline_size);
 	//link.href = s.url;
 	var status = (block_inline_scripts ? 'blocked' : 'allowed');
 	w.className += " " + status;
@@ -3246,7 +3269,7 @@
 	setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);	    
 	    
 	var w = find_element(widget, "right_item");
-	w.innerText = " [" + get_size_kb(stats.inline_size) + "k]";
+	w.innerText = " [" + format_size(stats.inline_size) + "]";
 
 	if (!block_inline_scripts)
 	{
@@ -3491,7 +3514,7 @@
 	    s += hn.inline + ' inline, ';
 	}
 	var total = hn.inline_size + hn.scripts.reduce(function(val, script){ return val + script.size }, 0);
-	return s + (total ? get_size_kb(total) + 'k' : '');
+	return s + (total ? format_size(total) : '');
     }
     
     function update_host_table(w)
@@ -3617,7 +3640,7 @@
     function main_button_tooltip()
     {
 	var size = stats.total_size + (block_inline_scripts ? 0 : stats.inline_size);
-	size = (!size ? "" : " (" + get_size_kb(size) + "k total)");
+	size = (!size ? "" : " (" + format_size(size) + " total)");
 	var s = "";
 	if (stats.total)
 	    s += stats.loaded + "/" + stats.total + " scripts";
@@ -3786,7 +3809,7 @@
 	{
 	    var size = stats.total_size + stats.inline_size;
 	    n = get_size_kb(size / 100, true);
-	    s = get_size_kb(size) + "k loaded.";
+	    s = format_size(size) + " loaded.";
 	    klass = 'heavy';
 	    if (n <= 1)
 		klass = 'medium';
@@ -4154,7 +4177,7 @@ input[type=radio]:checked + label      { background-color: #fe911c; color: #f8f8
       layout: '<widget name="select_button_display" init><table class="dropdown_setting"><tr><td>Button display</td><td><select><option value="y">Toolbar</option><option value="n">Page</option></select></td></tr></table></widget>' },
    'select_badge_logic' : {
       init: select_badge_logic_init,
-      layout: '<widget name="select_badge_logic" init><table class="dropdown_setting"  	 title="Number displayed in ScriptWeeder button. Can also use shift+click on main button to rotate options."><tr><td>Badge</td><td><select><option value="off">None</option><option value="nloaded">Scripts not loaded</option><option value="loaded">Scripts loaded</option><option value="nblocked">Scripts we block</option><option value="weight">Script weight</option></select></td></tr></table></widget>' },
+      layout: '<widget name="select_badge_logic" init><table class="dropdown_setting"  	 title="Number displayed in ScriptWeeder button. Can also shift+click on main button to rotate options."><tr><td>Badge</td><td><select><option value="off">None</option><option value="nloaded">Scripts not loaded</option><option value="loaded">Scripts loaded</option><option value="nblocked">Scripts we block</option><option value="weight">Scripts weight</option></select></td></tr></table></widget>' },
    'select_iframe_logic' : {
       init: select_iframe_logic_init,
       layout: '<widget name="select_iframe_logic" init><table id="iframe_logic" class="dropdown_setting"   	 title="Allowed iframes run in the current mode, blocked iframes run in Block All mode. The policy decides which iframes are allowed: [Block] no iframes allowed. [Filter] iframe allowed if host allowed in menu. [Allow] all iframes are allowed (permissive)."><tr><td>Iframe policy</td><td><select><option value="block_all">Block</option><option value="filter">Filter</option><option value="allow">Allow</option></select></td></tr></table></widget>' },

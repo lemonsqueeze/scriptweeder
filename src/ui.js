@@ -694,7 +694,7 @@ function(){   // fake line, keep_editor_happy
 	var label = hn.inline + ' inline';
 	
 	link.innerText = label;
-	link.title = get_size_kb(hn.inline_size) + 'k';
+	link.title = format_size(hn.inline_size);
 	//link.href = s.url;
 	var status = (block_inline_scripts ? 'blocked' : 'allowed');
 	w.className += " " + status;
@@ -864,7 +864,7 @@ function(){   // fake line, keep_editor_happy
 	setup_checkbox_item(w, block_inline_scripts, toggle_allow_inline);	    
 	    
 	var w = find_element(widget, "right_item");
-	w.innerText = " [" + get_size_kb(stats.inline_size) + "k]";
+	w.innerText = " [" + format_size(stats.inline_size) + "]";
 
 	if (!block_inline_scripts)
 	{
@@ -1109,7 +1109,7 @@ function(){   // fake line, keep_editor_happy
 	    s += hn.inline + ' inline, ';
 	}
 	var total = hn.inline_size + hn.scripts.reduce(function(val, script){ return val + script.size }, 0);
-	return s + (total ? get_size_kb(total) + 'k' : '');
+	return s + (total ? format_size(total) : '');
     }
     
     function update_host_table(w)
@@ -1235,7 +1235,7 @@ function(){   // fake line, keep_editor_happy
     function main_button_tooltip()
     {
 	var size = stats.total_size + (block_inline_scripts ? 0 : stats.inline_size);
-	size = (!size ? "" : " (" + get_size_kb(size) + "k total)");
+	size = (!size ? "" : " (" + format_size(size) + " total)");
 	var s = "";
 	if (stats.total)
 	    s += stats.loaded + "/" + stats.total + " scripts";
@@ -1404,7 +1404,7 @@ function(){   // fake line, keep_editor_happy
 	{
 	    var size = stats.total_size + stats.inline_size;
 	    n = get_size_kb(size / 100, true);
-	    s = get_size_kb(size) + "k loaded.";
+	    s = format_size(size) + " loaded.";
 	    klass = 'heavy';
 	    if (n <= 1)
 		klass = 'medium';
