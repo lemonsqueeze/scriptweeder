@@ -3,7 +3,7 @@
 // @author lemonsqueeze https://github.com/lemonsqueeze/scriptweeder
 // @description Block unwanted javascript. noscript on steroids for opera !
 // @license GNU GPL version 2 or later version.
-// @published Aug 11 2013
+// @published May 26 2014
 // ==/UserScript==
 
 
@@ -17,9 +17,9 @@
 // but when running as an extension they're 2 different things, beware !
 (function(document, location, opera, scriptStorage)
 {
-    var version_number = "1.5.9";
+    var version_number = "1.6.0";
     var version_type = "userjs";
-    var version_date = "Aug 11 2013";
+    var version_date = "May 26 2014";
     var version_full = "scriptweeder " + version_type + " v" + version_number + ", " + version_date + ".";
     
 
@@ -3457,18 +3457,22 @@
 	    global_remove_host(h);	      
 	}
 
-	if (mode != 'filtered' && !glob_icon_clicked)	// blocking something, need to switch mode
+	// blocking related/helper host in relaxed mode ? switch to filtered mode.
+	if (mode == 'relaxed' && relaxed_mode_helper_host(h) && !glob_icon_clicked)
 	{
-	    // blocking related/helper host in relaxed mode ? switch to filtered mode.
-	    // (related/helper hosts are always allowed in relaxed mode)
-	    if (mode == 'relaxed' && relaxed_mode_helper_host(h))
-		relaxed_mode_to_filtered_mode(h);
-	    if (mode == 'allow_all')
-		allow_all_mode_to_filtered_mode(h);
+	    relaxed_mode_to_filtered_mode(h);
+	    set_mode('filtered');
+	    return;	    
+	}
+
+	// same for allow_all mode.
+	if (mode == 'allow_all' && !glob_icon_clicked)
+	{
+	    allow_all_mode_to_filtered_mode(h);
 	    set_mode('filtered');
 	    return;
-	}	
-
+	}
+	
 	update_host_table(main_ui); // preserves current scroll position
     };
 

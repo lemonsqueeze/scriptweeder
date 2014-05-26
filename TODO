@@ -51,6 +51,10 @@
 
 [ FIXME ]
 
+  - http://www.aura-couleurs.fr/applications-energetiques.html
+    "there are 2 scriptweeder instances running", handshake problem with userjs
+    even though no userjs ...
+
   - weird !!
     tests/iframes/3rd_party_script.html
     with ext + userjs, switching page->toolbar, ui shows up at the bottom !
